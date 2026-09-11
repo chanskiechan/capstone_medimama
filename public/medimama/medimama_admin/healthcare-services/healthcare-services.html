@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Healthcare Services | MediMama Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div data-medimama-sidebar></div>
+
+  <main class="main-content healthcare-page">
+    <header class="page-header">
+      <div><p class="eyebrow">MEDIMAMA ADMIN</p><h1>Healthcare Services</h1></div>
+      <div class="header-user"><span><i class="fa-regular fa-calendar"></i> July 23, 2026</span><button class="bell" aria-label="Notifications"><i class="fa-regular fa-bell"></i><b>3</b></button><i class="avatar">MS</i><div><strong>Maria Santos</strong><small>Midwife</small></div></div>
+    </header>
+
+    <section class="content">
+      <div class="section-top">
+        <div class="tabs" role="tablist" aria-label="Healthcare modules">
+          <button class="tab active" data-tab-target="prenatal" role="tab">Prenatal Records</button>
+          <button class="tab" data-tab-target="postnatal" role="tab">Postnatal Records</button>
+          <button class="tab" data-tab-target="immunization" role="tab">Immunization</button>
+          <button class="tab" data-tab-target="appointments" role="tab">Appointments</button>
+        </div>
+        <div class="toolbar"><label class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="tableSearch" type="search" placeholder="Search records..."></label><select id="statusFilter" aria-label="Filter by status"><option value="">Filter by Status</option></select><button class="add-button" id="addRecord"><i class="fa-solid fa-plus"></i> Add New Record</button></div>
+      </div>
+
+      <section class="module active" id="prenatal" data-title="Prenatal Record">
+        <div class="module-intro"><div><p class="eyebrow">MATERNAL CARE</p><h2>Prenatal Records</h2><p>Monitor maternal health, pregnancy progress, supplements, and risk assessment.</p></div><span class="count-pill">24 active pregnancies</span></div>
+        <div class="table-card"><div class="data-table prenatal-table"><div class="table-head"><span>Patient ID</span><span>Mother's Name</span><span>Gestational Age</span><span>EDD</span><span>Risk Status</span><span>Last Visit</span><span>Actions</span></div>
+          <div class="table-row" data-status="Normal"><span>M-2026-0148</span><strong>Angela Reyes</strong><span>32 weeks</span><span>Sep 16, 2026</span><span class="badge normal">Normal</span><span>Jul 20, 2026</span><span class="row-actions"><button data-action="view">View Details</button><button data-action="log">Add Log</button></span></div>
+          <div class="table-row" data-status="High Risk"><span>M-2026-0152</span><strong>Liza Dela Cruz</strong><span>28 weeks</span><span>Oct 14, 2026</span><span class="badge danger">High Risk</span><span>Jul 22, 2026</span><span class="row-actions"><button data-action="view">View Details</button><button data-action="log">Add Log</button></span></div>
+          <div class="table-row" data-status="Moderate"><span>M-2026-0137</span><strong>Joyce Garcia</strong><span>20 weeks</span><span>Dec 08, 2026</span><span class="badge moderate">Moderate</span><span>Jul 18, 2026</span><span class="row-actions"><button data-action="view">View Details</button><button data-action="log">Add Log</button></span></div>
+          <div class="table-row" data-status="Normal"><span>M-2026-0161</span><strong>Maribel Santos</strong><span>14 weeks</span><span>Jan 19, 2027</span><span class="badge normal">Normal</span><span>Jul 17, 2026</span><span class="row-actions"><button data-action="view">View Details</button><button data-action="log">Add Log</button></span></div>
+        </div></div>
+      </section>
+
+      <section class="module" id="postnatal" data-title="Postnatal Record">
+        <div class="module-intro"><div><p class="eyebrow">POSTPARTUM CARE</p><h2>Postnatal Records</h2><p>Track delivery information, maternal recovery, newborn details, and feeding.</p></div><span class="count-pill">11 recovery plans</span></div>
+        <div class="table-card"><div class="data-table postnatal-table"><div class="table-head"><span>Record ID</span><span>Mother's Name</span><span>Delivery Date</span><span>Delivery Type</span><span>Newborn Status</span><span>Recovery Stage</span><span>Actions</span></div>
+          <div class="table-row" data-status="Stable"><span>PN-2026-041</span><strong>Maria Gonzales</strong><span>Jul 19, 2026</span><span>NSVD</span><span class="badge normal">Stable</span><span>Day 4 check</span><span class="row-actions"><button data-action="view">View Details</button><button data-action="edit">Edit</button></span></div>
+          <div class="table-row" data-status="Follow-up"><span>PN-2026-039</span><strong>Leah Cruz</strong><span>Jul 15, 2026</span><span>C-section</span><span class="badge moderate">Follow-up</span><span>Incision review</span><span class="row-actions"><button data-action="view">View Details</button><button data-action="edit">Edit</button></span></div>
+          <div class="table-row" data-status="Stable"><span>PN-2026-034</span><strong>Anne Flores</strong><span>Jul 06, 2026</span><span>NSVD</span><span class="badge normal">Stable</span><span>Week 2 check</span><span class="row-actions"><button data-action="view">View Details</button><button data-action="edit">Edit</button></span></div>
+        </div></div>
+      </section>
+
+      <section class="module" id="immunization" data-title="Immunization Record">
+        <div class="summary-cards"><article><i class="fa-solid fa-shield-heart blue"></i><div><small>Total Vaccinated This Month</small><strong>86</strong><em>+12% from June</em></div></article><article><i class="fa-solid fa-clock pink"></i><div><small>Overdue Vaccines</small><strong>8</strong><em>Needs follow-up</em></div></article><article><i class="fa-solid fa-calendar-days violet"></i><div><small>Upcoming Doses</small><strong>17</strong><em>Next 7 days</em></div></article></div>
+        <div class="module-intro slim"><div><p class="eyebrow">INFANT PROTECTION</p><h2>Immunization Records</h2></div><span class="count-pill">Vaccine checklist updated</span></div>
+        <div class="table-card"><div class="data-table immunization-table"><div class="table-head"><span>Infant ID</span><span>Child Name</span><span>Mother's Name</span><span>Vaccine Due</span><span>Due Date</span><span>Status</span><span>Actions</span></div>
+          <div class="table-row" data-status="Pending"><span>I-2026-029</span><strong>Baby Ethan Cruz</strong><span>Leah Cruz</span><span>Pentavalent 2 + OPV 2</span><span>Jul 26, 2026</span><span class="badge pending">Pending</span><span class="row-actions"><button data-action="administer">Mark Administered</button><button data-action="view">View Card</button></span></div>
+          <div class="table-row" data-status="Overdue"><span>I-2026-041</span><strong>Baby Sofia Reyes</strong><span>Angela Reyes</span><span>BCG</span><span>Jul 18, 2026</span><span class="badge danger">Overdue</span><span class="row-actions"><button data-action="administer">Mark Administered</button><button data-action="view">View Card</button></span></div>
+          <div class="table-row" data-status="Completed"><span>I-2026-022</span><strong>Baby Liam Garcia</strong><span>Joyce Garcia</span><span>Hepatitis B (BD)</span><span>Jul 20, 2026</span><span class="badge normal">Completed</span><span class="row-actions"><button data-action="view">View Card</button></span></div>
+        </div></div>
+      </section>
+
+      <section class="module" id="appointments" data-title="Appointment">
+        <div class="module-intro"><div><p class="eyebrow">SCHEDULE MANAGEMENT</p><h2>Appointments</h2><p>Manage prenatal, postnatal, infant immunization, emergency, and follow-up visits.</p></div><div class="view-switch"><button class="active" data-view="table"><i class="fa-solid fa-table-list"></i> Table</button><button data-view="calendar"><i class="fa-regular fa-calendar"></i> Calendar</button></div></div>
+        <div class="table-card appointment-view" id="appointmentTable"><div class="data-table appointment-table"><div class="table-head"><span>Appt ID</span><span>Patient Name</span><span>Service Type</span><span>Date & Time</span><span>Provider / Staff</span><span>Status</span><span>Actions</span></div>
+          <div class="table-row" data-status="Scheduled"><span>APT-26071</span><strong>Angela Reyes</strong><span>Prenatal Visit</span><span>Jul 24, 9:30 AM</span><span>Maria Santos</span><span class="badge pending">Scheduled</span><span class="row-actions"><button data-action="reschedule">Reschedule</button><button data-action="update">Update Status</button></span></div>
+          <div class="table-row" data-status="Completed"><span>APT-26068</span><strong>Maria Gonzales</strong><span>Postnatal Checkup</span><span>Jul 23, 11:00 AM</span><span>Dr. R. Flores</span><span class="badge normal">Completed</span><span class="row-actions"><button data-action="view">View Details</button></span></div>
+          <div class="table-row" data-status="Cancelled"><span>APT-26065</span><strong>Baby Ethan Cruz</strong><span>Infant Immunization</span><span>Jul 23, 2:00 PM</span><span>J. Ramos, RN</span><span class="badge cancelled">Cancelled</span><span class="row-actions"><button data-action="reschedule">Reschedule</button></span></div>
+        </div></div>
+        <div class="calendar-view" id="appointmentCalendar" hidden><div class="calendar-header"><button>&lsaquo;</button><strong>July 2026</strong><button>&rsaquo;</button></div><div class="weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div class="calendar-grid"><span></span><span></span><span></span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span class="today">23 <b>2 visits</b></span><span class="has-event">24 <b>1 visit</b></span><span>25</span><span class="has-event">26 <b>2 doses</b></span><span>27</span><span>28</span><span>29</span><span>30</span><span>31</span></div></div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="modal"><form class="record-modal" id="recordForm"><button type="button" class="close" id="closeModal" aria-label="Close">&times;</button><p class="eyebrow" id="modalLabel">NEW RECORD</p><h2 id="modalTitle">Add New Record</h2><div class="form-grid" id="formFields"></div><div class="modal-actions"><button type="button" class="cancel" id="cancelModal">Cancel</button><button class="save" type="submit">Save Record</button></div></form></div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="../sidebar/sidebar-loader.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

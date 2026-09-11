@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMama Appointments</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div data-medimama-mother-navbar></div>
+
+    <main class="dashboard-shell">
+        <section class="appointments-page">
+            <div class="appointments-header">
+                <div>
+                    <p class="label">Appointments</p>
+                    <h1>Upcoming visits</h1>
+                    <span>Review your schedule and open appointment details from one place.</span>
+                </div>
+                <button class="primary" type="button" data-open="bookAppointment">Book New Appointment</button>
+            </div>
+
+            <div class="appointments-toolbar">
+                <div class="filter-pills" role="tablist" aria-label="Appointment filters">
+                    <button class="pill active" type="button" data-filter="all" role="tab">All</button>
+                    <button class="pill" type="button" data-filter="confirmed" role="tab">Confirmed</button>
+                    <button class="pill" type="button" data-filter="upcoming" role="tab">Upcoming</button>
+                    <button class="pill" type="button" data-filter="rescheduled" role="tab">Rescheduled</button>
+                </div>
+            </div>
+
+            <div class="appointments-grid">
+                <article class="appointment-card">
+                    <div>
+                        <p>Prenatal Checkup</p>
+                        <strong>August 20, 2026</strong>
+                        <small>8:30 AM · Barangay Health Center</small>
+                    </div>
+                    <button type="button" data-open="appointmentDetails">View Details</button>
+                </article>
+                <article class="appointment-card secondary-card">
+                    <div>
+                        <p>Infant Growth Review</p>
+                        <strong>September 4, 2026</strong>
+                        <small>10:00 AM · Barangay Health Center</small>
+                    </div>
+                    <button type="button" data-open="appointmentDetails">View Details</button>
+                </article>
+            </div>
+
+            <div class="appointments-list">
+                <div class="section-title"><h2>All upcoming appointments</h2></div>
+                <div class="appointment-row selected" data-status="confirmed">
+                    <span>
+                        <strong>August 20</strong>
+                        <small>Prenatal Checkup</small>
+                    </span>
+                    <span class="status-chip confirmed">Confirmed</span>
+                    <em>8:30 AM</em>
+                    <button type="button" data-open="appointmentDetails">Details</button>
+                </div>
+                <div class="appointment-row" data-status="upcoming">
+                    <span>
+                        <strong>September 4</strong>
+                        <small>Infant Growth Review</small>
+                    </span>
+                    <span class="status-chip upcoming">Upcoming</span>
+                    <em>10:00 AM</em>
+                    <button type="button" data-open="appointmentDetails">Details</button>
+                </div>
+                <div class="appointment-row" data-status="rescheduled">
+                    <span>
+                        <strong>September 15</strong>
+                        <small>Postnatal Consultation</small>
+                    </span>
+                    <span class="status-chip rescheduled">Rescheduled</span>
+                    <em>1:30 PM</em>
+                    <button type="button" data-open="appointmentDetails">Details</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="help-bar">
+        <div><span><i class="fa-regular fa-heart"></i></span><p><strong>Need Help?</strong> Contact your barangay health center or talk to our <button type="button" data-open="assistantChat">MediMama Assistant</button></p></div>
+        <button type="button" data-open="assistantChat"><i class="fa-solid fa-robot"></i> Chat with MediMama Assistant</button>
+    </footer>
+
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+        <div class="modal-card">
+            <button class="modal-close" type="button" id="modalClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            <p class="modal-kicker" id="modalKicker">MediMama</p>
+            <h2 id="modalTitle"></h2>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="../../medimama-core.js"></script><script src="navbar-component.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

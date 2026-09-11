@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMama Caregiver Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link rel="stylesheet" href="caregiver-dashboard.css">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="#home"><img src="../../medimamalogo.png" alt="MediMama"></a>
+        <nav aria-label="Caregiver navigation">
+            <a class="active" href="#home"><i class="fa-solid fa-house"></i>Home</a>
+            <a href="#schedule"><i class="fa-regular fa-calendar-days"></i>Schedule</a>
+            <a href="#care-plan"><i class="fa-solid fa-list-check"></i>Care Plan</a>
+            <a href="#notes"><i class="fa-regular fa-note-sticky"></i>Care Notes</a>
+        </nav>
+        <div class="top-actions">
+            <button class="bell" id="notificationButton" aria-label="Show notifications" aria-expanded="false"><i class="fa-regular fa-bell"></i><b>2</b></button>
+            <div class="notifications" id="notificationPanel"><strong>Notifications</strong><button data-message="Immunization appointment is tomorrow at 9:00 AM."><i class="fa-solid fa-syringe"></i> Immunization appointment tomorrow</button><button data-message="Vitamin D dose is due at 8:00 PM."><i class="fa-solid fa-pills"></i> Evening medicine reminder</button></div>
+            <button class="profile" id="profileButton" data-modal="account"><span id="caregiverInitials">JD</span><span><strong id="caregiverName">Juan Dela Cruz</strong><small>Caregiver</small></span><i class="fa-solid fa-chevron-down"></i></button>
+            <button class="bell" id="caregiverLogout" type="button" aria-label="Log out"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+    </header>
+
+    <main id="home" class="page-shell">
+        <section class="welcome">
+            <div><p><i class="fa-solid fa-heart"></i> Caregiver workspace</p><h1 id="caregiverGreeting">Good morning, Juan!</h1><span>Here is what needs your attention for Baby Patrick today.</span></div>
+            <div class="linked-person"><span class="baby-icon"><i class="fa-solid fa-baby"></i></span><span><strong>Baby Patrick Ibanez</strong><small>2 months old &middot; Linked to your care</small></span><button data-modal="profile">View profile</button></div>
+        </section>
+
+        <section class="summary" aria-label="Today's care summary">
+            <article><span class="circle blue"><i class="fa-solid fa-list-check"></i></span><div><strong id="taskCount">3</strong><small>Tasks for today</small></div></article>
+            <article><span class="circle coral"><i class="fa-regular fa-calendar-check"></i></span><div><strong>1</strong><small>Upcoming appointment</small></div></article>
+            <article><span class="circle green"><i class="fa-solid fa-check"></i></span><div><strong id="completedCount">1</strong><small>Tasks completed</small></div></article>
+        </section>
+
+        <section class="dashboard-grid">
+            <div class="primary-column">
+                <section id="care-plan" class="card tasks-card">
+                    <div class="section-heading"><div><p>Daily care plan</p><h2>Today's Tasks</h2></div><button data-modal="allTasks">View all</button></div>
+                    <div class="task-list">
+                        <label class="task done"><input type="checkbox" checked><span class="checkmark"><i class="fa-solid fa-check"></i></span><span><strong>Morning feeding</strong><small>Completed at 7:15 AM</small></span><time>7:00 AM</time></label>
+                        <label class="task"><input type="checkbox"><span class="checkmark"><i class="fa-solid fa-check"></i></span><span><strong>Give Vitamin D drops</strong><small>1 drop after feeding</small></span><time>8:00 PM</time></label>
+                        <label class="task"><input type="checkbox"><span class="checkmark"><i class="fa-solid fa-check"></i></span><span><strong>Tummy time</strong><small>Supervised activity for 5–10 minutes</small></span><time>2:00 PM</time></label>
+                        <label class="task"><input type="checkbox"><span class="checkmark"><i class="fa-solid fa-check"></i></span><span><strong>Record feeding and diaper changes</strong><small>Update today's care notes</small></span><time>All day</time></label>
+                    </div>
+                </section>
+
+                <section id="schedule" class="card appointment-card">
+                    <div class="section-heading"><div><p>Next visit</p><h2>Upcoming Appointment</h2></div><button data-modal="appointment">View details</button></div>
+                    <div class="appointment-content"><span class="date-block"><b>28</b><small>AUG</small></span><div><strong>Infant Immunization</strong><p><i class="fa-regular fa-clock"></i> 9:00 AM &nbsp; <i class="fa-solid fa-location-dot"></i> Barangay Health Center</p><small>Bring Baby Patrick's immunization card and a clean cloth.</small></div><button class="outline-button" data-modal="appointment">Prepare for visit</button></div>
+                </section>
+            </div>
+
+            <aside>
+                <section class="card quick-card"><div class="section-heading"><div><p>Helpful tools</p><h2>Quick Actions</h2></div></div><div class="quick-actions"><button data-modal="careNote"><i class="fa-regular fa-pen-to-square"></i><span>Add care note</span></button><button data-modal="symptoms"><i class="fa-solid fa-heart-pulse"></i><span>Report symptom</span></button><button data-modal="contacts"><i class="fa-solid fa-phone"></i><span>Contact health worker</span></button><button data-modal="schedule"><i class="fa-regular fa-calendar-plus"></i><span>View schedule</span></button></div></section>
+                <section id="notes" class="card notes-card"><div class="section-heading"><div><p>Latest update</p><h2>Care Notes</h2></div><button data-modal="careNote">Add note</button></div><article><span><i class="fa-solid fa-bottle-droplet"></i></span><div><strong>Feeding went well this morning</strong><p>Finished 120 ml at 7:15 AM and burped comfortably.</p><small>Added by Juan &middot; Today, 7:30 AM</small></div></article><article><span class="peach"><i class="fa-solid fa-moon"></i></span><div><strong>Sleep update</strong><p>Slept from 10:00 PM to 2:30 AM.</p><small>Added by Shaina &middot; Yesterday</small></div></article></section>
+                <section class="emergency"><i class="fa-solid fa-triangle-exclamation"></i><div><strong>Need urgent help?</strong><span>For severe symptoms, contact your health center or emergency services immediately.</span></div><button data-modal="contacts">Get help</button></section>
+            </aside>
+        </section>
+    </main>
+    <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-modal="true"><div class="modal-box"><button class="modal-close" id="modalClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button><p id="modalKicker">MediMama Caregiver</p><h2 id="modalTitle"></h2><div id="modalBody"></div></div></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="../../medimama-core.js"></script><script src="caregiver-dashboard.js"></script>
+</body>
+</html>

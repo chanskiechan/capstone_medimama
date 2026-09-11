@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>MEDIMAMA | Login</title>
+
+    <!-- Poppins Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="medimamaloginsignup.css">
+
+</head>
+
+<body>
+
+    <!-- Background Shapes -->
+
+    <img src="../../background.png" class="bg bg1" alt="">
+
+
+    <div class="container">
+
+        <!-- LEFT SIDE -->
+
+        <div class="left">
+
+            <img src="../../medimamalogo.png" class="logo" alt="MediMama logo">
+
+            
+
+            <p class="tagline">
+                Empowering Mothers.<br>
+                Protecting Every Child.
+            </p>
+
+            <img src="../../medimama.png" class="mother" alt="Mother and child illustration">
+
+            <div class="info-card">
+
+                <img src="../../healthcare%20servicesicon.png" alt="Healthcare icon">
+
+                <div>
+
+                    <h4>Your Health. Your Child.</h4>
+
+                    <p>Our Priority</p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDE -->
+
+        <div class="right">
+
+            <div class="login-card">
+
+                <h2>Welcome Back!</h2>
+
+                <span>Please login to your account</span>
+
+                <form id="loginForm">
+                    <div class="form-feedback" id="loginFeedback" role="alert" aria-live="polite"></div>
+
+                    <!-- Email -->
+
+                    <label>Email Address</label>
+
+                    <div class="input-box">
+
+                        <i class="fa-regular fa-envelope"></i>
+
+                        <input type="email"
+                            id="email"
+                            placeholder="Enter your email">
+
+                    </div>
+
+                    <!-- Password -->
+
+                    <label>Password</label>
+
+                    <div class="input-box">
+
+                        <i class="fa-solid fa-lock"></i>
+
+                        <input type="password"
+                            id="password"
+                            placeholder="Enter your password">
+
+                        <button type="button" class="password-toggle" id="togglePassword" aria-label="Show password" aria-pressed="false"><i class="fa-solid fa-eye"></i></button>
+
+                    </div>
+
+                    <!-- Remember -->
+
+                    <div class="remember">
+
+                        <label>
+
+                            <input type="checkbox">
+
+                            Remember me
+
+                        </label>
+
+                        <a href="#" id="forgotPassword">Forgot Password?</a>
+
+                    </div>
+
+                    <!-- Login -->
+
+                    <button type="submit" class="login-btn">
+
+                        <i class="fa-solid fa-right-to-bracket"></i>
+
+                        Login
+
+                    </button>
+
+                    <p class="register">
+
+                        Don't have an account?
+
+                        <a href="#" id="showSignup">Register here</a>
+
+                    </p>
+
+                </form>
+
+            </div>
+
+            <!-- SIGNUP CARD (Hidden by default) -->
+            <div class="signup-card" id="signupCard" style="display:none;">
+
+                <h2>Create Account</h2>
+
+                <span id="signupIntro">Register as a mother or caregiver</span>
+
+                <form id="signupForm">
+                    <div class="form-feedback" id="signupFeedback" role="alert" aria-live="polite"></div>
+
+                    <fieldset class="account-type-choice">
+                        <legend>Register as</legend>
+                        <div class="account-type-options">
+                            <label class="account-type-option selected">
+                                <input type="radio" name="accountType" value="mother" checked>
+                                <i class="fa-solid fa-person-pregnant"></i>
+                                <span><strong>Mother</strong><small>Manage your maternal and infant health records</small></span>
+                            </label>
+                            <label class="account-type-option">
+                                <input type="radio" name="accountType" value="caregiver">
+                                <i class="fa-solid fa-people-roof"></i>
+                                <span><strong>Caregiver</strong><small>Support a linked mother or infant</small></span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <!-- Name -->
+                    <label>Name</label>
+                    <div class="name-fields">
+                        <div class="input-box">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="text" id="firstName" placeholder="First name">
+                        </div>
+                        <div class="input-box">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="text" id="middleName" placeholder="Middle name (optional)">
+                        </div>
+                        <div class="input-box">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="text" id="lastName" placeholder="Last name">
+                        </div>
+                        <div class="input-box">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="text" id="suffix" placeholder="Suffix (optional)">
+                        </div>
+                    </div>
+
+                    <section class="caregiver-fields" id="caregiverFields" hidden>
+                        <p class="form-section-note">Caregiver information</p>
+
+                        <label for="relationship">Relationship to patient</label>
+                        <div class="input-box">
+                            <i class="fa-solid fa-people-arrows"></i>
+                            <select id="relationship">
+                                <option value="">Select relationship</option>
+                                <option>Father</option>
+                                <option>Grandmother / Grandfather</option>
+                                <option>Sibling</option>
+                                <option>Legal guardian</option>
+                                <option>Other relative</option>
+                                <option value="not-related">Other (not related)</option>
+                            </select>
+                        </div>
+
+                        <div id="relationshipOtherWrap" hidden>
+                            <label for="relationshipOther">Please describe your connection to the mother or infant</label>
+                            <div class="input-box">
+                                <i class="fa-solid fa-pen"></i>
+                                <input type="text" id="relationshipOther" maxlength="100" placeholder="Example: family friend or neighbor">
+                            </div>
+                        </div>
+
+                        <label for="linkedPatient">Mother or infant to link</label>
+                        <div class="input-box">
+                            <i class="fa-solid fa-link"></i>
+                            <input type="text" id="linkedPatient" placeholder="Enter the mother's or infant's full name">
+                        </div>
+
+                        <label for="emergencyContact">Emergency contact number</label>
+                        <div class="input-box phone-input">
+                            <i class="fa-solid fa-phone-volume"></i>
+                            <span class="country-code">+63</span>
+                            <input type="tel" id="emergencyContact" inputmode="numeric" maxlength="10" placeholder="9XXXXXXXXX">
+                        </div>
+
+                        <label for="idType">Valid ID type</label>
+                        <div class="input-box">
+                            <i class="fa-solid fa-address-card"></i>
+                            <select id="idType">
+                                <option value="">Select ID type</option>
+                                <option>Philippine National ID</option>
+                                <option>Driver's License</option>
+                                <option>Passport</option>
+                                <option>Barangay ID</option>
+                                <option>Senior Citizen ID</option>
+                            </select>
+                        </div>
+
+                        <div class="terms-check caregiver-consent">
+                            <input type="checkbox" id="caregiverConsent">
+                            <label for="caregiverConsent">I understand that access to the linked patient record requires approval from the mother or an administrator.</label>
+                        </div>
+                    </section>
+
+                    <!-- Address -->
+                    <label>Address</label>
+                    <div class="address-location" aria-label="Registered location">
+                        <span>Barangay Bucandala II</span>
+                        <span>Imus City</span>
+                        <span>Cavite</span>
+                    </div>
+                    <div class="input-box">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <input type="text" id="addressDetails" placeholder="House no., street, subdivision, or landmark">
+                    </div>
+
+                    <!-- Birthdate -->
+                    <label>Birthdate</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-calendar"></i>
+                        <input type="date"
+                            id="birthdate">
+                    </div>
+
+                    <!-- Contact Number -->
+                    <label>Contact Number</label>
+                    <div class="input-box phone-input">
+                        <i class="fa-solid fa-phone"></i>
+                        <span class="country-code">+63</span>
+                        <input type="tel"
+                            id="contactNumber"
+                            inputmode="numeric"
+                            maxlength="10"
+                            placeholder="9XXXXXXXXX">
+                    </div>
+
+                    <!-- Email -->
+                    <label>Email Address</label>
+                    <div class="email-otp-wrapper">
+                        <div class="input-box email-input">
+                            <i class="fa-regular fa-envelope"></i>
+                            <input type="email"
+                                id="signupEmail"
+                                placeholder="Enter your email">
+                        </div>
+                        <button type="button" class="send-otp-btn" id="sendOtpBtn">Send OTP</button>
+                    </div>
+
+                    <!-- OTP Verification Section (Hidden by default) -->
+                    <div id="otpVerificationSection" style="display:none;">
+                        <div class="otp-confirmation-message">
+                            <i class="fa-solid fa-check-circle"></i>
+                            <span id="otpMessage">OTP sent to your email</span>
+                        </div>
+
+                        <!-- OTP Input -->
+                        <label>Verify OTP</label>
+                        <div class="otp-verify-wrapper">
+                            <div class="input-box">
+                                <i class="fa-solid fa-envelope-open-text"></i>
+                            <input type="text"
+                                id="otp"
+                                placeholder="Enter OTP"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                                maxlength="6">
+                            </div>
+                            <button type="button" class="verify-otp-btn" id="verifyOtpBtn">Confirm</button>
+                        </div>
+                        <div id="otpFeedback" class="otp-feedback"></div>
+                    </div>
+
+                    <!-- Valid ID Upload -->
+                    <label>Valid ID</label>
+                    <div class="input-box file-upload">
+                        <i class="fa-solid fa-id-card"></i>
+                        <input type="file"
+                            id="validId"
+                            accept="image/*,.pdf">
+                        <span id="fileName" aria-live="polite">No file selected</span>
+                        <label class="file-select-button" for="validId"><i class="fa-solid fa-upload"></i> Upload ID</label>
+                    </div>
+
+                    <!-- Password -->
+                    <label>Password</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password"
+                            id="signupPassword"
+                            placeholder="Create a password"
+                            aria-describedby="passwordHint">
+                        <button type="button" class="password-toggle" id="toggleSignupPassword" aria-label="Show password" aria-pressed="false"><i class="fa-solid fa-eye"></i></button>
+                    </div>
+                    <p class="password-hint" id="passwordHint">At least 8 characters, with uppercase, lowercase, number, and special character.</p>
+
+                    <!-- Confirm Password -->
+                    <label>Confirm Password</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password"
+                            id="confirmPassword"
+                            placeholder="Confirm your password">
+                        <button type="button" class="password-toggle" id="toggleConfirmPassword" aria-label="Show password" aria-pressed="false"><i class="fa-solid fa-eye"></i></button>
+                    </div>
+
+                    <!-- OTP Section -->
+
+                    <!-- Terms -->
+                    <div class="terms-check">
+                        <input type="checkbox" id="termsCheckbox">
+                        <label for="termsCheckbox">I agree to the <a href="#" data-legal="terms">Terms</a> and <a href="#" data-legal="privacy">Privacy Policy</a>, including consent for health-data processing.</label>
+                    </div>
+
+                    <!-- Register Button -->
+                    <button type="submit" class="register-btn">
+                        <i class="fa-solid fa-user-plus"></i>
+                        Register
+                    </button>
+
+                    <p class="login-link">
+                        Already have an account?
+                        <a href="#" id="showLogin">Login here</a>
+                    </p>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="approval-modal" id="approvalModal" role="dialog" aria-modal="true" aria-labelledby="approvalTitle" aria-hidden="true">
+        <div class="approval-card">
+            <div class="approval-icon"><i class="fa-solid fa-envelope-circle-check"></i></div>
+            <h2 id="approvalTitle">Registration Submitted</h2>
+            <p id="approvalMessage">Your account request has been sent to the administrator for approval.</p>
+            <p id="approvalEmailMessage">Once approved, you will receive an email confirmation at the address you registered.</p>
+            <button type="button" id="approvalClose">Back to Login</button>
+        </div>
+    </div>
+
+    <div class="approval-modal" id="legalModal" role="dialog" aria-modal="true" aria-labelledby="legalTitle" aria-hidden="true">
+        <div class="approval-card">
+            <div class="approval-icon"><i class="fa-solid fa-shield-heart"></i></div>
+            <h2 id="legalTitle">Terms and Privacy</h2>
+            <p id="legalMessage"></p>
+            <button type="button" id="legalClose">I understand</button>
+        </div>
+    </div>
+
+    <script src="medimamaloginsignup.js"></script>
+
+</body>
+
+</html>

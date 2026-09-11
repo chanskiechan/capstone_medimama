@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MediMama Admin - Mothers</title><link rel="stylesheet" href="mothers.css"></head>
+<body>
+    <div data-medimama-sidebar></div>
+    <main class="main-content directory-page">
+        <header class="page-header"><div><p class="eyebrow">Patient management</p><h1>Mother Directory</h1><p>View registered mothers and their maternal care status.</p></div><button class="primary-button" type="button" id="addMother"><i class="fa-solid fa-user-plus"></i> Add mother</button></header>
+        <section class="summary-grid"><article><i class="fa-solid fa-users"></i><span><b id="totalCount">0</b><small>Registered mothers</small></span></article><article><i class="fa-solid fa-person-pregnant pink"></i><span><b id="pregnantCount">0</b><small>Currently pregnant</small></span></article><article><i class="fa-solid fa-baby teal"></i><span><b id="bornCount">0</b><small>Baby born / postnatal</small></span></article></section>
+        <section class="directory-panel"><div class="directory-tools"><label class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="search" type="search" placeholder="Search mother, record ID, or address"></label><select id="statusFilter" aria-label="Filter by motherhood status"><option value="all">All motherhood statuses</option><option value="Pregnant">Currently pregnant</option><option value="Baby born">Baby born / postnatal</option></select></div><div class="table-wrap"><table><thead><tr><th>Mother</th><th>Record ID</th><th>Age</th><th>Motherhood status</th><th>Care details</th><th>Contact</th><th></th></tr></thead><tbody id="motherRows"></tbody></table></div></section>
+    </main>
+    <div class="profile-modal" id="profileModal" aria-hidden="true" role="dialog" aria-modal="true"><div class="profile-card"><button id="closeProfile" class="close" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button><div id="profileContent"></div></div></div><div class="toast" id="toast" role="status"></div>
+    <script src="../sidebar/sidebar-loader.js"></script><script src="../../medimama-core.js"></script><script src="mothers.js"></script>
+</body></html>

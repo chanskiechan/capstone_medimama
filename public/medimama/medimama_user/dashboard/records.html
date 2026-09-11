@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMama Records</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div data-medimama-mother-navbar></div>
+
+    <main class="dashboard-shell">
+        <section class="records-page">
+            <div class="records-header">
+                <div>
+                    <p class="label">Health Records</p>
+                    <h1>Patient and baby records</h1>
+                    <span>Access your most recent maternal and infant health information in one place.</span>
+                </div>
+                <button class="primary" type="button" data-open="healthRecords">View Records Summary</button>
+            </div>
+
+            <div class="records-toolbar">
+                <div class="record-search">
+                    <label for="recordSearch">Search records</label>
+                    <input id="recordSearch" type="search" placeholder="Search by type, detail, or date">
+                </div>
+                <div class="filter-pills" role="tablist" aria-label="Record status filters">
+                    <button class="pill active" type="button" data-filter="all">All</button>
+                    <button class="pill" type="button" data-filter="confirmed">Completed</button>
+                    <button class="pill" type="button" data-filter="reviewed">Reviewed</button>
+                    <button class="pill" type="button" data-filter="upcoming">Due</button>
+                    <button class="pill" type="button" data-filter="rescheduled">Rescheduled</button>
+                </div>
+            </div>
+
+            <div class="record-cards">
+                <article class="record-card">
+                    <div>
+                        <p>Maternal History</p>
+                        <strong>Latest checkup</strong>
+                        <small>Blood pressure stable, hemoglobin 12.5 g/dL.</small>
+                    </div>
+                    <span class="status-chip confirmed">Updated</span>
+                </article>
+                <article class="record-card secondary-card">
+                    <div>
+                        <p>Immunization</p>
+                        <strong>Next vaccine</strong>
+                        <small>Pentavalent 1 due on August 28, 2026.</small>
+                    </div>
+                    <span class="status-chip upcoming">Upcoming</span>
+                </article>
+                <article class="record-card">
+                    <div>
+                        <p>Growth Summary</p>
+                        <strong>Baby Patrick</strong>
+                        <small>5.2 kg — 58 cm, healthy growth curve.</small>
+                    </div>
+                    <span class="status-chip confirmed">Normal</span>
+                </article>
+            </div>
+
+            <div class="records-table-wrap">
+                <div class="section-title"><h2>Recent records</h2></div>
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Details</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                            <tr class="clickable-row" data-record-type="Ultrasound" data-record-details="Fetal anatomy and maternal uterus check" data-record-date="Aug 10, 2026" data-record-status="confirmed" data-record-status-label="Completed">
+                            <td>Ultrasound</td>
+                            <td>Fetal anatomy and maternal uterus check</td>
+                            <td>Aug 10, 2026</td>
+                            <td><span class="status-chip confirmed">Completed</span></td>
+                        </tr>
+                        <tr class="clickable-row" data-record-type="Lab results" data-record-details="Complete blood count and iron level" data-record-date="Aug 05, 2026" data-record-status="reviewed" data-record-status-label="Reviewed">
+                            <td>Lab results</td>
+                            <td>Complete blood count and iron level</td>
+                            <td>Aug 05, 2026</td>
+                            <td><span class="status-chip confirmed">Reviewed</span></td>
+                        </tr>
+                        <tr class="clickable-row" data-record-type="Vaccination" data-record-details="Pentavalent 1 schedule reminder" data-record-date="Aug 28, 2026" data-record-status="upcoming" data-record-status-label="Due">
+                            <td>Vaccination</td>
+                            <td>Pentavalent 1 schedule reminder</td>
+                            <td>Aug 28, 2026</td>
+                            <td><span class="status-chip upcoming">Due</span></td>
+                        </tr>
+                        <tr class="clickable-row" data-record-type="Prenatal visit" data-record-details="Next follow-up appointment" data-record-date="Sep 15, 2026" data-record-status="rescheduled" data-record-status-label="Rescheduled">
+                            <td>Prenatal visit</td>
+                            <td>Next follow-up appointment</td>
+                            <td>Sep 15, 2026</td>
+                            <td><span class="status-chip rescheduled">Rescheduled</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer class="help-bar">
+        <div><span><i class="fa-regular fa-heart"></i></span><p><strong>Need Help?</strong> Contact your barangay health center or talk to our <button type="button" data-open="assistantChat">MediMama Assistant</button></p></div>
+        <button type="button" data-open="assistantChat"><i class="fa-solid fa-robot"></i> Chat with MediMama Assistant</button>
+    </footer>
+
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+        <div class="modal-card">
+            <button class="modal-close" type="button" id="modalClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            <p class="modal-kicker" id="modalKicker">MediMama</p>
+            <h2 id="modalTitle"></h2>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="../../medimama-core.js"></script><script src="navbar-component.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

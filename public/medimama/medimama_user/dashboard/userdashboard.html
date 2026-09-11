@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMama User Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-page">
+    <div data-medimama-mother-navbar></div>
+
+    <main class="dashboard-shell">
+        <section class="hero-panel">
+            <div class="hero-copy">
+                <p><i class="fa-solid fa-heart-pulse"></i> Postpartum care &middot; Baby born</p>
+                <h1>Shaina Santos! <span aria-hidden="true">👋</span></h1>
+                <span>Your recovery and your baby's care are both being tracked in one place.</span>
+            </div>
+            <div class="mother-visual" aria-hidden="true">
+                <img src="../../motherside.png" alt="">
+            </div>
+        </section>
+
+        <section class="main-grid">
+            <div class="left-column">
+                <div class="overview-grid">
+                    <article class="next-card appointment-card">
+                        <span class="card-icon pink"><i class="fa-regular fa-calendar-days"></i></span>
+                        <div>
+                            <p class="label">Next Appointment</p>
+                            <h2>August 20, 2026</h2>
+                            <strong>Postnatal Checkup</strong>
+                            <small><i class="fa-regular fa-clock"></i> 8:30 AM <span>Midwife Maria</span></small>
+                            <small><i class="fa-solid fa-location-dot"></i> Barangay Health Center</small>
+                            <button type="button" data-open="appointmentDetails">View Details</button>
+                        </div>
+                    </article>
+
+                    <article class="next-card immunization-card">
+                        <span class="baby-illustration">👶</span>
+                        <div>
+                            <p class="label blue-text">Baby's Immunization</p>
+                            <ul class="check-list">
+                                <li><i class="fa-solid fa-circle-check"></i><span>BCG</span><b>Completed</b></li>
+                                <li><i class="fa-solid fa-circle-check"></i><span>Hepatitis B</span><b>Completed</b></li>
+                            </ul>
+                            <div class="next-vaccine">
+                                <p>Next Vaccine</p>
+                                <strong>Pentavalent 1</strong>
+                                <small><i class="fa-regular fa-calendar-days"></i> Due: August 28, 2026</small>
+                            </div>
+                            <button type="button" data-open="immunizationSchedule">View Schedule</button>
+                        </div>
+                    </article>
+                </div>
+
+                <section class="quick-actions" aria-labelledby="quickActionsTitle">
+                    <h2 id="quickActionsTitle">Quick Actions</h2>
+                    <div class="action-grid">
+                        <button class="action-card orange" type="button" data-open="bookAppointment"><i class="fa-regular fa-calendar-plus"></i><span>Book Appointment</span></button>
+                        <button class="action-card peach" type="button" data-open="immunizationSchedule"><i class="fa-solid fa-syringe"></i><span>Immunization Schedule</span></button>
+                        <button class="action-card coral" type="button" data-open="healthRecords"><i class="fa-solid fa-folder-open"></i><span>Health Records</span></button>
+                        <button class="action-card lemon" type="button" data-open="healthReport"><i class="fa-solid fa-heart-pulse"></i><span>Report Health Concern</span></button>
+                        <button class="action-card cyan" type="button" data-open="facilityLocator"><i class="fa-solid fa-location-dot"></i><span>Healthcare Facility Locator</span></button>
+                        <button class="action-card green" type="button" data-open="healthEducation"><i class="fa-regular fa-lightbulb"></i><span>Health Education</span></button>
+                        <button class="action-card purple" type="button" data-open="assistantChat"><i class="fa-solid fa-robot"></i><span>MediMama Assistant</span></button>
+                    </div>
+                </section>
+
+                <div class="bottom-grid">
+                    <section class="content-card tips-card">
+                        <div class="section-title"><h2>Health Tips for You</h2><button type="button" data-open="healthEducation">View all</button></div>
+                        <div class="tip-slider" id="tipSlider">
+                            <button class="slider-arrow" type="button" data-slide="prev" aria-label="Previous health tip"><i class="fa-solid fa-chevron-left"></i></button>
+                            <article class="tip active">
+                                <img src="../../motherside.png" alt="">
+                                <div><strong>Breastfeeding Guide</strong><p>Breast milk provides the best nutrition for your baby.</p></div>
+                            </article>
+                            <article class="tip">
+                                <span class="tip-icon"><i class="fa-solid fa-apple-whole"></i></span>
+                                <div><strong>Healthy Pregnancy Meals</strong><p>Choose iron-rich food, leafy vegetables, and enough water.</p></div>
+                            </article>
+                            <article class="tip">
+                                <span class="tip-icon"><i class="fa-solid fa-bed"></i></span>
+                                <div><strong>Rest and Recovery</strong><p>Short rest periods help your body recover and support milk supply.</p></div>
+                            </article>
+                            <button class="slider-arrow" type="button" data-slide="next" aria-label="Next health tip"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                        <div class="dots" id="tipDots" aria-label="Health tip pages"></div>
+                    </section>
+
+                    <section class="content-card announcement-card">
+                        <div class="section-title"><h2>Barangay Announcement</h2><button type="button" data-open="announcementDetails">View all</button></div>
+                        <button class="announcement-body" type="button" data-open="announcementDetails">
+                            <span><i class="fa-regular fa-hospital"></i></span>
+                            <strong>No clinic operation</strong>
+                            <p>on August 22, 2026 due to Barangay Assembly</p>
+                        </button>
+                    </section>
+                </div>
+            </div>
+
+            <aside class="right-column">
+                <section class="side-card notification-list">
+                    <div class="section-title"><h2>Notifications</h2><button type="button" data-action="view-notifications">View all</button></div>
+                    <button type="button" data-open="appointmentDetails"><span class="round pink"><i class="fa-regular fa-calendar-days"></i></span><span><strong>Appointment Reminder</strong><small>You have an appointment on August 20, 2026 at 8:30 AM.</small><em>2 hours ago</em></span></button>
+                    <button type="button" data-open="immunizationSchedule"><span class="round blue"><i class="fa-solid fa-syringe"></i></span><span><strong>Immunization Reminder</strong><small>Pentavalent 1 vaccine is due on August 28, 2026.</small><em>1 day ago</em></span></button>
+                    <button type="button" data-open="announcementDetails"><span class="round lavender"><i class="fa-solid fa-bullhorn"></i></span><span><strong>New Announcement</strong><small>No clinic operation on August 22, 2026.</small><em>3 days ago</em></span></button>
+                </section>
+
+                <section class="side-card growth-card">
+                    <div class="section-title"><h2>Baby's Growth Summary</h2><button type="button" id="growthToggle">View full chart</button></div>
+                    <div class="baby-profile">
+                        <span class="baby-avatar">👶</span>
+                        <div><strong>Baby Patrick Ibanez</strong><small>2 months old / Male</small></div>
+                    </div>
+                    <div class="growth-stats">
+                        <span><small>Weight</small><strong>5.2 kg</strong><em>Normal</em></span>
+                        <span><small>Height</small><strong>58 cm</strong><em>Normal</em></span>
+                    </div>
+                    <div class="growth-message"><i class="fa-solid fa-arrow-trend-up"></i><span>Baby Ethan is growing well. Keep it up, Mom!</span></div>
+                    <div class="growth-chart" id="growthChart" hidden>
+                        <div><span style="height:44%"></span><small>May</small></div>
+                        <div><span style="height:58%"></span><small>Jun</small></div>
+                        <div><span style="height:72%"></span><small>Jul</small></div>
+                        <div><span style="height:84%"></span><small>Aug</small></div>
+                    </div>
+                </section>
+            </aside>
+        </section>
+    </main>
+
+    <footer class="help-bar">
+        <div><span><i class="fa-regular fa-heart"></i></span><p><strong>Need Help?</strong> Contact your barangay health center or talk to our <button type="button" data-open="assistantChat">MediMama Assistant</button></p></div>
+        <button type="button" data-open="assistantChat"><i class="fa-solid fa-robot"></i> Chat with MediMama Assistant</button>
+    </footer>
+
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+        <div class="modal-card">
+            <button class="modal-close" type="button" id="modalClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            <p class="modal-kicker" id="modalKicker">MediMama</p>
+            <h2 id="modalTitle"></h2>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="navbar-component.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

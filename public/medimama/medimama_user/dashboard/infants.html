@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMama - My Infants</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="infants-page-body">
+    <div data-medimama-mother-navbar></div>
+
+    <main class="dashboard-shell infant-shell">
+        <section class="infant-page-heading">
+            <div><p class="label">My Infants</p><h1>Baby health, all in one place.</h1><span>Register an infant, follow the approval status, and review verified growth and immunization records.</span></div>
+            <button class="primary" type="button" id="showInfantRegistration"><i class="fa-solid fa-plus"></i> Register an infant</button>
+        </section>
+
+        <section class="infant-overview" aria-label="Infant summary">
+            <article class="infant-profile-card">
+                <div class="infant-card-top"><span class="infant-avatar" aria-hidden="true">&#128118;</span><span class="approved-badge"><i class="fa-solid fa-circle-check"></i> Approved</span></div>
+                <h2>Baby Patrick Ibanez</h2><p>2 months old &middot; Male</p>
+                <dl><div><dt>Date of birth</dt><dd>June 15, 2026</dd></div><div><dt>Health status</dt><dd class="normal-text">Growing well</dd></div></dl>
+                <button type="button" class="outline-button" data-infant="patrick">View growth details <i class="fa-solid fa-arrow-right"></i></button>
+            </article>
+            <article class="approval-card" id="approvalCard">
+                <span class="approval-icon"><i class="fa-regular fa-clock"></i></span>
+                <div><p class="label">Registration status</p><h2>Register another infant</h2><p>New registrations are reviewed by your barangay health worker before health information is shown.</p><button type="button" class="text-button" id="approvalRegister">Start registration <i class="fa-solid fa-arrow-right"></i></button></div>
+            </article>
+        </section>
+
+        <section class="infant-detail-grid" id="growthDetails">
+            <article class="infant-content-card growth-detail-card">
+                <div class="infant-section-title"><div><p class="label">Growth tracker</p><h2 id="growthTitle">Patrick's growth</h2></div><select id="infantSelector" aria-label="Select infant"><option value="patrick">Baby Patrick Ibanez</option></select></div>
+                <div class="growth-metrics"><div><span>Current weight</span><strong id="weightValue">5.2 kg</strong><small><i class="fa-solid fa-arrow-trend-up"></i> Healthy range</small></div><div><span>Current length</span><strong id="heightValue">58 cm</strong><small><i class="fa-solid fa-arrow-trend-up"></i> Healthy range</small></div><div><span>Last updated</span><strong id="visitValue">Aug 14</strong><small>2026 checkup</small></div></div>
+                <div class="chart-legend"><span><i class="weight-dot"></i> Weight (kg)</span><span>Updated by health worker</span></div>
+                <div class="growth-line-chart" aria-label="Weight growth chart for Baby Patrick"><div class="chart-scale"><span>6 kg</span><span>5 kg</span><span>4 kg</span></div><div class="chart-area"><i></i><i></i><i></i><i></i><svg viewBox="0 0 400 130" role="img" aria-label="Weight steadily increases from 3.4 to 5.2 kilograms"><polyline points="12,112 136,82 260,49 388,22" fill="none" stroke="#1976d2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline><circle cx="12" cy="112" r="5"></circle><circle cx="136" cy="82" r="5"></circle><circle cx="260" cy="49" r="5"></circle><circle cx="388" cy="22" r="5"></circle></svg><div class="chart-months"><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span></div></div></div>
+            </article>
+
+            <article class="infant-content-card immunization-checklist">
+                <div class="infant-section-title"><div><p class="label">Immunization record</p><h2>Vaccine checklist</h2></div><span class="progress-pill">2 of 8 complete</span></div>
+                <p class="checklist-intro">Keep a clear record of each dose. Only a health worker can confirm a completed vaccination.</p>
+                <ul class="vaccine-list">
+                    <li class="complete"><span><i class="fa-solid fa-check"></i></span><div><strong>BCG</strong><small>Given at birth &middot; Jun 15, 2026</small></div><b>Complete</b></li>
+                    <li class="complete"><span><i class="fa-solid fa-check"></i></span><div><strong>Hepatitis B birth dose</strong><small>Given at birth &middot; Jun 15, 2026</small></div><b>Complete</b></li>
+                    <li class="upcoming"><span><i class="fa-solid fa-syringe"></i></span><div><strong>Pentavalent 1 + OPV 1 + PCV 1</strong><small>Due Aug 28, 2026</small></div><b>Due soon</b></li>
+                    <li><span><i class="fa-regular fa-circle"></i></span><div><strong>Rotavirus vaccine</strong><small>Schedule verified by your health worker</small></div><b>Upcoming</b></li>
+                </ul>
+                <p class="checklist-note"><i class="fa-solid fa-circle-info"></i> The schedule is a guide. Confirm the recommended dose and date with your barangay health center.</p>
+            </article>
+        </section>
+
+        <section class="registration-panel" id="registrationPanel" hidden>
+            <div class="registration-heading"><div><p class="label">Infant registration</p><h2>Add an infant to your account</h2><span>Your request will be marked Pending until the barangay health worker verifies it.</span></div><button class="close-registration" type="button" id="hideInfantRegistration" aria-label="Close registration"><i class="fa-solid fa-xmark"></i></button></div>
+            <form id="infantRegistrationForm" class="infant-form">
+                <label>Infant's full name<input name="infantName" required placeholder="e.g., Maria Santos"></label>
+                <label>Date of birth<input name="birthDate" type="date" required></label>
+                <label>Sex<select name="sex" required><option value="">Select sex</option><option>Female</option><option>Male</option></select></label>
+                <label>Place of birth<input name="placeOfBirth" required placeholder="e.g., Imus City"></label>
+                <label class="form-full">Notes for the health worker<textarea name="notes" placeholder="Optional: enter an existing clinic record number or other helpful note."></textarea></label>
+                <div class="form-full form-actions"><button type="button" class="secondary" id="cancelInfantRegistration">Cancel</button><button type="submit">Submit for approval</button></div>
+            </form>
+        </section>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="../../medimama-core.js"></script><script src="navbar-component.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

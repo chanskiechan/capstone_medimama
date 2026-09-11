@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMama Admin - Announcements</title>
+    <link rel="stylesheet" href="announcements.css">
+</head>
+<body>
+    <div data-medimama-sidebar></div>
+
+    <main class="main-content announcements-page">
+        <header class="announcements-header">
+            <div><p class="eyebrow">Communication center</p><h1>Announcements</h1><p class="page-description">Create and manage updates for mothers, caregivers, and healthcare personnel.</p></div>
+            <button class="primary-button" id="newAnnouncement" type="button"><i class="fa-solid fa-plus"></i> Create announcement</button>
+        </header>
+
+        <section class="announcement-stats" aria-label="Announcement statistics">
+            <article><i class="fa-solid fa-bullhorn blue"></i><span><b id="publishedCount">0</b><small>Published</small></span></article>
+            <article><i class="fa-solid fa-box-archive pink"></i><span><b id="archivedCount">0</b><small>Archived</small></span></article>
+            <article><i class="fa-solid fa-thumbtack teal"></i><span><b id="pinnedCount">0</b><small>Pinned</small></span></article>
+        </section>
+
+        <section class="toolbar" aria-label="Announcement filters">
+            <label class="search-field"><i class="fa-solid fa-magnifying-glass"></i><input id="announcementSearch" type="search" placeholder="Search title, description, or tags"></label>
+            <select id="statusFilter" aria-label="Filter by status"><option value="all">All statuses</option><option value="published">Published</option><option value="archived">Archived</option></select>
+            <select id="audienceFilter" aria-label="Filter by audience"><option value="all">All audiences</option><option value="Mothers & caregivers">Mothers & caregivers</option><option value="Healthcare personnel">Healthcare personnel</option><option value="Everyone">Everyone</option></select>
+            <select id="priorityFilter" aria-label="Filter by priority"><option value="all">All priorities</option><option value="High">High priority</option><option value="Normal">Normal priority</option><option value="Low">Low priority</option></select>
+        </section>
+
+        <section class="announcement-list" id="announcementList" aria-live="polite"></section>
+    </main>
+
+    <div class="announcement-modal" id="announcementModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+        <div class="modal-card">
+            <button class="close-button" id="closeModal" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            <p class="eyebrow">Announcement editor</p><h2 id="formTitle">Create announcement</h2>
+            <form id="announcementForm">
+                <input id="announcementId" type="hidden">
+                <div class="form-grid">
+                    <label class="form-group full">Title <input id="title" name="title" maxlength="100" required placeholder="e.g. Free prenatal check-up this Friday"></label>
+                    <label class="form-group full">Description <textarea id="description" name="description" maxlength="1000" required placeholder="Write the full announcement and any instructions for recipients."></textarea><small><span id="descriptionCount">0</span>/1000 characters</small></label>
+                    <label class="form-group">Audience <select id="audience" name="audience"><option>Mothers &amp; caregivers</option><option>Healthcare personnel</option><option>Everyone</option></select></label>
+                    <label class="form-group">Priority <select id="priority" name="priority"><option>Normal</option><option>High</option><option>Low</option></select></label>
+                    <label class="form-group">Publish date <input id="publishDate" name="publishDate" type="date" required></label>
+                    <label class="form-group">Expiry date <input id="expiryDate" name="expiryDate" type="date"></label>
+                    <label class="form-group full">Tags <input id="tags" name="tags" maxlength="120" placeholder="e.g. prenatal, clinic schedule, health advisory"><small>Separate tags with commas.</small></label>
+                    <label class="checkbox-row full"><input id="pinned" name="pinned" type="checkbox"><span><b>Pin this announcement</b><small>Pinned announcements appear first in the list.</small></span></label>
+                    <label class="image-upload full"><span><i class="fa-regular fa-image"></i> Add image</span><input id="image" type="file" accept="image/png,image/jpeg,image/webp"><small>Optional: PNG, JPG, or WebP. Image is shown in the announcement.</small></label>
+                    <div class="image-preview full" id="imagePreview" hidden><img id="previewImage" alt="Selected announcement image"><button id="removeImage" type="button">Remove image</button></div>
+                </div>
+                <div class="form-actions"><button class="secondary-button" id="saveDraft" type="button">Save as draft</button><button class="primary-button" type="submit"><i class="fa-solid fa-paper-plane"></i> Publish announcement</button></div>
+            </form>
+        </div>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="../sidebar/sidebar-loader.js"></script>
+    <script src="announcements.js"></script>
+</body>
+</html>

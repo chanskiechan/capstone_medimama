@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMama Admin - Profile Settings</title>
+    <link rel="stylesheet" href="../system/system.css">
+</head>
+<body>
+    <div data-medimama-sidebar></div>
+    <main class="system-page">
+        <header class="page-header"><div><p class="eyebrow">MY ACCOUNT</p><h1>Profile Settings</h1><p>Manage your administrator details and account preferences.</p></div><div class="header-actions"><button id="editProfile" class="secondary" type="button"><i class="fa-solid fa-pen"></i> Edit profile</button><button id="saveProfile" class="primary" type="button" hidden><i class="fa-solid fa-floppy-disk"></i> Save changes</button></div></header>
+        <section class="settings-card">
+            <h2 class="section-heading">Administrator profile</h2>
+            <div class="profile-photo-row"><div class="profile-photo" id="profilePhoto"><i class="fa-solid fa-user"></i></div><div><strong>Profile photo <small>(optional)</small></strong><p>This helps staff identify the signed-in administrator.</p><label class="secondary photo-upload" for="profileImage">Choose photo</label><input id="profileImage" type="file" accept="image/*" hidden><button id="removePhoto" class="text-action" type="button">Remove photo</button></div></div>
+            <div class="field-grid">
+                <label>Full name<input id="profileName" autocomplete="name"></label>
+                <label>Email address<input id="profileEmail" type="email" autocomplete="email"></label>
+                <label>Contact number<input id="profilePhone" inputmode="numeric" autocomplete="tel"></label>
+                <label>Position<select id="profilePosition"><option>System Administrator</option><option>Midwife</option><option>Health Worker</option></select></label>
+                <label class="full">Assigned facility<input id="profileFacility"></label>
+            </div>
+            <div class="info-box"><i class="fa-solid fa-circle-info"></i> Password changes and email verification will use the secure backend once it is connected. These profile details are currently stored only in this frontend demo.</div>
+        </section>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="../sidebar/sidebar-loader.js"></script>
+    <script src="profile-settings.js"></script>
+</body>
+</html>

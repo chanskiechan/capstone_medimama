@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMama Admin Dashboard</title>
+    <link rel="stylesheet" href="dashboardadmin.css">
+    <style>
+        .approval-actions { flex-wrap: wrap; }
+        .approval-action.verify { background: #e8edff; color: #4f7cf4; }
+        .approval-action:disabled { cursor: not-allowed; opacity: .5; }
+        .approval-table small { display: block; margin-top: 3px; color: #71809a; font-size: 10px; overflow-wrap: anywhere; }
+        .dashboard-approval-list { display: grid; gap: 8px; margin-top: 16px; }
+        .dashboard-approval-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) 100px 12px; gap: 10px; align-items: center; width: 100%; padding: 10px 12px; border: 1px solid #e7ecfa; border-radius: 9px; background: #fff; color: #40506a; text-align: left; cursor: pointer; }
+        .dashboard-approval-row:hover, .dashboard-approval-row:focus-visible { border-color: #a9c0fb; background: #f7f9ff; outline: 0; }
+        .dashboard-approval-row strong, .dashboard-approval-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .dashboard-approval-row strong { color: #293854; font-size: 12px; }.dashboard-approval-row small, .dashboard-approval-row time { color: #71809a; font-size: 10px; }.dashboard-approval-row time { text-align: right; }
+        .approval-type { padding: 4px 6px; border-radius: 5px; background: #e8edff; color: #4f7cf4; font-size: 9px; font-weight: 700; text-align: center; }.approval-type.caregiver { background: #fff0f6; color: #d05a8a; }.approval-type.infant { background: #e2f7f5; color: #168b91; }.dashboard-approval-empty { margin: 14px 0 0; color: #71809a; font-size: 11px; }.dashboard-approval-empty i { color: #168b91; }
+        .approval-heading-actions { display: flex; align-items: center; gap: 10px; }
+        .approval-heading-actions select { border: 1px solid #dce4f3; border-radius: 7px; padding: 6px 8px; background: #fff; color: #52627a; font: inherit; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <div data-medimama-sidebar></div>
+
+    <main class="main-content dashboard-page">
+        <header class="top-bar dashboard-header">
+            <div>
+                <p class="eyebrow">MediMama Admin</p>
+                <h1>Dashboard</h1>
+            </div>
+            <div class="header-actions">
+                <span class="date-display"><i class="fa-regular fa-calendar"></i> <span id="currentDate">May 27, 2025</span></span>
+                <div class="notification-menu-wrap">
+                    <button class="notification-button" id="notificationButton" type="button" aria-label="Show notifications" aria-expanded="false"><i class="fa-regular fa-bell"></i><b>3</b></button>
+                    <div class="notification-menu" id="notificationMenu" role="menu">
+                        <p>Notifications</p>
+                        <button type="button" data-notice="Appointment reminder opened"><i class="fa-regular fa-calendar"></i>Ana Reyes has an appointment at 8:00 AM</button>
+                        <button type="button" data-notice="Immunization reminder opened"><i class="fa-solid fa-syringe"></i>8 immunizations are due today</button>
+                        <button type="button" data-notice="New health concern report opened"><i class="fa-solid fa-heart-pulse"></i>New health concern report received</button>
+                    </div>
+                </div>
+                <div class="admin-user"><span class="admin-avatar">MS</span><span><strong>Maria Santos</strong><small>Midwife</small></span></div>
+            </div>
+        </header>
+
+        <section class="dashboard-content">
+            <section class="stats-grid" aria-label="Dashboard statistics">
+                <article class="stat-card teal"><span class="stat-icon"><i class="fa-solid fa-users"></i></span><div><strong>48</strong><h2>Registered Mothers</h2><p>Total active pregnant women</p></div></article>
+                <article class="stat-card blue"><span class="stat-icon"><i class="fa-solid fa-baby"></i></span><div><strong>62</strong><h2>Registered Infants</h2><p>Total active infants</p></div></article>
+                <article class="stat-card purple"><span class="stat-icon"><i class="fa-regular fa-calendar-check"></i></span><div><strong>12 <em>/ 15</em></strong><h2>Appointments Today</h2><p>Daily capacity: 15 patients</p></div><a href="#" data-modal="appointments">View appointments <i class="fa-solid fa-arrow-right"></i></a></article>
+                <article class="stat-card pink"><span class="stat-icon"><i class="fa-solid fa-user-clock"></i></span><div><strong>6</strong><h2>Pending Follow-ups</h2><p>Missed visits and care items needing attention</p></div><a href="#" data-modal="followups">View follow-ups <i class="fa-solid fa-arrow-right"></i></a></article>
+            </section>
+
+            <section class="panel approvals-summary" aria-labelledby="approvalsTitle">
+                <div class="panel-heading"><div><p class="eyebrow">Registration review</p><h2 id="approvalsTitle">Pending Approvals</h2></div><div class="approval-heading-actions"><select id="approvalTypeFilter" aria-label="Filter pending approvals"><option value="all">All requests</option><option value="Mother">Mothers</option><option value="Infant">Infants</option><option value="Caregiver">Caregivers</option></select><a href="#" data-modal="approvals">Review all</a></div></div>
+                <div class="approvals-summary-content"><span class="approval-summary-icon"><i class="fa-solid fa-user-shield"></i></span><div><strong id="pendingApprovalCount">0</strong><p>Mother, infant, and caregiver registration requests need review.</p></div><button type="button" class="details-button" data-modal="approvals">Review requests <i class="fa-solid fa-arrow-right"></i></button></div>
+                <div class="dashboard-approval-list" id="dashboardApprovalList" aria-live="polite"></div>
+            </section>
+
+            <section class="dashboard-grid primary-grid">
+                <article class="panel overview-panel">
+                    <div class="panel-heading"><div><p class="eyebrow">Service activity</p><h2>Monthly Overview</h2></div><span class="month-chip">May 2025</span></div>
+                    <div class="chart-legend"><span><i class="legend-dot teal-dot"></i>Prenatal Visits</span><span><i class="legend-dot purple-dot"></i>Postnatal Visits</span><span><i class="legend-dot pink-dot"></i>Immunizations</span></div>
+                    <div class="chart-wrap">
+                        <svg viewBox="0 0 650 260" role="img" aria-label="Monthly services line chart">
+                            <g class="grid-lines"><line x1="42" y1="28" x2="630" y2="28"/><line x1="42" y1="76" x2="630" y2="76"/><line x1="42" y1="124" x2="630" y2="124"/><line x1="42" y1="172" x2="630" y2="172"/><line x1="42" y1="220" x2="630" y2="220"/></g>
+                            <g class="axis-labels"><text x="12" y="224">0</text><text x="6" y="176">10</text><text x="6" y="128">20</text><text x="6" y="80">30</text><text x="6" y="32">40</text></g>
+                            <polyline class="chart-line prenatal" points="70,143 210,116 350,102 490,128 600,156"/><polyline class="chart-line postnatal" points="70,181 210,166 350,156 490,171 600,193"/><polyline class="chart-line immunization" points="70,100 210,76 350,53 490,90 600,119"/>
+                            <g class="chart-points prenatal-points"><circle cx="70" cy="143" r="5"/><circle cx="210" cy="116" r="5"/><circle cx="350" cy="102" r="5"/><circle cx="490" cy="128" r="5"/><circle cx="600" cy="156" r="5"/></g>
+                            <g class="chart-points postnatal-points"><circle cx="70" cy="181" r="5"/><circle cx="210" cy="166" r="5"/><circle cx="350" cy="156" r="5"/><circle cx="490" cy="171" r="5"/><circle cx="600" cy="193" r="5"/></g>
+                            <g class="chart-points immunization-points"><circle cx="70" cy="100" r="5"/><circle cx="210" cy="76" r="5"/><circle cx="350" cy="53" r="5"/><circle cx="490" cy="90" r="5"/><circle cx="600" cy="119" r="5"/></g>
+                            <g class="x-labels"><text x="48" y="250">May 1–7</text><text x="186" y="250">May 8–14</text><text x="322" y="250">May 15–21</text><text x="462" y="250">May 22–28</text><text x="566" y="250">May 29–31</text></g>
+                        </svg>
+                    </div>
+                </article>
+
+                <article class="panel appointments-panel">
+                    <div class="panel-heading"><div><p class="eyebrow">Today's schedule</p><h2>Upcoming Appointments</h2></div><a href="#" data-modal="calendar">View calendar</a></div>
+                    <div class="appointment-list">
+                        <div class="appointment-table-head"><span>Time</span><span>Patient</span><span>Service</span><span>Status</span></div>
+                        <button class="appointment-row" type="button" data-modal="appointment-detail" data-appointment-id="apt-001"><span><i class="fa-regular fa-calendar"></i> 9:30 AM</span><span>Liza Dela Cruz</span><span>Prenatal Checkup</span><b>Scheduled</b></button>
+                        <button class="appointment-row" type="button" data-modal="appointment-detail" data-appointment-id="apt-002"><span><i class="fa-regular fa-calendar"></i> 11:00 AM</span><span>Maria Gonzales</span><span>Postnatal Checkup</span><b>Scheduled</b></button>
+                        <button class="appointment-row" type="button" data-modal="appointment-detail" data-appointment-id="apt-005"><span><i class="fa-regular fa-calendar"></i> 2:00 PM</span><span>Baby Ethan Cruz</span><span>Post-vaccination Follow-up</span><b>Scheduled</b></button>
+                    </div>
+                </article>
+            </section>
+
+            <section class="dashboard-grid secondary-grid">
+                <article class="panel concerns-panel">
+                    <div class="panel-heading"><div><p class="eyebrow">Patient care</p><h2>Recent Health Concern Reports</h2></div><a href="#" data-modal="concerns">View all</a></div>
+                    <div class="report-table"><div class="report-head"><span>Patient</span><span>Concern</span><span>Date</span><span>Status</span></div><div><span>Baby Ethan Cruz</span><span>Post-vaccination reaction</span><span>May 26, 2025</span><b class="pending">Pending</b></div><div><span>Maria Santos</span><span>Maternal health concern</span><span>May 25, 2025</span><b class="progress">In progress</b></div><div><span>Baby Liam Garcia</span><span>Fever after vaccination</span><span>May 24, 2025</span><b class="resolved">Resolved</b></div></div>
+                </article>
+                <article class="panel activity-panel">
+                    <div class="panel-heading"><div><p class="eyebrow">Live updates</p><h2>Recent System Activities</h2></div><a href="#" data-modal="activities">View all</a></div>
+                    <ul class="activity-list"><li><i class="fa-solid fa-user-plus teal-icon"></i><span><strong>New mother registered: Liza Dela Cruz</strong><small>by Maria Santos · 10:15 AM</small></span></li><li><i class="fa-regular fa-calendar purple-icon"></i><span><strong>Appointment scheduled for Ana Reyes</strong><small>by Maria Santos · 9:45 AM</small></span></li><li><i class="fa-solid fa-syringe pink-icon"></i><span><strong>Immunization record updated</strong><small>by Juan Dela Cruz · 9:20 AM</small></span></li></ul>
+                </article>
+            </section>
+        </section>
+    </main>
+
+    <div class="dashboard-toast" id="dashboardToast" role="status" aria-live="polite"></div>
+    <div class="data-modal" id="dataModal" role="dialog" aria-modal="true" aria-labelledby="dataModalTitle" aria-hidden="true">
+        <div class="modal-card">
+            <button class="modal-close" id="modalClose" type="button" aria-label="Close pop-up"><i class="fa-solid fa-xmark"></i></button>
+            <p class="eyebrow" id="dataModalSubtitle">Dashboard details</p>
+            <h2 id="dataModalTitle"></h2>
+            <div class="modal-content" id="modalContent"></div>
+        </div>
+    </div>
+
+    <script src="../sidebar/sidebar-loader.js"></script>
+    <script src="../../medimama-core.js"></script>
+    <script src="dashboardadmin.js"></script>
+</body>
+</html>

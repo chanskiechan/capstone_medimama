@@ -1,0 +1,61 @@
+<div class="sidebar collapsed">
+    <div class="sidebar-header">
+        <button class="logo" id="toggleSidebar" type="button" aria-label="Expand sidebar" aria-expanded="false">
+            <img class="logo-image" data-logo="icon" alt="MediMama logo">
+            <img class="logo-wordmark" data-logo="wordmark" alt="MediMama">
+        </button>
+    </div>
+
+    <nav class="sidebar-menu" aria-label="Main navigation">
+        <div class="menu-item">
+            <a href="../dashboard/dashboardadmin.html" class="menu-link" data-nav="dashboard"><i class="fas fa-home"></i><span class="menu-text">Dashboard</span></a>
+        </div>
+
+        <div class="menu-item has-submenu">
+            <a href="#" class="menu-link" data-nav="patients" data-submenu="patientMenu"><i class="fas fa-users"></i><span class="menu-text">Patient Management</span><i class="fas fa-chevron-down arrow"></i></a>
+            <div class="submenu" id="patientMenu">
+                <a href="../mothers/mothers.html" class="submenu-link" data-nav="mothers"><i class="fas fa-female"></i><span>Mother</span></a>
+                <a href="../infants/infants.html" class="submenu-link" data-nav="infants"><i class="fas fa-baby"></i><span>Infant</span></a>
+            </div>
+        </div>
+
+        <div class="menu-item has-submenu">
+            <a href="../healthcare-services/healthcare-services.html?tab=prenatal" class="menu-link" data-nav="healthcare" data-submenu="healthcareMenu"><i class="fas fa-hospital"></i><span class="menu-text">Healthcare Services</span><i class="fas fa-chevron-down arrow"></i></a>
+            <div class="submenu" id="healthcareMenu">
+                <a href="../healthcare-services/healthcare-services.html?tab=prenatal" class="submenu-link" data-healthcare-tab="prenatal"><i class="fas fa-file-medical"></i><span>Prenatal Records</span></a>
+                <a href="../healthcare-services/healthcare-services.html?tab=postnatal" class="submenu-link" data-healthcare-tab="postnatal"><i class="fas fa-file-medical"></i><span>Postnatal Records</span></a>
+                <a href="../healthcare-services/healthcare-services.html?tab=immunization" class="submenu-link" data-healthcare-tab="immunization"><i class="fas fa-syringe"></i><span>Immunization</span></a>
+                <a href="../healthcare-services/healthcare-services.html?tab=appointments" class="submenu-link" data-healthcare-tab="appointments"><i class="fas fa-calendar-check"></i><span>Appointments</span></a>
+            </div>
+        </div>
+
+        <div class="menu-item">
+            <a href="#" class="menu-link"><i class="fas fa-chart-bar"></i><span class="menu-text">Reports</span></a>
+        </div>
+
+        <div class="menu-item">
+            <a href="../announcements/announcements.html" class="menu-link"><i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span></a>
+        </div>
+
+        <div class="menu-item has-submenu">
+            <a href="#" class="menu-link" data-submenu="systemMenu"><i class="fas fa-cog"></i><span class="menu-text">System</span><i class="fas fa-chevron-down arrow"></i></a>
+            <div class="submenu" id="systemMenu">
+                <a href="#" class="submenu-link"><i class="fas fa-lock"></i><span>Audit Logs</span></a>
+                <a href="#" class="submenu-link"><i class="fas fa-sync"></i><span>Back up &amp; Restore</span></a>
+                <a href="#" class="submenu-link"><i class="fas fa-sliders-h"></i><span>Settings</span></a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="profile-item">
+            <button class="profile-link" type="button" aria-expanded="false" aria-controls="profileMenu">
+                <i class="fas fa-user-circle"></i><span class="menu-text">Profile</span><i class="fas fa-chevron-up profile-arrow" aria-hidden="true"></i>
+            </button>
+            <div class="profile-menu" id="profileMenu">
+                <a href="#" class="profile-menu-link" data-page="Profile Settings"><i class="fas fa-user-gear"></i><span>Profile Settings</span></a>
+                <a href="#" class="profile-menu-link logout-link" data-login-link><i class="fas fa-right-from-bracket"></i><span>Log out</span></a>
+            </div>
+        </div>
+    </div>
+</div>

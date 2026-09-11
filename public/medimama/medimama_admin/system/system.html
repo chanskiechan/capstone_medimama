@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMama Admin - System</title>
+    <link rel="stylesheet" href="system.css">
+</head>
+<body>
+    <div data-medimama-sidebar></div>
+    <main class="system-page">
+        <header class="page-header"><div><p class="eyebrow">ADMINISTRATION</p><h1 id="pageTitle">System Settings</h1><p id="pageDescription">Choose how this frontend demo behaves for staff.</p></div><button id="saveButton" class="primary" type="button"><i class="fa-solid fa-floppy-disk"></i> Save changes</button></header>
+        <div class="system-layout">
+            <nav class="settings-nav" aria-label="System settings">
+                <button type="button" data-tab="settings"><i class="fa-solid fa-sliders"></i><span>System Settings</span></button>
+                <button type="button" data-tab="audit"><i class="fa-solid fa-shield-halved"></i><span>Audit Logs</span></button>
+                <button type="button" data-tab="backup"><i class="fa-solid fa-database"></i><span>Backup &amp; Restore</span></button>
+            </nav>
+            <section class="settings-card" id="tabContent" aria-live="polite"></section>
+        </div>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="../sidebar/sidebar-loader.js"></script>
+    <script src="system.js"></script>
+</body>
+</html>
