@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test src/care.test.js",
+    "test:ui": "node scripts/check-care-ui.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

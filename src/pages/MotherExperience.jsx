@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import MotherDashboard from './MotherDashboard';
+import { session } from '../care';
 
 const Icon = ({ name }) => <i className={`fa-solid fa-${name}`} />;
 
 function AssistantWidget() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([{ from: 'bot', text: 'Hi Shaina! How can I help with your maternal or baby-care questions today?' }]);
+  const [messages, setMessages] = useState([{ from: 'bot', text: 'Hi ' + (session().name || 'there') + '! How can I help with your maternal or baby-care questions today?' }]);
   useEffect(() => {
     const intercept = (event) => {
       const link = event.target.closest('a[href="/caregiver"]');
