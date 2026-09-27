@@ -1,6 +1,6 @@
 import { useInsertionEffect } from 'react';
 
-const pages = ['dashboard', 'mothers', 'infants', 'healthcare', 'announcements', 'system', 'caregiver', 'user', 'login'];
+const pages = ['dashboard', 'mothers', 'infants', 'reports', 'healthcare', 'announcements', 'system', 'caregiver', 'user', 'login'];
 export function PageStyles({ page }) {
   useInsertionEffect(() => {
     // Apply the destination stylesheet before React replaces the page markup.

@@ -63,13 +63,13 @@ export function appointmentError(data, item, now = today()) {
   return '';
 }
 export const vaccineSchedule = [
-  { id: 'bcg', vaccine: 'BCG', dose: 'Birth dose', days: 0 },
-  { id: 'hepb', vaccine: 'Hepatitis B', dose: 'Birth dose', days: 0 },
-  ...['Pentavalent', 'OPV', 'PCV'].flatMap(vaccine => [1, 2, 3].map((dose, i) => ({ id: `${vaccine.toLowerCase()}-${dose}`, vaccine, dose: `Dose ${dose}`, days: 42 + i * 28, previous: i ? `${vaccine.toLowerCase()}-${dose - 1}` : null, interval: 28 }))),
-  { id: 'ipv-1', vaccine: 'IPV', dose: 'Dose 1', days: 98 },
-  { id: 'ipv-2', vaccine: 'IPV', dose: 'Dose 2', months: 9, previous: 'ipv-1', intervalMonths: 4 },
-  { id: 'mmr-1', vaccine: 'MMR', dose: 'Dose 1', months: 9 },
-  { id: 'mmr-2', vaccine: 'MMR', dose: 'Dose 2', months: 12, previous: 'mmr-1', interval: 28 },
+  { id: 'bcg', vaccine: 'BCG', dose: 'Birth dose', days: 0, ageLabel: 'At birth' },
+  { id: 'hepb', vaccine: 'Hepatitis B', dose: 'Birth dose', days: 0, ageLabel: 'At birth' },
+  ...['Pentavalent', 'OPV', 'PCV'].flatMap(vaccine => [1, 2, 3].map((dose, i) => ({ id: `${vaccine.toLowerCase()}-${dose}`, vaccine, dose: `Dose ${dose}`, days: 42 + i * 28, ageLabel: `${6 + i * 4} weeks old`, previous: i ? `${vaccine.toLowerCase()}-${dose - 1}` : null, interval: 28 }))),
+  { id: 'ipv-1', vaccine: 'IPV', dose: 'Dose 1', days: 98, ageLabel: '14 weeks old' },
+  { id: 'ipv-2', vaccine: 'IPV', dose: 'Dose 2', months: 9, ageLabel: '9 months old', previous: 'ipv-1', intervalMonths: 4 },
+  { id: 'mmr-1', vaccine: 'MMR', dose: 'Dose 1', months: 9, ageLabel: '9 months old' },
+  { id: 'mmr-2', vaccine: 'MMR', dose: 'Dose 2', months: 12, ageLabel: '12 months old', previous: 'mmr-1', interval: 28 },
 ];
 export const completedDose = (baby, rule) => (baby.vaccines || []).find(v => (v.scheduleId === rule.id || (v.vaccine === rule.vaccine && v.dose === rule.dose)) && ['Complete', 'Completed'].includes(v.status));
 export function vaccineDue(baby, rule) {

@@ -1,17 +1,49 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AdminShell } from '../components/AdminShell';
 import { useStore } from '../store';
 import CareWorkspace from '../components/CareWorkspace';
 import { today, serviceGroup } from '../care';
+import { supabase } from '../lib/supabase';
+import './AdminDashboardAnnouncements.css';
 
 const Icon = ({ name }) => <i className={`fa-solid fa-${name}`} />;
 function Modal({ children, close }) { return <div className="modal-backdrop open" onMouseDown={(e) => e.target === e.currentTarget && close()}><div className="record-modal"><button className="close" onClick={close}>&times;</button>{children}</div></div>; }
 
+function DashboardAnnouncements() {
+  const [items, setItems] = useState([]);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let active = true;
+    supabase.from('announcements').select('id,title,description,priority,created_at').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).then(({ data, error: loadError }) => {
+      if (!active) return;
+      if (loadError) setError('Announcements are unavailable right now.');
+      else setItems(data || []);
+    });
+    return () => { active = false; };
+  }, []);
+  return <section className="dashboard-announcements"><div className="dashboard-announcements-heading"><div><p className="eyebrow">Health center updates</p><h2>Announcements</h2></div><i className="fa-solid fa-bullhorn" /></div>{error ? <p className="admin-empty">{error}</p> : items.length ? <div className="dashboard-announcement-list">{items.map(item => <article key={item.id}><span><i className="fa-solid fa-bullhorn" /></span><div><h3>{item.title}</h3><p>{item.description}</p><small>{new Date(item.created_at).toLocaleDateString()}</small></div><em className={item.priority.toLowerCase()}>{item.priority}</em></article>)}</div> : <p className="admin-empty">No announcements published yet.</p>}</section>;
+}
+
 export function AdminDashboard() {
-  const { data } = useStore();
-  const visits = data.appointments.filter(a => a.date === today() && a.status !== 'Cancelled');
-  return <AdminShell page="dashboard"><main className="main-content care-admin"><header className="page-header"><div><p className="eyebrow">MediMama Admin</p><h1>Dashboard</h1><p>{today()} - Patient care and registration review</p></div></header><section className="stats-grid"><Stat icon="users" value={data.mothers.length} title="Registered mothers" text="Maternal records" color="teal" /><Stat icon="baby" value={data.infants.length} title="Registered infants" text={data.infants.filter(i => i.status === 'Pending approval').length + ' awaiting approval'} color="blue" /><Stat icon="calendar-check" value={visits.filter(a => serviceGroup(a.service) === 'maternal').length + ' / 20'} title="Maternal appointments today" text="Wednesday clinic: 10 AM to 5 PM" color="purple" /><Stat icon="syringe" value={visits.filter(a => serviceGroup(a.service) === 'infant').length + ' / 20'} title="Infant appointments today" text="Wednesday clinic: 8 AM to 5 PM" color="pink" /></section><CareWorkspace section="overview" admin /></main></AdminShell>;
+  const { data, refreshPatientData } = useStore();
+  // Fetch again on dashboard entry so bookings made on the mother portal are
+  // reflected immediately, even when realtime updates are not enabled.
+  useEffect(() => { refreshPatientData?.(); }, [refreshPatientData]);
+  // Bookings are available only on Wednesdays. Show the capacity for the
+  // current Wednesday (or the next Wednesday) so a newly made booking is
+  // immediately reflected instead of being hidden by a "today" filter.
+  const nextClinicDate = (() => {
+    const date = new Date(`${today()}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + ((3 - date.getUTCDay() + 7) % 7));
+    return date.toISOString().slice(0, 10);
+  })();
+  const visits = data.appointments.filter(a => a.date === nextClinicDate && !['Cancelled', 'cancelled'].includes(a.status));
+  // Prefer the linked patient type stored in Supabase. The service fallback
+  // also supports older locally saved appointment records.
+  const maternalVisits = visits.filter(a => a.mother_id || a.motherId || (!a.infant_id && !a.infantId && serviceGroup(a.service) === 'maternal'));
+  const infantVisits = visits.filter(a => a.infant_id || a.infantId || serviceGroup(a.service) === 'infant');
+  return <AdminShell page="dashboard"><main className="main-content care-admin"><header className="page-header"><div><p className="eyebrow">MediMama Admin</p><h1>Dashboard</h1><p>{today()} - Patient care and registration review</p></div></header><section className="stats-grid"><Stat icon="users" value={data.mothers.length} title="Registered mothers" text="Maternal records" color="teal" /><Stat icon="baby" value={data.infants.length} title="Registered infants" text={data.infants.filter(i => i.status === 'Pending approval').length + ' awaiting approval'} color="blue" /><Stat icon="calendar-check" value={maternalVisits.length + ' / 20'} title="Maternal appointments" text={`${nextClinicDate} clinic: 10 AM to 5 PM`} color="purple" /><Stat icon="syringe" value={infantVisits.length + ' / 20'} title="Infant appointments" text={`${nextClinicDate} clinic: 8 AM to 5 PM`} color="pink" /></section><DashboardAnnouncements /></main></AdminShell>;
 }
 function Stat({ icon, value, title, text, color }) { return <article className={`stat-card ${color}`}><span className="stat-icon"><Icon name={icon} /></span><div><strong>{value}</strong><h2>{title}</h2><p>{text}</p></div></article>; }
 
