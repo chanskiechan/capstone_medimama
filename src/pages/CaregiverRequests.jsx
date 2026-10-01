@@ -18,7 +18,7 @@ function DetailsModal({ request, mothers, assignment, close, onSave, onDelete })
 
 export default function CaregiverRequests() {
   const [requests, setRequests] = useState([]), [mothers, setMothers] = useState([]), [assignments, setAssignments] = useState([]), [selected, setSelected] = useState(null), [notice, setNotice] = useState('');
-  const load = async () => { const [r, m, a] = await Promise.all([supabase.from('caregiver_requests').select('*').order('created_at', { ascending: false }), supabase.from('mothers').select('id, full_name'), supabase.from('caregiver_assignments').select('id, caregiver_id, mother_id, relationship, status')]); setRequests(r.data || []); setMothers(m.data || []); setAssignments(a.data || []); };
+  const load = async () => { const [r, m, a] = await Promise.all([supabase.from('caregiver_requests').select('*').order('created_at', { ascending: false }), supabase.from('mothers').select('id, full_name'), supabase.from('caregiver_assignments').select('id, caregiver_id, mother_id, relationship, status')]); setRequests((r.data || []).filter(request => !request.archived_at)); setMothers(m.data || []); setAssignments(a.data || []); };
   useEffect(() => { load(); }, []);
   const assignmentFor = request => assignments.find(a => a.caregiver_id === request.caregiver_id);
   const linkedMotherFor = request => {

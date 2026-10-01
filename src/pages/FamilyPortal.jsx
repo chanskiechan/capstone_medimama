@@ -45,7 +45,8 @@ export function FamilyHeader() {
     <Link className="family-brand" to={caregiver ? '/caregiver' : '/user'} aria-label="MediMama home"><img src="/medimama/medimamalogo.png" alt="MediMama" /></Link>
     <nav className="family-navigation" aria-label="Main navigation">
       {links.map(([to, icon, label]) => <NavLink key={to} to={to} end className="family-nav-item"><i className={'fa-solid fa-' + icon} aria-hidden="true" /><span>{label}</span></NavLink>)}
-      <NavLink to="/support/education" className={() => 'family-nav-item' + (location.pathname.startsWith('/support/') ? ' active' : '')} aria-current={location.pathname.startsWith('/support/') ? 'page' : undefined}><i className="fa-solid fa-hand-holding-heart" aria-hidden="true" /><span>Family Support</span></NavLink>
+      <NavLink to="/support/concerns" className="family-nav-item"><i className="fa-solid fa-file-lines" aria-hidden="true" /><span>Reports</span></NavLink>
+      <NavLink to="/support/education" className={() => 'family-nav-item' + ((location.pathname.startsWith('/support/') && location.pathname !== '/support/concerns') ? ' active' : '')} aria-current={(location.pathname.startsWith('/support/') && location.pathname !== '/support/concerns') ? 'page' : undefined}><i className="fa-solid fa-hand-holding-heart" aria-hidden="true" /><span>Family Support</span></NavLink>
     </nav>
     <div className="family-header-actions">
       <NavLink to="/support/notifications" className="family-notification" aria-label="Notifications" title="Notifications"><i className="fa-solid fa-bell" aria-hidden="true" /></NavLink>

@@ -10,10 +10,13 @@ try {
     grant usage on schema public,auth to authenticated,anon; grant execute on function auth.uid() to authenticated,anon;`);
   const initial = (await readFile('supabase/migrations/001_initial_schema.sql','utf8')).replace('create extension if not exists pgcrypto;','');
   await db.exec(initial);
+  // Install the caregiver table/policies without replacing the fixture signup trigger.
+  await db.exec((await readFile('supabase/migrations/003_caregiver_requests.sql','utf8')).split('-- A user can choose')[0]);
   await db.exec(await readFile('supabase/migrations/007_announcements.sql','utf8'));
   await db.exec('grant select,insert,update,delete on all tables in schema public to authenticated;');
   await db.exec(await readFile('supabase/migrations/016_complete_care_features.sql','utf8'));
   await db.exec(await readFile('supabase/migrations/017_admin_tools.sql','utf8'));
+  await db.exec(await readFile('supabase/migrations/018_caregiver_archive.sql','utf8'));
   const admin='10000000-0000-4000-8000-000000000001', mother='10000000-0000-4000-8000-000000000002', outsider='10000000-0000-4000-8000-000000000003';
   const patient='20000000-0000-4000-8000-000000000001';
   await db.exec(`insert into auth.users(id) values('${admin}'),('${mother}'),('${outsider}'); update public.profiles set role='admin' where id='${admin}';
@@ -68,6 +71,67 @@ try {
   invalid.tables.infants.push({...backup.tables.infants[0],id:'30000000-0000-4000-8000-000000000099',record_code:'INVALID-FK',mother_id:'20000000-0000-4000-8000-000000000098'});
   await assert.rejects(()=>db.query('select public.restore_clinical_backup($1)',[invalid]));
   assert.equal((await db.query('select * from public.mothers where id=$1',[newMother])).rows.length,0,'Invalid restore rolls back all inserted records');
-  console.log('Database checks passed: migrations 016/017, clinical persistence, account isolation, replies, archives, reminders, audit permissions and atomic missing-record restore.');
+  const caregiver='10000000-0000-4000-8000-000000000004';
+  await db.exec(`reset role; insert into auth.users(id) values('${caregiver}'); update public.profiles set role='caregiver' where id='${caregiver}';`);
+  await asUser(admin);
+  const request=(await db.query(`insert into public.caregiver_requests(caregiver_id,full_name,relationship,requested_patient_name,status) values($1,'Test caregiver','Parent','Test Mother','approved') returning id`,[caregiver])).rows[0];
+  await db.query(`insert into public.caregiver_assignments(caregiver_id,mother_id,relationship,consent_confirmed_at,status) values($1,$2,'Parent',now(),'approved')`,[caregiver,patient]);
+  await asUser(caregiver);
+  assert.ok((await db.query('select * from public.mothers')).rows.length>0,'Approved caregiver can access family');
+  await assert.rejects(()=>db.query('select public.set_caregiver_archived($1,true)',[request.id]));
+  await asUser(admin);
+  await db.query('select public.set_caregiver_archived($1,true)',[request.id]);
+  await assert.rejects(()=>db.query("update public.caregiver_assignments set status='approved' where caregiver_id=$1",[caregiver]));
+  await asUser(caregiver);
+  assert.equal((await db.query('select * from public.mothers')).rows.length,0,'Archived caregiver loses family access');
+  await asUser(admin);
+  await db.query('select public.set_caregiver_archived($1,false)',[request.id]);
+  const restoredCaregiver=(await db.query('select status,archived_at from public.caregiver_requests where id=$1',[request.id])).rows[0];
+  assert.equal(restoredCaregiver.status,'pending'); assert.equal(restoredCaregiver.archived_at,null);
+  await asUser(caregiver);
+  assert.equal((await db.query('select * from public.mothers')).rows.length,0,'Restore requires fresh approval before access');
+  await db.exec('reset role; create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]); create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text); alter table storage.objects enable row level security; grant usage on schema storage to authenticated; grant select,insert,delete on storage.objects to authenticated;');
+  await db.exec(await readFile('supabase/migrations/019_concern_reports.sql','utf8'));
+  await asUser(mother);
+  const report=(await db.query("insert into public.health_concerns(infant_id,category,subject,description) values($1,'Post-vaccination','Baby concern','Please review') returning *",[baby.id])).rows[0];
+  assert.equal(report.reporter_role,'mother');
+  await assert.rejects(()=>db.query("select public.reply_to_concern($1,'Pretend staff','Resolved')",[report.id]));
+  const path=mother+'/'+report.id+'/photo.png';
+  await db.query("insert into storage.objects(bucket_id,name) values('concern-images',$1)",[path]);
+  await db.query("insert into public.concern_attachments(concern_id,storage_path,file_name) values($1,$2,'photo.png')",[report.id,path]);
+  await asUser(outsider);
+  assert.equal((await db.query('select * from public.concern_attachments')).rows.length,0);
+  assert.equal((await db.query('select * from storage.objects')).rows.length,0);
+  await assert.rejects(()=>db.query("select public.reply_to_concern($1,'Unauthorized',null)",[report.id]));
+  await asUser(admin);
+  assert.equal((await db.query('select * from storage.objects')).rows.length,1);
+  await db.query("select public.reply_to_concern($1,'Please contact the health center.','Resolved')",[report.id]);
+  await asUser(mother);
+  assert.equal((await db.query('select * from public.concern_messages')).rows.length,1);
+  assert.ok((await db.query('select * from public.notifications where link_path is not null')).rows.length);
+  await db.query("select public.reply_to_concern($1,'Here is an update.',null)",[report.id]);
+  assert.equal((await db.query('select status from public.health_concerns where id=$1',[report.id])).rows[0].status,'Open');
+  await assert.rejects(()=>db.query("insert into public.concern_messages(concern_id,body) values($1,'Fake')",[report.id]));
+  for(let n=2;n<=4;n++) {
+    const photoPath=mother+'/'+report.id+'/'+n+'.png';
+    await db.query("insert into storage.objects(bucket_id,name) values('concern-images',$1)",[photoPath]);
+    const add=()=>db.query("insert into public.concern_attachments(concern_id,storage_path,file_name) values($1,$2,'photo.png')",[report.id,photoPath]);
+    if(n<=3) await add(); else {
+      await assert.rejects(add,/at most three/);
+      assert.equal((await db.query('delete from storage.objects where name=$1 returning name',[photoPath])).rows.length,1,'Failed upload metadata can be cleaned up');
+    }
+  }
+  await asUser(admin);
+  await db.query("update public.caregiver_requests set status='approved' where id=$1",[request.id]);
+  await db.query("update public.caregiver_assignments set status='approved' where caregiver_id=$1",[caregiver]);
+  await asUser(caregiver);
+  const caregiverReport=(await db.query("insert into public.health_concerns(mother_id,category,description,subject) values($1,'Maternal health','Caregiver details','Caregiver concern') returning id",[patient])).rows[0];
+  await db.query("select public.reply_to_concern($1,'Caregiver update',null)",[caregiverReport.id]);
+  await asUser(admin);
+  await db.query('select public.set_caregiver_archived($1,true)',[request.id]);
+  await asUser(caregiver);
+  assert.equal((await db.query('select * from public.concern_messages')).rows.length,0,'Revoked caregiver cannot read conversations');
+  await assert.rejects(()=>db.query("select public.reply_to_concern($1,'No longer authorized',null)",[caregiverReport.id]));
+  console.log('Database checks passed: archives, report submission, private photos, reply authorization, notifications and reopening.');
 } catch(error) { console.error(error.message); process.exitCode=1; }
 finally { await db.close(); }

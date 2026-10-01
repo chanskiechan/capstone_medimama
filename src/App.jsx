@@ -9,6 +9,7 @@ import MotherProfile from './pages/MotherProfile';
 import CaregiverProfile from './pages/CaregiverProfile';
 import Reports from './pages/Reports';
 import Support from './pages/Support';
+import AdminReports from './pages/AdminReports';
 import AdminTools, { AdminProfile } from './pages/AdminTools';
 import PasswordRecovery from './pages/PasswordRecovery';
 
@@ -43,10 +44,10 @@ export default function App() {
     <Route path="/system" element={admin(<AdminTools />)} />
     <Route path="/profile" element={admin(<AdminProfile />)} />
     <Route path="/caregiver-requests" element={admin(<CaregiverRequests />)} />
-    <Route path="/reports" element={admin(<Support admin view="reports" />)} />
+    <Route path="/reports" element={admin(<AdminReports />)} />
     <Route path="/care-notes" element={admin(<Reports />)} />
-    <Route path="/health-concerns" element={admin(<Support admin view="concerns" />)} />
-    <Route path="/archives" element={admin(<Support admin view="archives" />)} />
+    <Route path="/health-concerns" element={admin(<Navigate to="/reports" replace />)} />
+    <Route path="/archives" element={admin(<Navigate to="/system?tab=archives" replace />)} />
     <Route path="/support/:section" element={<ProtectedRoute roles={['mother','caregiver','admin']}><Support /></ProtectedRoute>} />
     <Route path="/caregiver" element={caregiver(<FamilyPortal page="caregiver" />)} />
     <Route path="/caregiver/profile" element={caregiver(<CaregiverProfile />)} />

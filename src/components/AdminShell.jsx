@@ -23,11 +23,9 @@ export function AdminShell({ page, children }) {
       <div className="menu-item"><NavLink className={navClass} to="/healthcare"><i className="fas fa-hospital" /><span className="menu-text">Healthcare Services</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/caregiver-requests"><i className="fas fa-user-check" /><span className="menu-text">Caregiver Requests</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/reports"><i className="fas fa-chart-bar" /><span className="menu-text">Reports</span></NavLink></div>
-      <div className="menu-item"><NavLink className={navClass} to="/health-concerns"><i className="fas fa-comment-medical" /><span className="menu-text">Health concerns</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/care-notes"><i className="fas fa-note-sticky" /><span className="menu-text">Caregiver notes</span></NavLink></div>
-      <div className="menu-item"><NavLink className={navClass} to="/archives"><i className="fas fa-box-archive" /><span className="menu-text">Patient archives</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/announcements"><i className="fas fa-bullhorn" /><span className="menu-text">Announcements</span></NavLink></div>
-      <div className="menu-item"><NavLink className={navClass} to="/system"><i className="fas fa-cog" /><span className="menu-text">System</span></NavLink></div>
+      <div className="menu-item"><NavLink className={navClass} to="/system"><i className="fas fa-cog" /><span className="menu-text">System Settings</span></NavLink></div>
     </nav>
     <div className="sidebar-footer"><div className={`profile-item${profile ? ' open' : ''}`}><button className="profile-link" onClick={() => setProfile(!profile)}><i className="fas fa-user-circle" /><span className="menu-text">Profile</span><i className="fas fa-chevron-up profile-arrow" /></button><div className="profile-menu"><NavLink className="profile-menu-link" to="/profile"><i className="fas fa-user-gear" /><span>Profile Settings</span></NavLink><a className="profile-menu-link logout-link" href="#logout" onClick={(e) => { e.preventDefault(); localStorage.removeItem('medimama-current-session'); supabase.auth.signOut(); navigate('/login', { replace: true }); }}><i className="fas fa-right-from-bracket" /><span>Log out</span></a></div></div></div>
   </aside>{children}</div>;

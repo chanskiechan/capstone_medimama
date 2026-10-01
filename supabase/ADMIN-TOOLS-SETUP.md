@@ -1,5 +1,11 @@
 # Activate the remaining admin features
 
+## Archive location update
+
+Archives are now under **System Settings → Archives**, with separate **Mother**, **Infant**, and **Caregiver** tabs. The old `/archives` link redirects here. Run `018_caregiver_archive.sql` once after 017 to enable caregiver archiving. Do not rerun 016 or 017.
+
+Caregiver archive preserves the registration and notes, revokes family assignments and removes the record from the active caregiver request list. Restore returns the registration to pending approval; family access must be approved again. Mother and infant archive behavior is unchanged.
+
 The guided chatbot is ready to test without this migration. Open **Family support → Health assistant**, or **Chat with us** on the mother dashboard. Try:
 
 - `When is my next appointment?`
