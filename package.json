@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/care.test.js",
-    "test:ui": "node scripts/check-care-ui.mjs"
+    "test": "node --test src/care.test.js src/support.test.js",
+    "test:ui": "node scripts/check-support-ui.mjs",
+    "test:database": "node scripts/check-database.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
@@ -17,5 +18,8 @@
     "react-dom": "latest",
     "react-router-dom": "latest",
     "vite": "latest"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8"
   }
 }

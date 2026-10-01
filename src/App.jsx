@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AdminDashboard, Directory, Healthcare, Profile, System } from './pages/AdminWorkspace';
+import { AdminDashboard, Directory, Healthcare } from './pages/AdminWorkspace';
 import Announcements from './pages/AnnouncementsManager';
 import MotherDashboard from './pages/MotherExperience';
 import FamilyPortal from './pages/FamilyPortal';
@@ -8,6 +8,9 @@ import CaregiverRequests from './pages/CaregiverRequests';
 import MotherProfile from './pages/MotherProfile';
 import CaregiverProfile from './pages/CaregiverProfile';
 import Reports from './pages/Reports';
+import Support from './pages/Support';
+import AdminTools, { AdminProfile } from './pages/AdminTools';
+import PasswordRecovery from './pages/PasswordRecovery';
 
 const sessionKey = 'medimama-current-session';
 
@@ -30,15 +33,21 @@ export default function App() {
   return <Routes>
     <Route path="/" element={<Login />} />
     <Route path="/login" element={<Login />} />
+    <Route path="/forgot-password" element={<PasswordRecovery />} />
+    <Route path="/reset-password" element={<PasswordRecovery reset />} />
     <Route path="/dashboard" element={admin(<AdminDashboard />)} />
     <Route path="/mothers" element={admin(<Directory type="mothers" />)} />
     <Route path="/infants" element={admin(<Directory type="infants" />)} />
     <Route path="/healthcare" element={admin(<Healthcare />)} />
     <Route path="/announcements" element={admin(<Announcements />)} />
-    <Route path="/system" element={admin(<System />)} />
-    <Route path="/profile" element={admin(<Profile />)} />
+    <Route path="/system" element={admin(<AdminTools />)} />
+    <Route path="/profile" element={admin(<AdminProfile />)} />
     <Route path="/caregiver-requests" element={admin(<CaregiverRequests />)} />
-    <Route path="/reports" element={admin(<Reports />)} />
+    <Route path="/reports" element={admin(<Support admin view="reports" />)} />
+    <Route path="/care-notes" element={admin(<Reports />)} />
+    <Route path="/health-concerns" element={admin(<Support admin view="concerns" />)} />
+    <Route path="/archives" element={admin(<Support admin view="archives" />)} />
+    <Route path="/support/:section" element={<ProtectedRoute roles={['mother','caregiver','admin']}><Support /></ProtectedRoute>} />
     <Route path="/caregiver" element={caregiver(<FamilyPortal page="caregiver" />)} />
     <Route path="/caregiver/profile" element={caregiver(<CaregiverProfile />)} />
     <Route path="/user" element={mother(<MotherDashboard />)} />

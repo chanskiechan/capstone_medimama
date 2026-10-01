@@ -1,0 +1,646 @@
+Root Entry
+
+SummaryInformation
+
+DocumentSummaryInformation
+
+WordDocument
+
+WPS_1722003993
+
+WPS Office_12.1.0.26880_F1E327BC-269C-435d-A152-05C5408002CA
+
+KSOTemplateDocerSaveRecord
+
+KSOProductBuildVer
+
+eyJoZGlkIjoiMzMyN2IxMmQ1YTM5NWQxM2MwMjg0Mjk2Y2Q4NzE4NTgiLCJ1c2VySWQiOiI3MDQ5MzE0MDM1NDkifQ==
+
+1033-12.1.0.26880
+
+17F31E0FC30E40468A52C05D199D7FE2_13
+
+WpsCustomData
+
+7c658a4e-8950-404c-9993-0439425ec0aa
+
+Picture 7
+
+7c658a4e-8950-404c-9993-0439425ec0aa
+
+image2.png
+
+MEDIMAMA: A Web-Based Maternal and Infant Health Management System for Barangay Bucandala II
+
+Christian Xyram Tagasa
+
+Patrick Joseph Ibanez
+
+Shaina May Yusores
+
+___________________________________________________________________
+
+An undergraduate capstone project manuscript submitted to the faculty of the department of Information Technology, Cavite State University, Imus Campus, Imus, Cavite in partial fulfilment of the requirements for the degree of Bachelor of Science in Information Technology. Contribution No._____________. Prepared under the supervision of Mrs.Wyeth A. Datul.
+___________________________________________________________________
+
+
+
+INTRODUCTION
+
+
+
+Barangay Health Centers play a vital role in providing primary healthcare services, particularly for mothers and infants. These services include prenatal and postnatal care, immunization programs, growth monitoring, and health education. However, many barangay health centers still rely on paper-based record-keeping systems for documenting maternal and infant health information. Manual records are vulnerable to loss, damage, and misplacement, making it difficult for healthcare personnel to efficiently track patient information, monitor vaccination schedules, and generate accurate reports. As a result, delays in service delivery and challenges in healthcare management may occur.
+With the continuous advancement of information technology, digital systems have become essential tools in improving the efficiency and reliability of health information management. A Barangay Health Management System can centralize maternal and infant health records, allowing healthcare personnel to securely store, update, retrieve, and monitor health information. Through digitization, health records become more organized, accessible, and protected, reducing paperwork while improving the accuracy and timeliness of healthcare services.
+This study focuses on the digitization of infant and maternal health records through a Web-Based Barangay Health Management System. The proposed system aims to support healthcare personnel in managing health records more efficiently while improving healthcare service delivery at the barangay level. The system will provide digital record management, immunization tracking, appointment scheduling, automated notifications and reminders, and report generation to support maternal and child healthcare monitoring.
+In addition, the system will include health education resources and family planning information to promote awareness and assist mothers and caregivers in making informed decisions regarding maternal, infant, and family health. The proposed system will also incorporate a Healthcare Facility Locator that enables mothers and caregivers to locate nearby hospitals, birthing homes, pediatric clinics, and health centers. Furthermore, a Health Concern Reporting feature will allow mothers and caregivers to report post-vaccination side effects, maternal health concerns, and infant health issues directly to healthcare personnel. A MEDIMAMA Health Assistant Chatbot will also be integrated to provide information regarding maternal health, infant care, immunization schedules, family planning, and other health-related concerns.
+
+Project Context
+The Barangay Health Center in Barangay Bucandala II is a community healthcare facility that provides essential health services, particularly for mothers and infants. Despite serving a growing number of residents, the health center continues to rely on manual record-keeping practices. Maternal and infant health records, including prenatal checkups, postnatal assessments, immunization records, and growth monitoring information, are documented on paper and stored physically. This process makes record management time-consuming and increases the risk of record loss, damage, duplication, and retrieval difficulties.
+The proposed system is intended for use by healthcare personnel and registered mothers or authorized caregivers. Healthcare personnel, including Barangay Health Workers (BHWs), midwives, and authorized health staff, will serve as the system administrators responsible for recording, updating, monitoring, and retrieving maternal and infant health information. Registered mothers and authorized caregivers will be able to access maternal and infant health information, monitor immunization schedules, receive reminders and notifications, report health concerns, locate nearby healthcare facilities, access educational health resources, and utilize the system
+
+s support features.
+Currently, the manual management of maternal and infant health records exposes important healthcare information to various risks, including physical deterioration of records, incomplete documentation, data inconsistencies, and delays in retrieving information when needed. These challenges may affect the quality and efficiency of healthcare services provided by the barangay health center.
+This study focuses on the development and implementation of a Web-Based Barangay Health Management System for Barangay Bucandala II. The system is designed specifically for barangay-level healthcare operations and is not intended to replace hospital information systems or provide medical diagnosis. Its primary purpose is to improve health record management, support maternal and infant healthcare monitoring, facilitate communication between healthcare personnel and registered mothers or caregivers, and enhance the overall efficiency of healthcare services within the barangay.
+Objective of the Study
+The main goal of this study is to develop a Web-Based Barangay Health Management System for the digitization of infant and maternal health records in Barangay Bucandala II Health Center. Specifically, the study aims to:
+
+1. Improve the management of maternal and infant health records by:
+Allowing healthcare personnel to efficiently record, update, retrieve, and manage maternal and infant health information through a centralized digital system.
+Providing organized and secure digital records that contain maternal health information, prenatal and postnatal records, immunization histories, and infant growth monitoring data.
+Reducing paperwork and minimizing the risks of record loss, damage, duplication, and retrieval delays.
+2. Enhance healthcare monitoring and communication by:
+Allowing registered mothers and caregivers to securely access maternal and infant health records through the web-based platform.
+Providing automated notifications and reminders for appointments, immunization schedules, and other important healthcare activities.
+Enabling mothers and caregivers to report maternal and infant health concerns directly to healthcare personnel through the system.
+3. Support healthcare service delivery and administrative functions by:
+Allowing healthcare personnel to monitor patient records, appointments, immunization schedules, and healthcare activities through an integrated dashboard.
+Generating accurate reports that support healthcare planning, monitoring, and decision-making within the barangay.
+Maintaining organized digital archives to ensure secure, accurate, and easily retrievable maternal and infant health records.
+4. Promote maternal and child healthcare awareness by:
+Providing accessible health education resources related to maternal care, infant care, immunization, nutrition, and family planning.
+Integrating a MEDIMAMA Health Assistant Chatbot that provides information regarding maternal health, infant care, immunization schedules, family planning, and other health-related concerns.
+5. Improve access to healthcare services by:
+Providing a Healthcare Facility Locator that enables mothers and caregivers to locate nearby hospitals, birthing homes, pediatric clinics, barangay health centers, and vaccination sites.
+Assisting mothers and caregivers in identifying appropriate healthcare facilities for maternal and infant healthcare needs.
+
+Overall, this study aims to develop a Web-Based Maternal and Infant Health Management System that will improve the efficiency of health record management and healthcare service delivery in Barangay Bucandala II Health Center. The proposed system seeks to provide a secure, organized, and accessible platform for managing maternal and infant health information while supporting healthcare personnel and registered mothers and caregivers through digital record management, appointment scheduling, immunization tracking, health concern reporting, healthcare facility location services, and health education resources. Through the implementation of the system, the researchers aim to contribute to the improvement of maternal and child healthcare services within the barangay.
+Purpose and Description
+The project aims to develop a Web-Based Maternal and Infant Health Management System for Barangay Bucandala II Health Center that is user-friendly, accessible, secure, and efficient in managing maternal and infant health information. The system will provide healthcare personnel with digital tools for recording, updating, monitoring, and retrieving health records, while registered mothers and caregivers will be able to access health information and receive important healthcare updates through a web-based platform.
+Key features of the system include:
+Digital forms for recording and managing maternal and infant health information, including prenatal and postnatal records, immunization histories, growth monitoring data, and vaccination schedules.
+Organized dashboards and reports that present patient information, healthcare activities, and health statistics in a clear and understandable format.
+Automated notifications and reminders for appointments, immunization schedules, prenatal checkups, and other important healthcare activities.
+A health monitoring dashboard that enables healthcare personnel to track patient records, appointments, vaccination status, and healthcare services efficiently.
+A search and record retrieval system that allows authorized users to quickly access maternal and infant health records.
+A health education module that provides information regarding family planning, maternal health, infant care, nutrition, immunization, and responsible parenthood.
+A Healthcare Facility Locator that enables mothers and caregivers to locate nearby hospitals, birthing homes, pediatric clinics, barangay health centers, and vaccination facilities.
+A Health Concern Reporting feature that allows mothers and caregivers to submit reports regarding post-vaccination side effects, maternal health concerns, and infant health issues directly to healthcare personnel.
+A MEDIMAMA Health Assistant Chatbot that provides information regarding maternal health, infant care, immunization schedules, family planning, and other health-related concerns.
+The study proposes the development of a Web-Based Maternal and Infant Health Management System as a secure, organized, and accessible platform for managing healthcare information at the barangay level. Through digital record management, healthcare monitoring tools, automated notifications, and informational support services, the system seeks to improve the efficiency of healthcare operations and strengthen maternal and child healthcare delivery within the community.
+Once im
+
+plemented, the system is expected to provide significant benefits to the following groups:
+Healthcare Personnel 
+
+ The system will assist healthcare staff in managing patient records efficiently, accessing information quickly, generating reports accurately, and reducing errors associated with manual record-keeping.
+Registered Mothers and Caregivers 
+
+ Users will be able to access maternal and infant health records, monitor immunization schedules, receive reminders, report health concerns, locate healthcare facilities, and access healthcare information conveniently.
+Barangay Health Center 
+
+ The system will support healthcare operations through improved record management, monitoring, reporting, and healthcare service delivery.
+Proponents 
+
+ The study will provide the researchers with practical experience in system development, database management, project implementation, and healthcare information systems.
+Future Researchers 
+
+ This study may serve as a reference for future research related to healthcare information systems, maternal and child healthcare management systems, barangay health management systems, and other healthcare digitization initiatives. It may also guide future researchers and developers in enhancing similar healthcare technologies and services.
+
+
+Time and Place of the Study
+	The study will be conducted from August 2026 to December 2026 at Cavite State University 
+
+ Imus Campus and Barangay Bucandala II Health Center. During this period, the researchers will carry out the planning, design, development, testing, implementation, and evaluation of the proposed Web-Based Maternal and Infant Health Management System. System design, prototype development, user testing, and data evaluation will be performed to ensure that the system meets the needs of healthcare personnel, mothers, and caregivers. The researchers will ensure that all phases of the project, from initial planning to final presentation, are completed within the allotted timeframe. The early stages of the project will focus on requirements gathering, system design, and development, while the later stages will concentrate on system testing, evaluation, refinement, and performance assessment.
+
+Scope and Limitations of the Study 
+This study focuses on the development and implementation of a Web-Based Maternal and Infant Health Management System for Barangay Bucandala II Health Center. The system is designed to support healthcare personnel, registered mothers, and authorized caregivers in managing and accessing maternal and infant health information. It covers maternal and infant health record management, including prenatal and postnatal records, birth information, growth monitoring, health assessments, immunization records, appointment scheduling, automated notifications and reminders, and report generation.
+The system also includes a Healthcare Facility Locator that enables mothers and caregivers to locate nearby hospitals, birthing homes, pediatric clinics, barangay health centers, and vaccination sites. In addition, it provides a Health Concern Reporting feature that allows users to report post-vaccination side effects, maternal health concerns, and infant health issues directly to healthcare personnel. A MEDIMAMA Health Assistant Chatbot is also integrated to provide information regarding maternal health, infant care, immunization schedules, family planning, nutrition, and other health-related concerns.
+The study will be conducted at Barangay Bucandala II Health Center from August 2026 to December 2026, covering the planning, development, testing, implementation, and evaluation phases of the proposed system.
+The study is limited to the healthcare services and records managed by Barangay Bucandala II Health Center and does not include data from other barangays, municipalities, hospitals, or healthcare institutions. The system is intended primarily for maternal and infant healthcare management and is not designed to provide medical diagnosis, treatment, or emergency medical services.
+The effectiveness of the system depends on the availability of a stable internet connection. Poor connectivity may affect access to records, notifications, and other online services. Some users may also have limited digital literacy, which may affect system usage and data entry accuracy. Furthermore, the chatbot is intended solely for educational and informational purposes and shall not replace professional medical consultation, diagnosis, or treatment. Historical records that are incomplete, damaged, or unavailable may also affect the completeness and accuracy of the digital database.
+
+
+
+
+Conceptual Framework
+
+
+
+
+
+Figure 1: Conceptual Framework
+Figure 1 presents the conceptual framework of the study using the Input
+
+Output (IPO) model. The framework illustrates the components and processes involved in the development of MEDIMAMA: A Web-Based Maternal and Infant Health Management System for Barangay Bucandala II.
+The input phase consists of the hardware and software requirements necessary for system development and operation, including desktop or laptop computers, internet connectivity, a web hosting server, web browsers, MySQL database, PHP, HTML, CSS, JavaScript, and XAMPP. It also includes the data requirements such as maternal health records, infant health records, prenatal and postnatal records, immunization records, appointment records, healthcare facility information, health concern reports, and user account information. The intended users of the system are healthcare personnel, including Barangay Health Workers (BHWs), midwives, and health staff, as well as registered mothers and authorized caregivers.
+The process phase involves the different stages of system development. System analysis focuses on identifying the issues and limitations of the existing manual record-keeping process and determining user and system requirements. During the system design phase, the database structure, user interface, and system modules are planned and designed. The system development phase includes the implementation of key features such as maternal and infant record management, immunization tracking, appointment scheduling, notification and reminder services, healthcare facility locator, health concern reporting, MEDIMAMA Health Assistant Chatbot, and report generation. The developed system then undergoes functionality, usability, performance, and security testing to ensure reliability and effectiveness. After testing, the system is deployed through implementation, user training, and data migration activities. Maintenance activities are also performed to provide system updates, monitor performance, and enhance security.
+The output phase of the framework is the development of MEDIMAMA: A Web-Based Maternal and Infant Health Management System for Barangay Bucandala II. The system provides digitized maternal and infant health records, automated notifications and appointment reminders, immunization monitoring, health concern reporting, healthcare facility locator information, health education and family planning resources, and centralized and secure health information management. These features are expected to improve healthcare service delivery, record management efficiency, and accessibility of maternal and infant health information.
+The evaluation phase assesses the overall effectiveness of the system in terms of functionality, usability, reliability, security, and user satisfaction. Feedback from healthcare personnel, mothers, and caregivers, together with system testing results, will be used to determine whether the system successfully meets its intended objectives and supports maternal and infant healthcare management within Barangay Bucandala II.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Definition of terms
+Barangay refers to the smallest local government unit in the Philippines where basic community services, including healthcare services, are provided.
+Barangay Health Center refers to a local healthcare facility that provides primary healthcare services such as prenatal care, postnatal care, immunizations, growth monitoring, and maternal and child health services at the barangay level.
+Maternal and Infant Health Management System (MEDIMAMA) refers to a web-based information system designed to digitize, manage, store, retrieve, and monitor maternal and infant health records in Barangay Bucandala II Health Center.
+Digitization refers to the process of converting paper-based health records into digital format to improve accessibility, accuracy, security, and record management efficiency.
+Infant Health Records refer to digital records containing an infant
+
+s personal information, birth details, immunization history, growth monitoring data, and health assessments.
+Maternal Health Records refer to digital records containing a mother's personal information, pregnancy history, prenatal and postnatal records, health assessments, and other related healthcare information.
+Healthcare Personnel refer to authorized health workers, including Barangay Health Workers (BHWs), midwives, and health staff, who are responsible for managing, updating, monitoring, and maintaining maternal and infant health records within the system.
+Caregiver refers to an authorized individual, such as a parent, guardian, grandparent, or relative, who is responsible for caring for an infant and may access the system on behalf of the child.
+Barangay Health Worker (BHW) refers to a trained community health worker who assists in delivering healthcare services and recording maternal and infant health information at the barangay level.
+Midwife refers to a healthcare professional who provides maternal healthcare services, including prenatal care, childbirth assistance, postnatal care, and maternal health monitoring.
+Health Record Management refers to the process of recording, organizing, storing, updating, retrieving, and monitoring maternal and infant health information using the digital system.
+Immunization Records refer to digital documentation of vaccines administered to mothers and infants, including vaccine details, dates of administration, and immunization schedules.
+Prenatal Checkup refers to a healthcare examination conducted during pregnancy to monitor the health and development of both the mother and the unborn child.
+Postnatal Checkup refers to a healthcare examination conducted after childbirth to monitor the recovery of the mother and the health condition of the infant.
+Appointment Scheduling refers to the system feature that allows healthcare personnel to manage healthcare appointments and enables users to receive reminders regarding scheduled healthcare services.
+Healthcare Facility Locator refers to a system feature that helps mothers and caregivers locate nearby hospitals, birthing homes, pediatric clinics, barangay health centers, and other healthcare facilities.
+Health Concern Reporting refers to a system feature that enables mothers and caregivers to report post-vaccination side effects, maternal health concerns, or infant health issues directly to healthcare personnel.
+MEDIMAMA Health Assistant Chatbot refers to an integrated chatbot feature that provides information regarding maternal health, infant care, immunization schedules, family planning, nutrition, and other health-related topics.
+Notification and Reminder System refers to a feature that automatically sends alerts and reminders regarding appointments, immunization schedules, prenatal checkups, postnatal checkups, and other healthcare activities.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+REVIEW OF RELATED LITERATURE AND STUDIES
+
+
+
+This chapter presents the related literature and studies supporting the development of MEDIMAMA: a digitized barangay health management system for infant and maternal health records in Barangay Bucandala II.  It helped the researchers develop a better understanding of the system and its role in improving healthcare services.
+Literature
+Foreign
+WHO 
+
+ Digital interventions for strengthening health systems (2019).
+According to the study, the World Health Organization released evidence-based recommendations on digital health interventions such as electronic client records,decision support, and targeted client communication. The study shows the guideline emphasizes that digitizing health records can improve continuity of care, service delivery monitoring, as well reporting
+
+especially for maternal and child health programs
+
+if privacy, usability and implement readiness are addressed. 
+
+Digitalization of home-based records for maternal, newborn, and child health
+The study review on the digitalization of home-based records for maternal, newborn and child health examined existing digital interventions aimed at improving access to and use of health records. The study identified key factors influencing the success of digital home-based records, such as system usability, digital literacy ,language accessibility and reliable internet and electricity. The study emphasized that digital home-based records should be developed alongside the digitization of patient health records to ensure data integration of continuity of care. 
+
+
+Digital Reminder Systems in Healthcare
+
+	Digital reminder systems play an important role in improving healthcare compliance and patient engagement. The World Health Organization (2019) recognized targeted client communication and digital notification systems as effective digital health interventions that support continuity of care and service monitoring. Automated reminders help patients remember appointments, vaccinations, and healthcare activities, thereby reducing missed healthcare services and improving healthcare outcomes. The findings support the implementation of automated notifications and reminder features in the proposed MEDIMAMA system.
+
+
+Healthcare Chatbots in Health Education and Patient Support
+	Healthcare chatbots have become increasingly important in providing health information and patient support. According to Bhattacharya and Pissurlenkar (2023), AI-enabled healthcare chatbots can improve access to healthcare information, support patient education, and reduce dependence on direct human interaction for routine inquiries. The study highlighted that healthcare chatbots are useful for answering frequently asked questions, providing health guidance, and assisting users in understanding healthcare information. The researchers emphasized that healthcare chatbots can serve as effective support tools when used for informational purposes while not replacing professional medical consultation. The findings support the integration of the MEDIMAMA Health Assistant Chatbot as an educational and information-support feature within the proposed system.
+
+
+Local
+Philippine DOH 
+
+ Field Health Services Information System (FHSIS)
+The field health services information system of the Philippine Depart of Health serves as the official mechanism for collecting, consolidating, and reporting public health service data across the country. The system is implemented to support monitoring, evaluation, and planning of health programs at various administrative levels, including barangay. Furthermore, through FHSIS, structured health records and standardised reporting are emphasised to ensure accurate documentation of maternal and child health services. This highlights the importance of an organized health information system in community health and supports the need for digitised infant and maternal health records to improve data accessibility, consistency and decision making at the barangay level.
+A Framework for Developing a Maternal Health Informatics System for an Urban City in the Philippines
+According to the study Cortez et al. (2014) proposed a framework for developing a Maternal health informatics system (MHIS) for use in an urban city in the Philippines. The study explained how technology can help improve maternal healthcare by making health records easier to organize, check, and access. The system allowed healthcare workers to store patient information, identify possible health risks, generate reports, and receive reminders to support patient care. The system featured electronic patient records, risk assessment functions, automated health reports, and reminder tools to assist healthcare workers in making informed decisions and maintaining continuous care. Moreover, the study showed that using digitized maternal health records can enhance collaboration among healthcare providers, improve monitoring of high-risk pregnancies and support timely interventions. Overall, the results support the idea of creating a Barangay Health Management System by showing how important well-organized digital maternal health records are for improving healthcare for mothers and babies.
+Community Health Information Tracking System (CHITS) 
+
+ Philippines
+Marcelo et al. examined the implementation of the  Community Health Information Tracking System, an electronic health information system created by the University of the Philippines Manila for application in government health centers and rural health units. The study focused on the digitization of patient records, including maternal and child health data, to support primary healthcare services. The study showed that CHITS improved the accuracy, accessibility and completeness of health records while reducing manual reporting and duplication of data. Furthermore, the system also makes it easier for health workers to keep track of prenatal visits, immunization records, and maternal health indicators. The study emphasizes that a user-friendly design and integration into daily workflows were very important for people to use the system.
+
+Studies
+Foreign 
+Introducing a digital emergency obstetric and newborn care register for indoor obstetric patient management: An implementation research in selected public health care facilities of Bangladesh
+Jabeen, S., et al (2024) examined the digitization of an emergency obstetric and newborn care (EmONC) register in public health facilities in Bangladesh. The study aimed to replace paper-based maternal and newborn records with a digital register to enhance data accessibility, completeness, and usability among healthcare providers. Findings revealed that the digital system improved the accuracy of maternal and newborn health data, reduced errors associated with manual record-keeping, and supported better monitoring of health services. The study was implemented in a hospital based facility with a successful result of effectiveness of digital health record systems in managing maternal and infant health information.
+
+Patient-Centered Digital Health Records and Their Effects on Health Outcomes: Systematic Review
+
+Brands ,M., et al. (2022) examine the effects of patient-centered digital health records on health outcomes across multiple studies. The researchers analyzed 81 studies with 1.6 million participants to assess the impact of digital health records.  The study showed that digitization of health records are associated with beneficial effects on the use of recommended care services, disease knowledge, patient engagement, treatment adherence, and self-management or self-efficacy. Additionally, high levels of patient satisfaction, feasibility, and acceptability were reported. The findings provided evidence for the adoption of digital record systems in diverse health contexts.
+
+
+Local 
+
+Public Health Record Management System: An Up-Close Monitoring System  
+
+Batoon,J., et al(2022) developed a Public Health Record Management System (PHRMS) for the barangay health center of Sto. Rosario, Paombong, Bulacan, the study aimed to address the issue  associated with manual record keeping.The system was designed with user
+
+friendly features to streamline data processing, enhance productivity, and securely manage patients
+
+ health information. The study demonstrated that integrating technology into primary health record management can support faster, more accurate, and organized service delivery at the community level. Based on the data gathered, the proponents conclude that the system is usable and functional. The developed system will completely put an end to a manual process of record management. Therefore, it is concluded that the developed Health Information System will have an immense effect in storing and protecting the records of the barangay public health center.  
+
+
+Timeliness of reporting process in the national routine health information system: The case of 19-year experience of Field Health Services Information System in Palawan, the Philippines
+Murai et al. (2022) took a close look at how timely health reporting is from 22 health centers using the Field Health Services Information System (FHSIS) over a span of 19 years. This includes the time when parts of the system were computerized. They discovered that efforts to modernize, like extending deadlines and moving toward electronic reporting in some centers, did help improve how quickly reports were submitted. Still, there were delays and inconsistencies in reporting that lingered. These findings highlight just how important it is to have reliable health information systems and digital reporting. Accurate and timely health data is crucial for managing local health systems and making decisions. The insights gained from the Filipino context really push for the need to have digitized health record systems at the community level. The study shows that when systems are updated and made more efficient, it can lead to better health outcomes. 
+
+A systems approach to improving maternal health in the Philippines
+
+Huntington et al. (Banzon, Recidoro 2012) describe a systematic approach by which we can improve on maternal health care through increased cooperation among the various building blocks of a health system (governance, service delivery, workforce, financing, health information systems) and other areas. With the Philippines specifically, developing information systems has been recognized as a critical component to achieve the efficient monitoring, planning, and evaluation of maternal and neonatal health services. According to a recent study of health system reform, the future performance of a health system depends not only on the clinical interventions delivered to the population but also on the infrastructure available for collecting and analysing data during the continuum of care. The research identified the continued struggles resulting from having a fragmented/inadequate health information system. The findings clearly illustrate the need for a more convenient way of providing reliable health data and demonstrate the necessity for establishing digitized health record systems (e.g., Barangay Health Management System) that allow community leaders to access accurate, timely, and relevant health data to support decision-making and service delivery for their community's health.
+
+System Technical Background
+
+Visual Studio Code (VS Code) is a lightweight and widely used source-code editor developed by Microsoft. According to Plainer (2021), VS Code provides support for multiple programming languages, debugging tools, extensions, and integrated development features that help developers create efficient and maintainable software applications. Due to its flexibility and user-friendly interface, VS Code is commonly used in web application development.
+XAMPP is an open-source software package that provides a local server environment for web development. According to K (2021), XAMPP integrates Apache, MySQL/MariaDB, PHP, and Perl, allowing developers to create, test, and deploy web-based applications efficiently. It is widely used for developing database-driven systems because it simplifies server configuration and application testing.
+HTML, CSS, and JavaScript are among the core technologies used in web development. HTML provides the structure of web pages, CSS is responsible for the visual presentation and design, while JavaScript enables interactive features and dynamic content. According to Ebrahim (2024), websites developed using these technologies can improve user experience through responsive interfaces, accessibility, and interactive functionalities. These technologies are widely utilized in modern web-based systems due to their effectiveness in creating user-friendly applications.
+MySQL is a relational database management system used to store, organize, and retrieve information efficiently. It provides secure and structured data management, making it suitable for handling healthcare records and other critical information. The integration of MySQL with PHP enables the development of dynamic and database-driven web applications.
+The combination of Visual Studio Code, XAMPP, PHP, MySQL, HTML, CSS, and JavaScript provides a reliable technological foundation for the development of MEDIMAMA: A Web-Based Maternal and Infant Health Management System. These technologies support efficient data management, secure record storage, responsive interfaces, and effective healthcare information services.
+
+Synthesis 
+
+The reviewed literature and studies demonstrate that the digitization of maternal and child healthcare records significantly improves the accuracy, accessibility, security, and efficiency of healthcare information management. International studies, including those conducted by the World Health Organization and other healthcare researchers, emphasize that electronic health record systems support healthcare monitoring, improve service delivery, and facilitate timely healthcare interventions for mothers and infants.
+Local studies in the Philippines further support the effectiveness of digital health information systems. Programs and systems such as the Field Health Services Information System (FHSIS), Community Health Information Tracking System (CHITS), and other healthcare record management platforms have shown positive impacts on record organization, healthcare reporting, and patient monitoring. These systems help healthcare personnel manage maternal and child health information more efficiently while reducing the challenges associated with manual record-keeping.
+The reviewed literature also highlights the growing importance of supportive digital healthcare technologies such as automated notification and reminder systems, healthcare chatbots, healthcare facility locator services, and patient health reporting tools. These technologies improve communication between healthcare providers and patients, increase access to healthcare information, and encourage greater patient participation in healthcare activities.
+Based on the reviewed literature and studies, the researchers conclude that integrating digital record management with healthcare support services can significantly enhance maternal and infant healthcare delivery. Therefore, the development of MEDIMAMA: A Web-Based Maternal and Infant Health Management System is supported by existing evidence showing that digital healthcare technologies contribute to more organized, accessible, efficient, and patient-centered healthcare services at the community level.
+
+
+
+
+
+
+
+
+METHODOLOGY
+
+
+
+This chapter presents the materials, methods, and data gathering techniques, data analysis, and implementation plan.
+Design of Software, System, Product and/or Processes
+The proposed system, Digitization of Infant and Maternal Health Records through a Barangay Health Management System, is a web-based system designed to improve the recording, storage, retrieval, and management of maternal and infant health information in the barangay health center. The system will serve as a digital platform where health workers can securely record and monitor essential health data of pregnant women, mothers, and infants. Through this system, manual paper-based recording will be replaced with a more organized and efficient digital process.
+The design of the proposed system includes modules for patient registration, maternal record management, infant health monitoring, immunization tracking, prenatal and postnatal care recording, report generation, record updating, and a Health Education Module. The Health Education Module provides accessible information on family planning, maternal care, and child health awareness to support informed decision-making among users.Furthermore, the design covers the development process, system architecture, testing procedures, and evaluation methods to ensure the system
+
+s effectiveness, reliability, accuracy, and usability. Through careful planning and implementation, the proposed system aims to support barangay health workers in providing better and faster health services to mothers and infants.
+
+Figure 2 presents the hierarchical input-process-output diagram of the proposed system, Digitization of Infant and Maternal Health Records through a Barangay Health Management System. As shown in the figure, the system consists of several modules that handle patient registration, health record encoding, maternal and infant monitoring, immunization scheduling, report generation, and record retrieval.
+
+
+
+
+Figure 2. Manual Process 
+
+
+Figure 3 presents the use case diagram of  Digitization of Infant and Maternal Health Records through a Barangay Health Management System in Barangay Bucandala II. The diagram shows the interaction between  the health worker, mother/caregiver and the barangay officials and the system.
+The Health Worker will serve as the main system user as they are the ones responsible for managing and maintaining health records. The health worker  can register patients, encode maternal and infant records, update health information, and record both prenatal and postnatal checkups. Additionally, the health worker can track immunization schedules, generate reports, and retrieve patient records.The system also allows the health worker to send alerts and reminders, particularly for scheduled immunizations and follow-up checkups. Some processes, such as generating reports, include retrieving patient records to ensure accurate and complete data. Additionally, the Mother/Caregiver can access the Health Education Module, where they can view information on family planning, maternal care, and child health awareness to support informed decision-making.
+The Mother/Caregiver interacts with the system through user-level access. They can register or log in to their accounts, view their personal health records, check immunization schedules, and receive alerts or reminders from the system. These features are designed to keep mothers informed and engaged in monitoring their own health and their child
+
+s development.
+The Barangay Official has limited access focused on monitoring and decision-making. They can view reports and monitor overall health data within the barangay. This allows them to assess community health conditions and plan appropriate health programs and interventions.
+Overall, the use case diagram demonstrates how the system supports efficient record management, improves communication between health workers and patients, and enhances the monitoring of maternal and infant health services at the barangay level.
+
+
+
+
+
+Figure 3. Use Case 
+
+
+
+
+
+
+
+
+
+
+
+Figure 4 graphical user interface design of the proposed mobile-based maternal and infant health monitoring system, which supports user interaction through two main components: the dashboard interface and the appointment scheduling interface. The dashboard provides an overview of the current date, tracks the infant's vaccination timetable, and displays the countdown to the next dose, keeping parents up-to-date on their child's immunizations. The appointment scheduling feature lets users pick a convenient date and time for health center visits, along with entering essential details, simplifying the process of arranging vaccinations and check-ups.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Figure 4. Graphical user interface design 
+
+System Development 
+The development of Digitization of Infant and Maternal Health Records through a Barangay Health Management System adopted the Agile model with iterative stages. This model was used because it allows the researchers to develop the system gradually by module, test each feature continuously, and make necessary improvements throughout the development process. Since the proposed system includes important functions such as patient registration, maternal health record management, infant health monitoring, immunization tracking, report generation, and record retrieval, the Agile model is appropriate for ensuring that each feature works properly and meets the needs of the intended users.
+Figure 3 shows the graphical illustration of the Agile model.
+
+
+
+
+Figure 3. Agile Methodology
+
+
+
+
+
+Planning. Identify the system goals, target users, and key features of the system, including patient registration, heal
+
+th record management, alert notifications, and essential system functions such as real-time data access and communication support for efficient healthcare services.
+Requirements Analysis. Gather necessary information from health workers, mothers, and caregivers in Barangay Bucandala II to define the functional and non-functional requirements of the system, including health record management, immunization tracking, scheduling, and system usability.
+Design. Prepare the graphical user interface, the database structure, use case diagrams and create flowcharts and the system architecture. The goal is to build a digital platform that is both user-friendly and well-organized. This platform will help health workers manage maternal and infant health records efficiently.
+Development / Iteration. Develop the system in modules to ensure organized and efficient implementation. The development is divided into iterations:
+First iteration: Register/Login
+Second iteration: Maternal Record Management
+Third iteration: Infant Health Record Management
+Fourth iteration: Immunization Tracking and Scheduling
+Fifth iteration: Report Generation and Record Retrieval
+Testing. Test each module to ensure it functions properly, including registration, record management, data retrieval and over system performance, especially the emergency alert and location functions.
+Deployment. Implement the system for actual use by health workers and authorized users.
+Maintenance. Maintain the system by fixing issues, improve features, and update the system based on feedback to ensure continuous efficiency and reliability. 
+System Testing
+The system will be tested to determine whether Digitization of Infant and Maternal Health Records through a Barangay Health Management System functions according to its intended purpose. The testing process will be conducted to check the accuracy, reliability, and performance of the system
+
+s major features, such as patient registration, maternal and infant record encoding, record updating, immunization tracking, report generation, and record retrieval. It also aims to identify errors, technical issues, and areas that require improvement before the final implementation of the system.The system will also be tested to ensure that educational content, including family planning information, is accessible, clear, and user-friendly for mothers.
+System Evaluation
+The system will be evaluated by selected respondents to determine its level of acceptability in terms of functionality, usability, reliability, efficiency, and overall performance. The respondents will be asked to use the developed system and answer an evaluation questionnaire based on their actual experience with the system. Their responses will serve as the basis for assessing whether the proposed system is acceptable and effective for its intended users.
+
+
+
+
+Data analysis plan. The researchers will use  the weighted mean to evaluate the responses of the respondents regarding the developed system. This statistical treatment enabled the researchers to determine the overall rating of the system based on the given criteria. The results were then interpreted using a descriptive scale to identify the level of system acceptability.
+Table 1 presents the descriptive interpretation of the mean.
+
+Numerical Scale
+
+Interpretation
+
+4.51 - 5.00
+
+Excellent
+
+3.51 - 4.50
+
+Very Good
+
+2.51 - 3.50
+
+1.51 - 2.50
+
+1.50 - below
+
+
+Implementation Plan
+The implementation plan was prepared to ensure the proper deployment and use of Digitization of Infant and Maternal Health Records through a Barangay Health Management System. It includes the strategies, activities, persons involved, and duration needed for the successful implementation of the proposed system.
+Table 2 shows the implementation plan
+Strategy
+
+Activities
+
+Persons Involved 
+
+Duration
+
+Approval from University Officials
+
+Researchers, System Administrator
+
+System Installation
+
+Installation of the system and required software and hardware
+
+Researchers, System Administrator
+
+Information Dissemination
+
+Orientation, flyers, and user guide/manual distribution
+
+Researchers, Respondents
+
+User Training
+
+Hands-on training and demonstration of system features
+
+Researchers, Respondents
+
+Actual Implementation
+
+Actual use of the mobile application by selected users
+
+Researchers, Respondents
+
+System Evaluation
+
+Evaluation through survey questionnaire
+
+Researchers, Respondents
+
+
+
+REFERENCES
+
+
+
+Brands, M. R., Gouw, S. C., Beestrum, M., Cronin, R. M., Fijnvandraat, K., & 		Badawy, S. M. (2022). Patient-Centered Digital Health Records and 	Their Effects on Health Outcomes: Systematic Review. Journal of 	Medical Internet Research, 24(12), 		
+	
+
+ HYPERLINK "https://www.jmir.org/2022/12/e43086/" \h 
+
+https://www.jmir.org/2022/12/e43086/
+
+
+
+Jabeen, S., Rahman, M., Siddique, A. B., Hasan, M., Matin, R. M., Rahman, Q. S., 	Hossain, T., Alim, A., Nadia, N., Mahmud, M., Islam, J., Islam, M. S., 	Haider, M. S., Dewan, F., Begum, F., Barua, U., Anam, M. T., Islam, 	A., Razzak, K. S. B., 
+
+ Rahman, A. E. (2024). Introducing a digital 	emergency obstetric and newborn care register for indoor obstetric 	patient management: An implementation research in selected public 	health facilities of Bangladesh. Journal of Global Health, 14, 		04075. 
+
+ HYPERLINK "https://www.researchgate.net/publication/380485851_Introducing_a_digital_emergency_obstetric_and_newborn_care_register_for_indoor_obstetric_patient_management_An_implementation_research_in_selected_public_health_care_facilities_of_Bangladesh" \h 
+
+(PDF) Introducing a digital emergency obstetric and newborn 
+
+ HYPERLINK "https://www.researchgate.net/publication/380485851_Introducing_a_digital_emergency_obstetric_and_newborn_care_register_for_indoor_obstetric_patient_management_An_implementation_research_in_selected_public_health_care_facilities_of_Bangladesh" \h 
+
+care register for indoor obstetric patient management: An 		
+
+ HYPERLINK "https://www.researchgate.net/publication/380485851_Introducing_a_digital_emergency_obstetric_and_newborn_care_register_for_indoor_obstetric_patient_management_An_implementation_research_in_selected_public_health_care_facilities_of_Bangladesh" \h 
+
+implementation research in selected public health care facilities of 
+
+ HYPERLINK "https://www.researchgate.net/publication/380485851_Introducing_a_digital_emergency_obstetric_and_newborn_care_register_for_indoor_obstetric_patient_management_An_implementation_research_in_selected_public_health_care_facilities_of_Bangladesh" \h 
+
+Bangladesh
+
+
+
+Batoon, J.
+
+A., Benitez, A.
+
+B., Cajucom, K.
+
+Z., Dalusung, M.
+
+M., Faustino, S.
+
+D., 	Galvez, I.
+
+D., & Mercado, L.
+
+L. (2022). Public health record 		management system: An up
+
+close monitoring system. International 	Journal of Advanced Trends in Computer Science and Engineering, 	11(3), 96
+
+100. 	
+	
+
+ HYPERLINK "https://www.warse.org/IJATCSE/static/pdf/file/ijatcse041132022.pdf" \h 
+
+https://www.warse.org/IJATCSE/static/pdf/file/ijatcse041132022.pdf
+
+
+
+Murai, S., Ventura, R.
+
+C., & Gaite, J.
+
+T. (2022). Timeliness of reporting process in 	the national routine health information system: The case of 19
+
+year 	experience of Field Health Services Information System in Palawan, 	the Philippines. PLoS One, 17(2), e0264681. 
+
+ HYPERLINK "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0264681" \h 
+
+Timeliness of reporting 
+
+ HYPERLINK "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0264681" \h 
+
+process in the national routine health information system: The case 
+
+ HYPERLINK "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0264681" \h 
+
+of 19-year experience of Field Health Services Information System in 
+
+ HYPERLINK "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0264681" \h 
+
+Palawan, the Philippines | PLOS One
+
+
+
+World Health Organization. (2019). Recommendations on Digital Interventions for Health System Strengthening. World Health Organization.
+
+ HYPERLINK "https://www.who.int/publications/i/item/9789241550505" \t "_new" 
+
+https://www.who.int/publications/i/item/9789241550505
+
+
+
+
+Department of Science and Technology 
+
+ Philippine Council for Health Research and 	Development. (n.d.). Community Health Information Tracking System 	(CHITS). In HeaRTnovations: DOST-PCHRD Health Innovations. 	Department of Science and Technology. 
+	
+
+ HYPERLINK "https://www.pchrd.dost.gov.ph/heartnovation/community-health-information-tracking-system-chits/" \h 
+
+Community Health Information Tracking System (CHITS)
+
+
+
+Geldof, M., Gerlach, N., & Portela, A. (2023). Digitalization of home-based records 	for maternal, newborn, and child health: A scoping review. BMC 		Digital Health, 1, Article 32. 
+
+ HYPERLINK "https://link.springer.com/article/10.1186/s44247-023-00032-1" \h 
+
+Digitalization of home-based records for 
+
+ HYPERLINK "https://link.springer.com/article/10.1186/s44247-023-00032-1" \h 
+
+maternal, newborn, and child health: a scoping review | BMC Digital
+
+ HYPERLINK "https://link.springer.com/article/10.1186/s44247-023-00032-1" \h 
+
+ HYPERLINK "https://link.springer.com/article/10.1186/s44247-023-00032-1" \h 
+
+
+
+Department of Health. (n.d.). Field Health Services Information System (FHSIS). 		Department of Health. 
+
+ HYPERLINK "https://ro4a.doh.gov.ph/field-health-service-information-system-fhsis/" \h 
+
+Field Health Service Information System 
+
+ HYPERLINK "https://ro4a.doh.gov.ph/field-health-service-information-system-fhsis/" \h 
+
+(FHSIS) | CHD-CaLaBaRZon
+
+
+
+Bhattacharya, B. S., & Pissurlenkar, V. S. (2023). Assistive Chatbots for Healthcare: A Succinct Review. arXiv.
+
+ HYPERLINK "https://arxiv.org/abs/2308.04178" \t "_new" 
+
+https://arxiv.org/abs/2308.04178
+
+	Heading 1
+
+	Heading 2
+
+	Heading 3
+
+	Heading 4
+
+	Heading 5
+
+	Heading 6
+
+Default Paragraph Font
+
+Table Normal
+
+Emphasis
+
+	Hyperlink
+
+Normal (Web)
+
+Subtitle
+
+TableNormal
+
+	_Style 10
+
+	_Style 11
+
+Version 5.23
+
+image3.png
+
+image5.png
+
+image1.png
+
+

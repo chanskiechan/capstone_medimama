@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { PageStyles } from '../components/PageStyles';
 import CareWorkspace from '../components/CareWorkspace';
 import FamilyOverview from '../components/FamilyOverview';
@@ -7,15 +7,29 @@ import MotherAnnouncements from '../components/MotherAnnouncements';
 import CaregiverNotes from '../components/CaregiverNotes';
 import { session } from '../care';
 import { supabase } from '../lib/supabase';
+import './FamilyHeader.css';
 
 export function FamilyHeader() {
   const user = session(), navigate = useNavigate();
   const caregiver = user.role === 'caregiver';
   const [avatarUrl, setAvatarUrl] = useState('');
+  const profileMenu = useRef(null), location = useLocation();
+  const [logoutError, setLogoutError] = useState('');
+  useEffect(() => { if (profileMenu.current) profileMenu.current.open = false; }, [location.pathname]);
+  useEffect(() => {
+    const close = event => { if (profileMenu.current && !profileMenu.current.contains(event.target)) profileMenu.current.open = false; };
+    const escape = event => { if (event.key === 'Escape' && profileMenu.current?.open) { profileMenu.current.open = false; profileMenu.current.querySelector('summary')?.focus(); } };
+    document.addEventListener('pointerdown', close); document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
+  }, []);
+  const logout = async () => {
+    if (!user.demo) { const { error } = await supabase.auth.signOut(); if (error) { setLogoutError('Could not log out. Please try again.'); return; } }
+    localStorage.removeItem('medimama-current-session'); navigate('/login', { replace: true });
+  };
   const links = caregiver ? [['/caregiver', 'hand-holding-heart', 'Care workspace']] : [['/user', 'house', 'Home'], ['/user/appointments', 'calendar-days', 'Appointments'], ['/user/records', 'clipboard', 'Records'], ['/user/infants', 'baby', 'My Infants']];
   const initials = (user.name || 'M').split(' ').map(p => p[0]).join('').slice(0, 2);
   useEffect(() => {
-    if (!user.id) return undefined;
+    if (!user.id || user.demo) return undefined;
     let active = true;
     const loadAvatar = async () => {
       const { data } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).single();
@@ -27,7 +41,20 @@ export function FamilyHeader() {
     return () => { active = false; window.removeEventListener('medimama-avatar-updated', applyAvatar); };
   }, [caregiver, user.id]);
   const photo = avatarUrl ? <img className="header-avatar-image" src={avatarUrl} alt="" /> : initials;
-  return <header className={`app-header${caregiver ? " caregiver-header" : ""}`}><Link className="brand" to={caregiver ? '/caregiver' : '/user'}><img src="/medimama/medimamalogo.png" alt="MediMama" /></Link>{!caregiver && <nav className="main-nav" aria-label="Mother pages">{links.map(([to, icon, label]) => <NavLink key={to} to={to} end className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}><i className={'fa-solid fa-' + icon} aria-hidden="true" /><span>{label}</span></NavLink>)}</nav>}<div className="header-actions"><Link className="user-pill" to={caregiver ? '/caregiver/profile' : '/user/profile'} aria-label="Open my profile"><span className="avatar">{photo}</span><span><strong>{user.name}</strong><small>{caregiver ? 'Caregiver' : 'Mother'}</small></span></Link><button type="button" className="family-primary" onClick={() => { localStorage.removeItem('medimama-current-session'); navigate('/login'); }}>Log out</button></div></header>;
+  return <header className="app-header family-header">
+    <Link className="family-brand" to={caregiver ? '/caregiver' : '/user'} aria-label="MediMama home"><img src="/medimama/medimamalogo.png" alt="MediMama" /></Link>
+    <nav className="family-navigation" aria-label="Main navigation">
+      {links.map(([to, icon, label]) => <NavLink key={to} to={to} end className="family-nav-item"><i className={'fa-solid fa-' + icon} aria-hidden="true" /><span>{label}</span></NavLink>)}
+      <NavLink to="/support/education" className={() => 'family-nav-item' + (location.pathname.startsWith('/support/') ? ' active' : '')} aria-current={location.pathname.startsWith('/support/') ? 'page' : undefined}><i className="fa-solid fa-hand-holding-heart" aria-hidden="true" /><span>Family Support</span></NavLink>
+    </nav>
+    <div className="family-header-actions">
+      <NavLink to="/support/notifications" className="family-notification" aria-label="Notifications" title="Notifications"><i className="fa-solid fa-bell" aria-hidden="true" /></NavLink>
+      <details className="family-profile" ref={profileMenu}>
+        <summary aria-label="Open account options"><span className="family-avatar">{photo}</span><span className="family-account-name"><strong>{user.name}</strong><small>{caregiver ? 'Caregiver' : 'Mother'}</small></span><i className="fa-solid fa-chevron-down" aria-hidden="true" /></summary>
+        <div className="family-profile-menu"><p>My account</p><Link to={caregiver ? '/caregiver/profile' : '/user/profile'}><i className="fa-solid fa-user" aria-hidden="true" />View profile</Link><button type="button" onClick={logout}><i className="fa-solid fa-arrow-right-from-bracket" aria-hidden="true" />Log out</button>{logoutError && <p role="alert">{logoutError}</p>}</div>
+      </details>
+    </div>
+  </header>;
 }
 
 export default function FamilyPortal({ page }) {

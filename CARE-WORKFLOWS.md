@@ -1,5 +1,7 @@
 # Maternal and infant care workflows
 
+> September 2026 update: the persistence and UI-test sections below describe the earlier browser-storage prototype. See [the current feature setup](supabase/FEATURE-SETUP.md) for the Supabase-backed clinical forms, support pages, archive/reporting features, migration and current tests.
+
 The document `Eto pa yung kulang sa system.docx`, including its immunization-card image, is implemented in the React care workspace.
 
 ## Use the features
