@@ -3,6 +3,12 @@
 The app changes are implemented locally. Your live Supabase database has not been changed.
 Migration 016 is based on the schema CSV you supplied. It preserves existing tables and records.
 
+For Mother-side appointment confirmation and time-only rescheduling, also run
+`supabase/migrations/021_mother_appointment_actions.sql` after migration 020.
+The Mother can confirm an appointment scheduled by the health center or submit a
+new-time request; the appointment date and service remain controlled by the
+health center.
+
 1. In VS Code, press **Ctrl+P**, type `016_complete_care_features.sql`, then press Enter.
 2. Copy all the SQL. In your Supabase project, open **SQL Editor**, create a new query, paste it, and click **Run** once.
 3. If Supabase reports an error, keep the full error message. The migration uses a transaction, so a failed run does not leave half the update applied. Do not rerun a successful migration.
@@ -20,7 +26,6 @@ These are **in-app inbox notifications**. No email, SMS, or push delivery servic
 - Mother dashboard → **Chat with us**: the same assistant. It answers supported education topics and retrieves linked appointments/reminders. It is a rules-based assistant, not an external AI model or diagnostic service.
 - Admin → **Health concerns**: review submissions and send replies.
 - Admin → **Reports**: date-filtered maternal checkups, infant visits, screening, growth, vaccinations and appointments; CSV export and print/save as PDF.
-- Admin → **Caregiver notes**: the existing observations page remains available.
 - Admin → **Patient archives**: search, archive, restore and retrieve clinical history. This is record archiving, not a full Supabase database backup.
 - Existing care forms now write measurements, vaccinations, screenings and maternal intake/history to Supabase. Infant registration saves its initial measurements in the same transaction. Patient data is loaded in pages, rather than silently stopping at Supabase's default row limit.
 

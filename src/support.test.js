@@ -47,7 +47,7 @@ test('common Tagalog prompts route to supported resources or symptom guidance',(
 });
 test('backup preview rejects other projects and unexpected tables',()=>{
   const backup={format:'medimama-clinical',version:1,project:'https://test.supabase.co',tables:Object.fromEntries(backupTables.map(t=>[t,[]]))};
-  assert.equal(validateBackup(backup,backup.project).length,8);
+  assert.equal(validateBackup(backup,backup.project).length,backupTables.length);
   assert.throws(()=>validateBackup(backup,'https://other.supabase.co'),/different/);
   assert.throws(()=>validateBackup({...backup,tables:{...backup.tables,profiles:[]}},backup.project),/unsupported/);
 });

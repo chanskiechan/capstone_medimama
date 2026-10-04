@@ -103,15 +103,6 @@ create table public.care_tasks (
   check (completed_at is null or due_at is null or completed_at >= due_at - interval '1 day')
 );
 
-create table public.care_notes (
-  id uuid primary key default gen_random_uuid(),
-  infant_id uuid not null references public.infants(id) on delete cascade,
-  author_id uuid not null references public.profiles(id) on delete restrict,
-  note text not null check (char_length(note) <= 3000),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
 create table public.maternal_records (
   id uuid primary key default gen_random_uuid(),
   mother_id uuid not null references public.mothers(id) on delete cascade,
@@ -152,7 +143,6 @@ create index infants_mother_id_idx on public.infants(mother_id);
 create index caregiver_assignments_lookup_idx on public.caregiver_assignments(caregiver_id, mother_id) where status = 'approved';
 create index appointments_scheduled_at_idx on public.appointments(scheduled_at);
 create index care_tasks_infant_id_idx on public.care_tasks(infant_id);
-create index care_notes_infant_id_idx on public.care_notes(infant_id, created_at desc);
 
 create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$ begin new.updated_at = now(); return new; end; $$;
@@ -161,7 +151,6 @@ create trigger profiles_updated_at before update on public.profiles for each row
 create trigger mothers_updated_at before update on public.mothers for each row execute function public.set_updated_at();
 create trigger infants_updated_at before update on public.infants for each row execute function public.set_updated_at();
 create trigger appointments_updated_at before update on public.appointments for each row execute function public.set_updated_at();
-create trigger care_notes_updated_at before update on public.care_notes for each row execute function public.set_updated_at();
 
 -- New sign-ups receive a non-privileged mother profile. Promote admin/caregiver roles
 -- only from a trusted backend using the service-role key.
@@ -201,7 +190,6 @@ alter table public.infants enable row level security;
 alter table public.caregiver_assignments enable row level security;
 alter table public.appointments enable row level security;
 alter table public.care_tasks enable row level security;
-alter table public.care_notes enable row level security;
 alter table public.maternal_records enable row level security;
 alter table public.growth_records enable row level security;
 alter table public.vaccinations enable row level security;
@@ -223,10 +211,6 @@ create policy "appointments: admin manages" on public.appointments for all to au
 create policy "tasks: read linked" on public.care_tasks for select to authenticated using (public.can_access_infant(infant_id));
 create policy "tasks: caregiver completes linked" on public.care_tasks for update to authenticated using (public.is_caregiver() and public.can_access_infant(infant_id)) with check (public.is_caregiver() and public.can_access_infant(infant_id));
 create policy "tasks: admin manages" on public.care_tasks for all to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "notes: read linked" on public.care_notes for select to authenticated using (public.can_access_infant(infant_id));
-create policy "notes: caregiver creates linked" on public.care_notes for insert to authenticated with check (public.is_caregiver() and author_id = auth.uid() and public.can_access_infant(infant_id));
-create policy "notes: author updates" on public.care_notes for update to authenticated using (public.is_caregiver() and author_id = auth.uid()) with check (public.is_caregiver() and author_id = auth.uid() and public.can_access_infant(infant_id));
-create policy "notes: admin manages" on public.care_notes for all to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy "maternal records: read linked" on public.maternal_records for select to authenticated using (public.can_access_mother(mother_id));
 create policy "maternal records: admin manages" on public.maternal_records for all to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy "growth: read linked" on public.growth_records for select to authenticated using (public.can_access_infant(infant_id));

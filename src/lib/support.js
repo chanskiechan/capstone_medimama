@@ -17,7 +17,7 @@ export function assistantReply(question, data, user, availability = {}) {
   const scope = family(data, user), ids = [...scope.mothers, ...scope.infants].map(p => p.id);
   if (appointmentQuestion) {
     const next = data.appointments.filter(a => ids.includes(a.patientId) && Date.parse(`${a.date}T${a.time || '23:59'}:00+08:00`) >= Date.now() && !['Cancelled', 'Completed'].includes(a.status)).sort((a,b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))[0];
-    return { text: next ? `Your next recorded appointment is ${next.service} for ${next.patient}, ${next.date} at ${next.time} (Philippine time). Status: ${next.status}.` : 'No upcoming appointment is recorded. Open Appointments to request a visit.' };
+    return { text: next ? `Your next recorded appointment is ${next.service} for ${next.patient}, ${next.date} at ${next.time} (Philippine time). Status: ${next.status}.` : 'No upcoming appointment is recorded. The health center will schedule your next visit.' };
   }
   if (vaccineQuestion) {
     const reminders = dueReminders(data, user);

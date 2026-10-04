@@ -36,7 +36,7 @@ export function StoreProvider({ children }) {
       const next = normalize({ ...patients,
         mothers: patients.mothers.map(m => ({ ...m, accountId: links.find(l => l.mother_id === m.id)?.user_id })),
         caregivers: assignments.map(a => ({ ...a, accountId: a.caregiver_id, motherId: a.mother_id, status: a.status[0].toUpperCase() + a.status.slice(1) })),
-        appointments: appointments.map(a => ({ ...a, patientId: a.mother_id || a.infant_id, patient: [...patients.mothers, ...patients.infants].find(p => p.id === (a.mother_id || a.infant_id))?.name || 'Linked patient', ...appointmentDateTime(a.scheduled_at), status: a.status[0].toUpperCase() + a.status.slice(1) })),
+        appointments: appointments.map(a => ({ ...a, patientId: a.mother_id || a.infant_id, patient: [...patients.mothers, ...patients.infants].find(p => p.id === (a.mother_id || a.infant_id))?.name || 'Linked patient', ...appointmentDateTime(a.scheduled_at), motherConfirmedAt: a.mother_confirmed_at || null, status: a.status[0].toUpperCase() + a.status.slice(1) })),
       });
       currentData.current = next; setData(next); setStorageError('');
     } catch (error) {

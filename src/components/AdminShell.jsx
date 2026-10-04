@@ -21,9 +21,7 @@ export function AdminShell({ page, children }) {
       <div className="menu-item"><NavLink className={navClass} to="/dashboard"><i className="fas fa-home" /><span className="menu-text">Dashboard</span></NavLink></div>
       <div className={`menu-item has-submenu${patients ? ' open' : ''}`}><a className="menu-link" href="#patients" onClick={(e) => { e.preventDefault(); setCollapsed(false); setPatients(!patients); }}><i className="fas fa-users" /><span className="menu-text">Patient Management</span><i className="fas fa-chevron-down arrow" /></a><div className={`submenu${patients ? ' open' : ''}`}><NavLink className="submenu-link" to="/mothers"><i className="fas fa-female" /><span>Mother</span></NavLink><NavLink className="submenu-link" to="/infants"><i className="fas fa-baby" /><span>Infant</span></NavLink></div></div>
       <div className="menu-item"><NavLink className={navClass} to="/healthcare"><i className="fas fa-hospital" /><span className="menu-text">Healthcare Services</span></NavLink></div>
-      <div className="menu-item"><NavLink className={navClass} to="/caregiver-requests"><i className="fas fa-user-check" /><span className="menu-text">Caregiver Requests</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/reports"><i className="fas fa-chart-bar" /><span className="menu-text">Reports</span></NavLink></div>
-      <div className="menu-item"><NavLink className={navClass} to="/care-notes"><i className="fas fa-note-sticky" /><span className="menu-text">Caregiver notes</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/announcements"><i className="fas fa-bullhorn" /><span className="menu-text">Announcements</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/system"><i className="fas fa-cog" /><span className="menu-text">System Settings</span></NavLink></div>
     </nav>

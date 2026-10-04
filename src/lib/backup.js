@@ -1,4 +1,4 @@
-export const backupTables = ['mothers','infants','maternal_records','growth_records','vaccinations','infant_records','appointments','care_notes'];
+export const backupTables = ['mothers','infants','maternal_records','growth_records','vaccinations','infant_records','appointments'];
 export function validateBackup(value, project) {
   if (!value || value.format !== 'medimama-clinical' || value.version !== 1 || !value.tables || Array.isArray(value.tables)) throw Error('Choose a MediMama clinical backup file.');
   if (value.project !== project) throw Error('This backup belongs to a different Supabase project.');

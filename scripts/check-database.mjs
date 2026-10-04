@@ -16,6 +16,7 @@ try {
   await db.exec('grant select,insert,update,delete on all tables in schema public to authenticated;');
   await db.exec(await readFile('supabase/migrations/016_complete_care_features.sql','utf8'));
   await db.exec(await readFile('supabase/migrations/017_admin_tools.sql','utf8'));
+  await db.exec(await readFile('supabase/migrations/020_remove_care_notes.sql','utf8'));
   await db.exec(await readFile('supabase/migrations/018_caregiver_archive.sql','utf8'));
   const admin='10000000-0000-4000-8000-000000000001', mother='10000000-0000-4000-8000-000000000002', outsider='10000000-0000-4000-8000-000000000003';
   const patient='20000000-0000-4000-8000-000000000001';

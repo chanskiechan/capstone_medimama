@@ -1,6 +1,29 @@
 :root { --medimama-blue:#4d7cf4; --medimama-blue-dark:#315fcf; --medimama-pink:#f46aa0; --medimama-pink-dark:#e0588d; --medimama-ink:#2d4058; --medimama-muted:#63708a; --medimama-surface:#f5f8fd; font-family:Poppins,Arial,sans-serif; background:var(--medimama-surface); }
 * { box-sizing: border-box; }
 body { margin: 0; }
+form[data-validation-invalid]::before {
+  display: block;
+  margin: 0 0 2px;
+  padding: 10px 12px;
+  border: 1px solid #f3b5c4;
+  border-radius: 8px;
+  background: #fff0f3;
+  color: #a62c49;
+  content: 'Please fill up all required fields.';
+  font-size: 12px;
+  font-weight: 600;
+}
+form [data-validation-error="true"],
+form [aria-invalid="true"] { border-color: #d94d70 !important; }
+form label[data-validation-error]::after,
+form .mm-input[data-validation-error]::after {
+  display: block;
+  margin-top: 2px;
+  color: #c2385b;
+  content: attr(data-validation-error);
+  font-size: 11px;
+  font-weight: 500;
+}
 .caregiver-row-actions{display:grid;gap:9px;justify-items:start}.caregiver-detail-note{grid-column:1/-1;margin:0;color:#64748b;font-size:12px;line-height:1.5}
 #root { min-height: 100vh; }
 /* The admin sidebar CSS is loaded globally and otherwise locks the entire page

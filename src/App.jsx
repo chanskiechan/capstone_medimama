@@ -4,10 +4,8 @@ import Announcements from './pages/AnnouncementsManager';
 import MotherDashboard from './pages/MotherExperience';
 import FamilyPortal from './pages/FamilyPortal';
 import { Login } from './pages/Login';
-import CaregiverRequests from './pages/CaregiverRequests';
 import MotherProfile from './pages/MotherProfile';
 import CaregiverProfile from './pages/CaregiverProfile';
-import Reports from './pages/Reports';
 import Support from './pages/Support';
 import AdminReports from './pages/AdminReports';
 import AdminTools, { AdminProfile } from './pages/AdminTools';
@@ -43,9 +41,7 @@ export default function App() {
     <Route path="/announcements" element={admin(<Announcements />)} />
     <Route path="/system" element={admin(<AdminTools />)} />
     <Route path="/profile" element={admin(<AdminProfile />)} />
-    <Route path="/caregiver-requests" element={admin(<CaregiverRequests />)} />
     <Route path="/reports" element={admin(<AdminReports />)} />
-    <Route path="/care-notes" element={admin(<Reports />)} />
     <Route path="/health-concerns" element={admin(<Navigate to="/reports" replace />)} />
     <Route path="/archives" element={admin(<Navigate to="/system?tab=archives" replace />)} />
     <Route path="/support/:section" element={<ProtectedRoute roles={['mother','caregiver','admin']}><Support /></ProtectedRoute>} />
@@ -53,8 +49,8 @@ export default function App() {
     <Route path="/caregiver/profile" element={caregiver(<CaregiverProfile />)} />
     <Route path="/user" element={mother(<MotherDashboard />)} />
     <Route path="/user/profile" element={mother(<MotherProfile />)} />
-    <Route path="/user/appointments" element={mother(<FamilyPortal page="appointments" />)} />
-    <Route path="/user/infants" element={mother(<FamilyPortal page="infants" />)} />
+    <Route path="/user/appointments" element={mother(<Navigate to="/user" replace />)} />
+    <Route path="/user/infants" element={mother(<Navigate to="/user/records" replace />)} />
     <Route path="/user/records" element={mother(<FamilyPortal page="records" />)} />
     <Route path="*" element={<Navigate to="/login" replace />} />
   </Routes>;

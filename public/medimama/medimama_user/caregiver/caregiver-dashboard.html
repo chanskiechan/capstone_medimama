@@ -17,7 +17,6 @@
             <a class="active" href="#home"><i class="fa-solid fa-house"></i>Home</a>
             <a href="#schedule"><i class="fa-regular fa-calendar-days"></i>Schedule</a>
             <a href="#care-plan"><i class="fa-solid fa-list-check"></i>Care Plan</a>
-            <a href="#notes"><i class="fa-regular fa-note-sticky"></i>Care Notes</a>
         </nav>
         <div class="top-actions">
             <button class="bell" id="notificationButton" aria-label="Show notifications" aria-expanded="false"><i class="fa-regular fa-bell"></i><b>2</b></button>
@@ -34,7 +33,7 @@
         </section>
 
         <section class="summary" aria-label="Today's care summary">
-            <article><span class="circle blue"><i class="fa-solid fa-list-check"></i></span><div><strong id="taskCount">3</strong><small>Tasks for today</small></div></article>
+            <article><span class="circle blue"><i class="fa-solid fa-list-check"></i></span><div><strong id="taskCount">2</strong><small>Tasks for today</small></div></article>
             <article><span class="circle coral"><i class="fa-regular fa-calendar-check"></i></span><div><strong>1</strong><small>Upcoming appointment</small></div></article>
             <article><span class="circle green"><i class="fa-solid fa-check"></i></span><div><strong id="completedCount">1</strong><small>Tasks completed</small></div></article>
         </section>
@@ -47,7 +46,6 @@
                         <label class="task done"><input type="checkbox" checked><span class="checkmark"><i class="fa-solid fa-check"></i></span><span><strong>Morning feeding</strong><small>Completed at 7:15 AM</small></span><time>7:00 AM</time></label>
                         <label class="task"><input type="checkbox"><span class="checkmark"><i class="fa-solid fa-check"></i></span><span><strong>Give Vitamin D drops</strong><small>1 drop after feeding</small></span><time>8:00 PM</time></label>
                         <label class="task"><input type="checkbox"><span class="checkmark"><i class="fa-solid fa-check"></i></span><span><strong>Tummy time</strong><small>Supervised activity for 5–10 minutes</small></span><time>2:00 PM</time></label>
-                        <label class="task"><input type="checkbox"><span class="checkmark"><i class="fa-solid fa-check"></i></span><span><strong>Record feeding and diaper changes</strong><small>Update today's care notes</small></span><time>All day</time></label>
                     </div>
                 </section>
 
@@ -58,8 +56,7 @@
             </div>
 
             <aside>
-                <section class="card quick-card"><div class="section-heading"><div><p>Helpful tools</p><h2>Quick Actions</h2></div></div><div class="quick-actions"><button data-modal="careNote"><i class="fa-regular fa-pen-to-square"></i><span>Add care note</span></button><button data-modal="symptoms"><i class="fa-solid fa-heart-pulse"></i><span>Report symptom</span></button><button data-modal="contacts"><i class="fa-solid fa-phone"></i><span>Contact health worker</span></button><button data-modal="schedule"><i class="fa-regular fa-calendar-plus"></i><span>View schedule</span></button></div></section>
-                <section id="notes" class="card notes-card"><div class="section-heading"><div><p>Latest update</p><h2>Care Notes</h2></div><button data-modal="careNote">Add note</button></div><article><span><i class="fa-solid fa-bottle-droplet"></i></span><div><strong>Feeding went well this morning</strong><p>Finished 120 ml at 7:15 AM and burped comfortably.</p><small>Added by Juan &middot; Today, 7:30 AM</small></div></article><article><span class="peach"><i class="fa-solid fa-moon"></i></span><div><strong>Sleep update</strong><p>Slept from 10:00 PM to 2:30 AM.</p><small>Added by Shaina &middot; Yesterday</small></div></article></section>
+                <section class="card quick-card"><div class="section-heading"><div><p>Helpful tools</p><h2>Quick Actions</h2></div></div><div class="quick-actions"><button data-modal="symptoms"><i class="fa-solid fa-heart-pulse"></i><span>Report symptom</span></button><button data-modal="contacts"><i class="fa-solid fa-phone"></i><span>Contact health worker</span></button><button data-modal="schedule"><i class="fa-regular fa-calendar-plus"></i><span>View schedule</span></button></div></section>
                 <section class="emergency"><i class="fa-solid fa-triangle-exclamation"></i><div><strong>Need urgent help?</strong><span>For severe symptoms, contact your health center or emergency services immediately.</span></div><button data-modal="contacts">Get help</button></section>
             </aside>
         </section>

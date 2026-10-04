@@ -1,30 +1,9 @@
--- Run once AFTER migration 016. Additive; preserves existing patient records.
+-- Remove the caregiver observation feature and exclude it from clinical backups.
 begin;
-create table public.audit_events (
-  id uuid primary key default gen_random_uuid(), actor_id uuid,
-  entity text not null, record_id uuid, action text not null,
-  created_at timestamptz not null default now()
-);
-alter table public.audit_events enable row level security;
-create policy "admin reads audit" on public.audit_events for select to authenticated using(public.is_admin());
-grant select on public.audit_events to authenticated;
-revoke insert, update, delete on public.audit_events from anon, authenticated;
-create index audit_events_created_idx on public.audit_events(created_at desc);
-create function public.record_care_audit() returns trigger
-language plpgsql security definer set search_path=public as $$
-begin
-  insert into public.audit_events(actor_id,entity,record_id,action)
-  values(auth.uid(),tg_table_name,case when tg_op='DELETE' then old.id else new.id end,tg_op);
-  return null;
-end; $$;
-do $$ declare target text; begin
-  foreach target in array array['mothers','infants','maternal_records','growth_records','vaccinations','infant_records','appointments','health_concerns','caregiver_assignments','announcements','profiles'] loop
-    execute format('create trigger care_audit after insert or update or delete on public.%I for each row execute function public.record_care_audit()',target);
-  end loop;
-end; $$;
 
--- This is a clinical-record backup, not an export of authentication accounts.
-create function public.export_clinical_backup() returns jsonb
+drop table if exists public.care_notes cascade;
+
+create or replace function public.export_clinical_backup() returns jsonb
 language plpgsql stable security invoker set search_path=public as $$
 declare target text; rows_json jsonb; tables_json jsonb := '{}';
 begin
@@ -36,9 +15,7 @@ begin
   return jsonb_build_object('format','medimama-clinical','version',1,'exported_at',now(),'tables',tables_json);
 end; $$;
 
--- Restore missing IDs only. Existing records are never overwritten or deleted.
--- All inserts run in one transaction: invalid references roll the entire restore back.
-create function public.restore_clinical_backup(backup_json jsonb) returns jsonb
+create or replace function public.restore_clinical_backup(backup_json jsonb) returns jsonb
 language plpgsql security invoker set search_path=public as $$
 declare target text; affected integer; totals jsonb := '{}';
   allowed text[] := array['mothers','infants','maternal_records','growth_records','vaccinations','infant_records','appointments'];
@@ -56,8 +33,10 @@ begin
   end loop;
   return totals;
 end; $$;
+
 revoke all on function public.export_clinical_backup() from public,anon;
 revoke all on function public.restore_clinical_backup(jsonb) from public,anon;
 grant execute on function public.export_clinical_backup() to authenticated;
 grant execute on function public.restore_clinical_backup(jsonb) to authenticated;
+
 commit;

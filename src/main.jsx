@@ -3,12 +3,13 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { StoreProvider } from './store';
 import { supabaseConfigured } from './lib/supabase';
+import FormValidation from './components/FormValidation';
 import './styles.css';
 import './layout.css';
 
 createRoot(document.getElementById('root')).render(
   supabaseConfigured ? (
-    <BrowserRouter><StoreProvider><App /></StoreProvider></BrowserRouter>
+    <BrowserRouter><StoreProvider><FormValidation /><App /></StoreProvider></BrowserRouter>
   ) : (
     <main role="alert" style={{ maxWidth: 640, margin: '64px auto', padding: 24, background: 'white', color: '#243530' }}>
       <h1>MediMama setup required</h1>

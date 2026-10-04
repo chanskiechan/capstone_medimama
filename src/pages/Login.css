@@ -25,3 +25,6 @@
 .mm-otp>p .fa-solid{margin-right:5px}
 
 .mm-demo{margin-top:22px;padding-top:18px;border-top:1px solid #e5ebf3;text-align:center}.mm-demo>p{margin:0;color:#2d4058;font-size:14px;font-weight:600}.mm-demo>span{display:block;margin:3px 0 13px;color:#63708a;font-size:12px}.mm-demo>div{display:flex;flex-wrap:wrap;gap:10px}.mm-demo button{display:flex;flex:1 1 160px;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px;border:1px solid #d6e2fb;border-radius:10px;background:#f3f7ff;color:#315fcf;font-size:13px;font-weight:600;cursor:pointer}.mm-demo button:hover{background:#e7efff}
+.mm-signup .mm-role>div{grid-template-columns:1fr}.mm-signup .mm-role>div>label:nth-child(2){display:none}
+.mm-signup .mm-names{grid-template-columns:1fr}
+.mm-signup .mm-role>div>label:first-child b{font-size:0}.mm-signup .mm-role>div>label:first-child b::after{content:'Mothers';font-size:12px}.mm-signup>.mm-subtitle{font-size:0}.mm-signup>.mm-subtitle::after{content:'MOTHERS REGISTRATION';font-size:12px}
