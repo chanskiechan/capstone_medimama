@@ -18,7 +18,8 @@ export default function ManageAppointment({ appointment }) {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const confirmed = appointment.status === 'Confirmed' || Boolean(appointment.motherConfirmedAt || appointment.mother_confirmed_at);
-  const waitingForApproval = appointment.status === 'Rescheduled';
+  const pending = !confirmed && ['Pending', 'Scheduled', 'Approved'].includes(appointment.status);
+  const rescheduled = appointment.status === 'Rescheduled';
 
   useEffect(() => { setTime(appointment.time || ''); }, [appointment.id, appointment.time]);
 
@@ -49,7 +50,7 @@ export default function ManageAppointment({ appointment }) {
       if (problem) { setBusy(false); return setError(problem.message); }
     }
     updateLocalAppointment({ time, status: 'Rescheduled', motherConfirmedAt: null });
-    setRescheduling(false); setBusy(false); setNotice('Reschedule request sent to the health center.');
+    setRescheduling(false); setBusy(false); setNotice('Appointment rescheduled.');
     await refreshPatientData?.();
   };
 
@@ -58,10 +59,10 @@ export default function ManageAppointment({ appointment }) {
     {notice && <p className="care-success" role="status">{notice}</p>}
     {error && <p className="care-error" role="alert">{error}</p>}
     {!rescheduling ? <div className="manage-appointment-actions">
-      {!confirmed && !waitingForApproval && <button type="button" onClick={confirm} disabled={busy}>{busy ? 'Saving...' : 'Confirm'}</button>}
+      {pending && <button type="button" onClick={confirm} disabled={busy}>{busy ? 'Saving...' : 'Confirm'}</button>}
       {confirmed && <span className="care-badge">Confirmed</span>}
-      {waitingForApproval && <span className="care-badge">Reschedule requested</span>}
-      {!waitingForApproval && <button type="button" onClick={() => { setError(''); setNotice(''); setRescheduling(true); }} disabled={busy}>Reschedule</button>}
+      {rescheduled && <span className="care-badge">Rescheduled</span>}
+      {pending && <button type="button" onClick={() => { setError(''); setNotice(''); setRescheduling(true); }} disabled={busy}>Reschedule</button>}
     </div> : <form className="manage-appointment-form" onSubmit={reschedule}>
       <label>Choose a new time<select value={time} onChange={event => setTime(event.target.value)} required>{timeOptions(appointment).map(option => <option key={option}>{option}</option>)}</select></label>
       <div className="manage-appointment-actions"><button type="button" onClick={() => setRescheduling(false)} disabled={busy}>Cancel</button><button type="submit" disabled={busy}>{busy ? 'Saving...' : 'Submit reschedule'}</button></div>

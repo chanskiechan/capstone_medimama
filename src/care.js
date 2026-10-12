@@ -46,6 +46,9 @@ export function appointmentError(data, item, now = today()) {
   if (infant?.status === 'Pending approval') return 'Infant registration must be approved before booking.';
   if (item.service === 'Prenatal Checkup' && mother.status === 'Postnatal') return 'This mother needs a postnatal appointment.';
   if (item.service === 'Postnatal Checkup' && mother.status !== 'Postnatal') return 'Delivery must be recorded before booking postnatal care.';
+  const activeStatuses = new Set(['pending', 'scheduled', 'approved', 'rescheduled', 'confirmed']);
+  const activeAppointment = data.appointments.find(a => a.id !== item.id && a.patientId === item.patientId && a.date >= now && activeStatuses.has(String(a.status || '').toLowerCase()));
+  if (activeAppointment) return 'Wait until the current appointment date has passed before booking another.';
   if (!Number.isFinite(day(item.date)) || item.date < now) return 'Choose today or a future date.';
   if (new Date(day(item.date)).getUTCDay() !== 3) return 'Clinic appointments are available on Wednesdays only.';
   const start = serviceGroup(item.service) === 'infant' ? '08:00' : '10:00';

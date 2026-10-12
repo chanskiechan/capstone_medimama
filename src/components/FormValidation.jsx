@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
-const message = 'Please fill up this required field.';
+const requiredMessage = 'This field is required.';
+const invalidMessage = 'Please enter a valid value.';
 const registrationRequired = new Set(['firstName', 'lastName', 'address', 'birthdate', 'contact', 'email', 'validId', 'password', 'confirmPassword', 'terms', 'relationship', 'linkedPatient', 'emergency', 'caregiverConsent']);
 
 function validationHost(field) {
@@ -15,7 +16,7 @@ function clearField(field) {
 
 function markField(field) {
   field.setAttribute('data-validation-error', 'true');
-  validationHost(field)?.setAttribute('data-validation-error', message);
+  validationHost(field)?.setAttribute('data-validation-error', isEmpty(field) ? requiredMessage : invalidMessage);
   field.setAttribute('aria-invalid', 'true');
 }
 
@@ -48,6 +49,11 @@ function resetForm(form) {
 
 export default function FormValidation() {
   useEffect(() => {
+    const syncRegistrationRequirements = () => {
+      document.querySelectorAll('.mm-signup input[name], .mm-signup select[name], .mm-signup textarea[name]').forEach(field => {
+        if (registrationRequired.has(field.name)) field.required = true;
+      });
+    };
     const onInvalid = event => {
       const field = event.target;
       if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) || !field.form) return;
@@ -76,11 +82,15 @@ export default function FormValidation() {
     document.addEventListener('input', onInput, true);
     document.addEventListener('change', onInput, true);
     document.addEventListener('click', onClick, true);
+    syncRegistrationRequirements();
+    const observer = new MutationObserver(syncRegistrationRequirements);
+    observer.observe(document.body, { childList: true, subtree: true });
     return () => {
       document.removeEventListener('invalid', onInvalid, true);
       document.removeEventListener('input', onInput, true);
       document.removeEventListener('change', onInput, true);
       document.removeEventListener('click', onClick, true);
+      observer.disconnect();
     };
   }, []);
 

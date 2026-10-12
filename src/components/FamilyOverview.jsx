@@ -12,6 +12,8 @@ function remindersFor(infants) {
   });
 }
 
+const appointmentStatus = status => ({ Scheduled: 'Pending', Approved: 'Pending' }[status] || status);
+
 function ReminderCard({ reminders, infantsLink }) {
   return <article className="care-card"><h2>Reminders</h2>{reminders.length ? <ul className="overview-reminders">{reminders.map(reminder => <li key={reminder.id}>{reminder.text}</li>)}</ul> : <p>No pending infant reminders.</p>}<p className="care-muted">Wednesday clinic: infant services from 8 AM, maternal care from 10 AM. Both close at 5 PM.</p><Link to={infantsLink}>View immunization details →</Link></article>;
 }
@@ -33,7 +35,7 @@ export default function FamilyOverview({ caregiver = false, showReminders = true
         <article className="care-card">
           <span className="overview-icon"><i className="fa-solid fa-calendar-days" aria-hidden="true" /></span>
           <h2>Next appointment</h2>
-          {next ? <><h3>{next.date} at {next.time}</h3><p>{next.patient} · {next.service}</p><span className="care-badge">{next.status}</span>{!caregiver && <ManageAppointment appointment={next} />}</> : <><p>No upcoming appointments.</p><p className="care-muted">Appointments are scheduled by the health center.</p></>}
+          {next ? <><h3>{next.date} at {next.time}</h3><p>{next.patient} · {next.service}</p><span className="care-badge">{appointmentStatus(next.status)}</span>{!caregiver && <ManageAppointment appointment={next} />}</> : <><p>No upcoming appointments.</p><p className="care-muted">Appointments are scheduled by the health center.</p></>}
         </article>
         <article className="care-card"><span className="overview-icon"><i className="fa-solid fa-heart-pulse" aria-hidden="true" /></span><h2>Maternal care</h2>{scope.mothers.map(mother => { const stage = pregnancy(mother); return <div key={mother.id}><h3>{mother.name}</h3><p>{stage.label}{stage.weeks !== null ? ` · ${stage.weeks} weeks` : ''}{mother.deliveryDate ? ` · Delivered ${mother.deliveryDate}` : ''}</p></div>; })}<Link to={recordsLink}>View maternal records →</Link></article>
         <article className="care-card"><span className="overview-icon"><i className="fa-solid fa-baby" aria-hidden="true" /></span><h2>{caregiver ? 'Linked infants' : 'My infants'}</h2><h3>{scope.infants.length} {scope.infants.length === 1 ? 'infant' : 'infants'}</h3><p>{scope.infants.map(infant => infant.name).join(', ') || 'No infants registered yet.'}</p><Link to={infantsLink}>{caregiver ? 'View infant records' : 'View infant records'} →</Link></article>

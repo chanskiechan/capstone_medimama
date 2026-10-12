@@ -28,6 +28,13 @@ test('rescheduling excludes itself and cancelled appointments release capacity',
   data.appointments = [{ ...appointment, id: 'other', status: 'Cancelled' }];
   assert.equal(appointmentError(data, appointment, '2099-01-01'), '');
 });
+test('blocks a new appointment until the patient current appointment date passes', () => {
+  const data = base();
+  data.appointments = [{ ...appointment, id: 'current', date: '2099-01-14', status: 'Confirmed' }];
+  assert.match(appointmentError(data, { ...appointment, date: '2099-01-21' }, '2099-01-01'), /current appointment date/);
+  data.appointments = [{ ...appointment, id: 'current', date: '2089-01-14', status: 'Confirmed' }];
+  assert.equal(appointmentError(data, { ...appointment, date: '2099-01-21' }, '2099-01-01'), '');
+});
 test('blocks duplicate patient services and full time slots', () => {
   const data = base(); data.appointments = [{ ...appointment, id: 'other' }];
   assert.match(appointmentError(data, appointment, '2099-01-01'), /already/);

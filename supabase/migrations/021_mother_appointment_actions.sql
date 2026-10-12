@@ -6,12 +6,100 @@ begin;
 alter table public.appointments
   add column if not exists mother_confirmed_at timestamptz;
 
+-- RLS policies that compare status must be recreated after the enum-to-text
+-- conversion below. This keeps the migration safe on databases with the
+-- mother and caregiver appointment policies already installed.
+drop policy if exists "appointments: mothers book linked" on public.appointments;
+drop policy if exists "appointments: mothers reschedule linked" on public.appointments;
+drop policy if exists "appointments: caregivers book linked" on public.appointments;
+drop policy if exists "appointments: caregivers reschedule own linked" on public.appointments;
+
+-- The original schema used an enum that did not include the mother-response
+-- states. Store appointment status as text so the workflow can use pending,
+-- confirmed, and rescheduled explicitly.
+alter table public.appointments
+  alter column status drop default;
+
+alter table public.appointments
+  alter column status type text using status::text;
+
+alter table public.appointments
+  alter column status set default 'pending';
+
+update public.appointments
+set status = 'pending'
+where status in ('scheduled', 'approved');
+
 alter table public.appointments
   drop constraint if exists appointments_status_check;
 
 alter table public.appointments
   add constraint appointments_status_check
-  check (status in ('pending', 'scheduled', 'rescheduled', 'approved', 'confirmed', 'completed', 'cancelled'));
+  check (status in ('pending', 'rescheduled', 'confirmed', 'completed', 'cancelled'));
+
+create policy "appointments: mothers book linked"
+on public.appointments for insert to authenticated
+with check (
+  public.is_mother()
+  and created_by = auth.uid()
+  and status = 'pending'
+  and (
+    (mother_id is not null and public.can_access_mother(mother_id))
+    or (infant_id is not null and public.can_access_infant(infant_id))
+  )
+);
+
+create policy "appointments: mothers reschedule linked"
+on public.appointments for update to authenticated
+using (
+  public.is_mother()
+  and created_by = auth.uid()
+  and (
+    (mother_id is not null and public.can_access_mother(mother_id))
+    or (infant_id is not null and public.can_access_infant(infant_id))
+  )
+)
+with check (
+  public.is_mother()
+  and created_by = auth.uid()
+  and status = 'pending'
+  and (
+    (mother_id is not null and public.can_access_mother(mother_id))
+    or (infant_id is not null and public.can_access_infant(infant_id))
+  )
+);
+
+create policy "appointments: caregivers book linked"
+on public.appointments for insert to authenticated
+with check (
+  public.is_caregiver()
+  and created_by = auth.uid()
+  and status = 'pending'
+  and (
+    (mother_id is not null and public.can_access_mother(mother_id))
+    or (infant_id is not null and public.can_access_infant(infant_id))
+  )
+);
+
+create policy "appointments: caregivers reschedule own linked"
+on public.appointments for update to authenticated
+using (
+  public.is_caregiver()
+  and created_by = auth.uid()
+  and (
+    (mother_id is not null and public.can_access_mother(mother_id))
+    or (infant_id is not null and public.can_access_infant(infant_id))
+  )
+)
+with check (
+  public.is_caregiver()
+  and created_by = auth.uid()
+  and status = 'pending'
+  and (
+    (mother_id is not null and public.can_access_mother(mother_id))
+    or (infant_id is not null and public.can_access_infant(infant_id))
+  )
+);
 
 create or replace function public.confirm_my_appointment(target_appointment_id uuid)
 returns void
@@ -50,7 +138,7 @@ begin
   set status = 'confirmed',
       mother_confirmed_at = now()
   where id = target_id
-    and status::text in ('approved', 'scheduled', 'rescheduled');
+    and status = 'pending';
 
   if not found then
     raise exception 'This appointment cannot be confirmed';
@@ -99,7 +187,7 @@ begin
   if target.id is null then
     raise exception 'Appointment not found or not linked to your account';
   end if;
-  if target.status::text not in ('approved', 'scheduled', 'rescheduled', 'confirmed') then
+  if target.status <> 'pending' then
     raise exception 'This appointment cannot be rescheduled';
   end if;
 
