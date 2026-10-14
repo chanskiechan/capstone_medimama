@@ -1,7 +1,7 @@
 export function hydratePatients(mothers, infants, maternal, growth, vaccines, infantRecords) {
   return {
     mothers: mothers.map(m => ({ ...m, ...m.care_plan, name: m.full_name, recordCode: m.record_code,
-      archived: m.status === 'archived', status: m.maternal_status === 'postnatal' ? 'Postnatal' : 'Pregnant',
+      archived: m.status === 'archived', approvalStatus: m.status, status: m.maternal_status === 'postnatal' ? 'Postnatal' : 'Pregnant',
       contact: m.contact_number, gestationWeeks: m.gestation_weeks, gestationDate: m.gestation_date, deliveryDate: m.delivery_date,
       records: maternal.filter(r => r.mother_id === m.id).map(r => ({ ...r, date: r.record_date, type: r.record_type })) })),
     infants: infants.map(i => ({ ...i, name: i.full_name, recordCode: i.record_code, motherId: i.mother_id,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useParams } from 'react-router-dom';
+import { Link, NavLink, Navigate, useParams } from 'react-router-dom';
 import { AdminShell } from '../components/AdminShell';
 import { FamilyHeader } from './FamilyPortal';
 import { PageStyles } from '../components/PageStyles';
@@ -12,13 +12,14 @@ import './Support.css';
 import ConcernReports from './ConcernReports';
 
 export function SupportNav() {
-  return <nav className="support-nav" aria-label="Family support">{[['education','Health education'],['concerns','Reports'],['notifications','Notifications'],['assistant','Health assistant']].map(([path,label]) => <NavLink key={path} to={`/support/${path}`}>{label}</NavLink>)}</nav>;
+  return <nav className="support-nav" aria-label="Family support">{[['education','Health education'],['concerns','Reports'],['notifications','Notifications']].map(([path,label]) => <NavLink key={path} to={`/support/${path}`}>{label}</NavLink>)}</nav>;
 }
 
 export default function Support({ admin = false, view }) {
   const params = useParams(), section = view || params.section || 'education';
   const { storageError } = useStore();
-  const content = <main className={admin ? 'main-content directory-page' : 'family-page'}><h1>{({ education: 'Health education', concerns: 'Reports', notifications: 'Notifications', assistant: 'MediMama Health Assistant', archives: 'Patient archives', reports: 'Healthcare reports' })[section] || 'Family support'}</h1>{!admin && <SupportNav />}{storageError && <p role="alert" className="support-message">{storageError}</p>}{section === 'education' ? <Education /> : section === 'concerns' ? <ConcernReports admin={admin || session().role === 'admin'} /> : section === 'notifications' ? <Notifications /> : section === 'assistant' ? <Assistant />  : section === 'reports' ? <HealthcareReports /> : <p>Choose a support page above.</p>}</main>;
+  if (section === 'assistant') return <Navigate to="/support/education" replace />;
+  const content = <main className={admin ? 'main-content directory-page' : 'family-page'}><h1>{({ education: 'Health education', concerns: 'Reports', notifications: 'Notifications', archives: 'Patient archives', reports: 'Healthcare reports' })[section] || 'Family support'}</h1>{!admin && <SupportNav />}{storageError && <p role="alert" className="support-message">{storageError}</p>}{section === 'education' ? <Education /> : section === 'concerns' ? <ConcernReports admin={admin || session().role === 'admin'} /> : section === 'notifications' ? <Notifications /> : section === 'reports' ? <HealthcareReports /> : <p>Choose a support page above.</p>}</main>;
   return admin ? <AdminShell page="reports">{content}</AdminShell> : <><PageStyles page="user" /><FamilyHeader />{content}</>;
 }
 

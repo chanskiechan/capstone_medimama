@@ -30,7 +30,7 @@ export default function FamilyOverview({ caregiver = false, showReminders = true
 
   return <section className="care-workspace family-overview" aria-label="Family care overview">
     {storageError && <p role="alert" className="care-error">{storageError}</p>}
-    {!ids.length ? <p className="care-empty">No linked records yet. Your health center can link your account to the correct family.</p> : <>
+    {ids.length > 0 && <>
       <div className="family-overview-grid">
         <article className="care-card">
           <span className="overview-icon"><i className="fa-solid fa-calendar-days" aria-hidden="true" /></span>

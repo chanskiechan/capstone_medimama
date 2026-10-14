@@ -8,7 +8,13 @@ import { session } from '../care';
 import { supabase } from '../lib/supabase';
 import { useStore } from '../store';
 import { dueReminders } from '../lib/support';
+import { Assistant } from './Support';
 import './FamilyHeader.css';
+
+function AssistantWidget() {
+  const [open, setOpen] = useState(false);
+  return <aside className={`assistant-widget${open ? ' open' : ''}`} aria-label="MediMama Assistant">{open && <section className="assistant-window"><header><strong>MediMama Assistant</strong><button type="button" onClick={() => setOpen(false)} aria-label="Close assistant">×</button></header><Assistant /></section>}<button type="button" className="assistant-launcher" onClick={() => setOpen(!open)}><i className="fa-solid fa-robot" /><span>Chat with us</span></button></aside>;
+}
 
 export function FamilyHeader() {
   const user = session(), navigate = useNavigate();
@@ -72,7 +78,7 @@ export function FamilyHeader() {
   const photo = avatarUrl ? <img className="header-avatar-image" src={avatarUrl} alt="" /> : initials;
   const reminders = dueReminders(data, user);
   const hasUnread = notifications.some(item => !item.read_at) || announcements.length > 0 || reminders.length > 0;
-  return <header className="app-header family-header">
+  return <><header className="app-header family-header">
     <Link className="family-brand" to={caregiver ? '/caregiver' : '/user'} aria-label="MediMama home"><img src="/medimama/medimamalogo.png" alt="MediMama" /></Link>
     <nav className="family-navigation" aria-label="Main navigation">
       {links.map(([to, icon, label]) => <NavLink key={to} to={to} end className="family-nav-item"><i className={'fa-solid fa-' + icon} aria-hidden="true" /><span>{label}</span></NavLink>)}
@@ -99,7 +105,7 @@ export function FamilyHeader() {
         <div className="family-profile-menu"><p>My account</p><Link to={caregiver ? '/caregiver/profile' : '/user/profile'}><i className="fa-solid fa-user" aria-hidden="true" />View profile</Link><button type="button" onClick={logout}><i className="fa-solid fa-arrow-right-from-bracket" aria-hidden="true" />Log out</button>{logoutError && <p role="alert">{logoutError}</p>}</div>
       </details>
     </div>
-  </header>;
+  </header>{!caregiver && <AssistantWidget />}</>;
 }
 
 export default function FamilyPortal({ page }) {

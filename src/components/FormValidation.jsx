@@ -67,6 +67,9 @@ export default function FormValidation() {
     const onInput = event => {
       const field = event.target;
       if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) || !field.form) return;
+      if (field.form.closest('.mm-signup') && (field.name === 'contact' || field.name === 'emergency')) {
+        field.value = field.value.replace(/\D/g, '').slice(0, 10);
+      }
       if (!isInvalid(field, field.form)) clearField(field);
       const hasInvalid = Array.from(field.form.querySelectorAll('input, select, textarea')).some(control => isInvalid(control, field.form));
       if (!hasInvalid) clearForm(field.form);
