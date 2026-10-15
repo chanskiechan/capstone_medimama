@@ -18,12 +18,12 @@ export function StoreProvider({ children }) {
       const { data: auth, error: authError } = await supabase.auth.getUser();
       if (authError) throw authError;
       if (!auth.user) { currentData.current = empty(); setData(empty()); return; }
-      const tables = ['mothers', 'infants', 'mother_accounts', 'caregiver_assignments', 'appointments', 'maternal_records', 'growth_records', 'vaccinations', 'infant_records'];
+      const tables = ['mothers', 'infants', 'mother_accounts', 'caregiver_assignments', 'appointments', 'appointment_change_requests', 'maternal_records', 'growth_records', 'vaccinations', 'infant_records'];
       const results = await Promise.all(tables.map(async table => {
         const rows = [];
         for (let offset = 0; ; offset += 500) {
           const result = await supabase.from(table).select('*').order(table === 'mother_accounts' ? 'mother_id' : 'id').range(offset, offset + 499);
-          if (result.error) return result;
+          if (result.error) return table === 'appointment_change_requests' ? { data: [] } : result;
           rows.push(...result.data);
           if (result.data.length < 500) return { data: rows };
         }
@@ -31,9 +31,9 @@ export function StoreProvider({ children }) {
       const problem = results.find(result => result.error);
       if (problem) throw problem.error;
       if (version !== requestVersion.current || session().demo) return;
-      const [mothers, infants, links, assignments, appointments, maternal, growth, vaccinations, infantRecords] = results.map(r => r.data || []);
+      const [mothers, infants, links, assignments, appointments, appointmentRequests, maternal, growth, vaccinations, infantRecords] = results.map(r => r.data || []);
       const patients = hydratePatients(mothers, infants, maternal, growth, vaccinations, infantRecords);
-      const next = normalize({ ...patients,
+      const next = normalize({ ...patients, appointmentRequests,
         mothers: patients.mothers.map(m => ({ ...m, accountId: links.find(l => l.mother_id === m.id)?.user_id })),
         caregivers: assignments.map(a => ({ ...a, accountId: a.caregiver_id, motherId: a.mother_id, status: a.status[0].toUpperCase() + a.status.slice(1) })),
         appointments: appointments.map(a => ({ ...a, patientId: a.mother_id || a.infant_id, patient: [...patients.mothers, ...patients.infants].find(p => p.id === (a.mother_id || a.infant_id))?.name || 'Linked patient', ...appointmentDateTime(a.scheduled_at), motherConfirmedAt: a.mother_confirmed_at || null, status: a.status[0].toUpperCase() + a.status.slice(1) })),

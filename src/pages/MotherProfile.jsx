@@ -10,9 +10,8 @@ export default function MotherProfile() {
   const user = session();
   const { refreshPatientData } = useStore();
   const [profile, setProfile] = useState({ full_name: user.name || '', phone: '', avatar_url: '' });
-  const [mother, setMother] = useState({ full_name: user.name || '', address: '', maternal_status: 'pregnant', delivery_date: '' });
+  const [mother, setMother] = useState({ full_name: user.name || '', birth_date: '', contact_number: '', address: '', maternal_status: 'pregnant', gestation_date: '', gestation_weeks: null, delivery_date: '' });
   const [editing, setEditing] = useState(false);
-  const [editingStatus, setEditingStatus] = useState('pregnant');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -21,14 +20,17 @@ export default function MotherProfile() {
     const load = async () => {
       const { data: profileData } = await supabase.from('profiles').select('full_name, phone, avatar_url').eq('id', user.id).single();
       const { data: link } = await supabase.from('mother_accounts').select('mother_id').eq('user_id', user.id).maybeSingle();
-      const { data: motherData } = link ? await supabase.from('mothers').select('full_name, address, maternal_status, delivery_date').eq('id', link.mother_id).single() : { data: null };
+      const { data: motherData } = link ? await supabase.from('mothers').select('full_name, birth_date, contact_number, address, maternal_status, gestation_date, gestation_weeks, delivery_date').eq('id', link.mother_id).single() : { data: null };
       if (!active) return;
       if (profileData) {
         const savedPhone = profileData.phone || '';
         const phone = /^9\d{9}$/.test(savedPhone) ? `0${savedPhone}` : savedPhone;
         setProfile(current => ({ ...current, ...profileData, phone, full_name: profileData.full_name || user.name || '' }));
       }
-      if (motherData) setMother(current => ({ ...current, ...motherData, full_name: motherData.full_name || user.name || '', maternal_status: motherData.maternal_status || 'pregnant', delivery_date: motherData.delivery_date || '' }));
+      if (motherData) {
+        setMother(current => ({ ...current, ...motherData, full_name: motherData.full_name || user.name || '', maternal_status: motherData.maternal_status || 'pregnant', birth_date: motherData.birth_date || '', contact_number: motherData.contact_number || '', gestation_date: motherData.gestation_date || '', delivery_date: motherData.delivery_date || '' }));
+        setProfile(current => ({ ...current, phone: current.phone || motherData.contact_number || '' }));
+      }
     };
     load();
     return () => { active = false; };
@@ -38,7 +40,11 @@ export default function MotherProfile() {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(event.currentTarget));
     setBusy(true);
-    const expectedDeliveryDate = values.maternal_status === 'pregnant' ? values.delivery_date || null : null;
+    if (values.maternal_status !== mother.maternal_status) {
+      setBusy(false);
+      return setNotice('Maternal status and delivery date are updated by the health center after a clinical assessment.');
+    }
+    const expectedDeliveryDate = values.maternal_status === 'pregnant' ? values.delivery_date || null : mother.delivery_date || null;
     let { error } = await supabase.rpc('update_my_mother_profile', { new_full_name: values.full_name, new_address: values.address, new_phone: values.phone, new_maternal_status: values.maternal_status, new_delivery_date: expectedDeliveryDate });
     // Existing projects may still have the earlier four-argument RPC in the
     // PostgREST schema cache. Save through it, then update the contact number.
@@ -60,7 +66,7 @@ export default function MotherProfile() {
     // page waits for the periodic refresh before it sees Postnatal status.
     await refreshPatientData?.();
     setBusy(false);
-    const next = { full_name: values.full_name.trim(), address: values.address.trim(), maternal_status: values.maternal_status, delivery_date: expectedDeliveryDate || '' };
+    const next = { ...mother, full_name: values.full_name.trim(), address: values.address.trim(), contact_number: values.phone, maternal_status: values.maternal_status, delivery_date: expectedDeliveryDate || '' };
     setMother(next); setProfile(current => ({ ...current, full_name: next.full_name, phone: values.phone }));
     localStorage.setItem('medimama-current-session', JSON.stringify({ ...user, name: next.full_name }));
     setEditing(false); setNotice('Profile and maternal status updated.');
@@ -81,6 +87,6 @@ export default function MotherProfile() {
   const displayName = profile.full_name || mother.full_name || user.name || 'Mother';
   const initials = displayName.split(' ').filter(Boolean).map(name => name[0]).join('').slice(0, 2) || 'M';
   const maternalLabel = mother.maternal_status === 'postnatal' ? 'Postnatal' : 'Prenatal';
-  const contactLabel = profile.phone || 'Not recorded';
-  return <><PageStyles page="user" /><FamilyHeader /><main className="family-page mother-profile-page"><header><div><p>MediMama care</p><h1>My profile</h1><span>Update your contact details, profile photo, and maternal status.</span></div><button className="family-primary" onClick={() => { setNotice(''); setEditingStatus(mother.maternal_status || 'pregnant'); setEditing(true); }}><i className="fa-solid fa-pen" /> Edit profile</button></header>{notice && <p className="mother-profile-notice">{notice}</p>}<section className="mother-profile-card"><div className="mother-avatar-wrap">{profile.avatar_url ? <img src={profile.avatar_url} alt="Profile" /> : <span>{initials}</span>}<label className="mother-avatar-edit"><i className="fa-solid fa-camera" /><input type="file" accept="image/png,image/jpeg,image/webp" onChange={upload} disabled={busy} /></label></div><div><h2>{displayName}</h2><p>Mother account · <b>{maternalLabel}</b></p><small>PNG, JPEG, or WebP · maximum 2 MB</small></div></section><section className="mother-details-card"><h2>Profile details</h2><div className="mother-details-grid"><label>Full name<input value={displayName} readOnly /></label><label>Email address<input value={user.email || 'Not recorded'} readOnly /></label><label>Contact number<input value={contactLabel} readOnly /></label><label>Address<input value={mother.address || 'Not recorded'} readOnly /></label><label>Maternal status<input value={maternalLabel} readOnly /></label>{mother.maternal_status === 'pregnant' && <label>Expected delivery date<input value={mother.delivery_date || 'Not recorded'} readOnly /></label>}</div></section>{editing && <div className="mother-profile-modal" onMouseDown={event => event.target === event.currentTarget && !busy && setEditing(false)}><form onSubmit={saveDetails}><button className="mother-profile-close" type="button" onClick={() => setEditing(false)} aria-label="Close">×</button><p>MediMama care</p><h2>Edit profile</h2><label>Full name<input name="full_name" defaultValue={mother.full_name || displayName} required /></label><label>Philippine mobile number<input name="phone" defaultValue={profile.phone || ''} onInput={event => { event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 11); }} placeholder="09XXXXXXXXX" inputMode="numeric" pattern="09[0-9]{9}" required /><small>Enter 11 digits starting with 09.</small></label><label>Address<input name="address" defaultValue={mother.address || ''} placeholder="House no., street, subdivision, or landmark" /></label><label>Maternal status<select name="maternal_status" value={editingStatus} onChange={event => setEditingStatus(event.target.value)}><option value="pregnant">Prenatal</option><option value="postnatal">Postnatal</option></select></label>{editingStatus === 'pregnant' && <label>Expected delivery date <small>Required for Prenatal</small><input name="delivery_date" type="date" min={today()} defaultValue={mother.delivery_date || ''} required /></label>}<div className="mother-profile-actions"><button type="button" className="mother-profile-cancel" onClick={() => setEditing(false)} disabled={busy}>Cancel</button><button className="family-primary" disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button></div></form></div>}</main></>;
+  const contactLabel = profile.phone || mother.contact_number || 'Not recorded';
+  return <><PageStyles page="user" /><FamilyHeader /><main className="family-page mother-profile-page"><header><div><p>MediMama care</p><h1>My profile</h1><span>Update your contact details, profile photo, and personal information.</span></div><button className="family-primary" onClick={() => { setNotice(''); setEditing(true); }}><i className="fa-solid fa-pen" /> Edit profile</button></header>{notice && <p className="mother-profile-notice">{notice}</p>}<section className="mother-profile-card"><div className="mother-avatar-wrap">{profile.avatar_url ? <img src={profile.avatar_url} alt="Profile" /> : <span>{initials}</span>}<label className="mother-avatar-edit"><i className="fa-solid fa-camera" /><input type="file" accept="image/png,image/jpeg,image/webp" onChange={upload} disabled={busy} /></label></div><div><h2>{displayName}</h2><p>Mother account · <b>{maternalLabel}</b></p><small>PNG, JPEG, or WebP · maximum 2 MB</small></div></section><section className="mother-details-card"><h2>Profile details</h2><div className="mother-details-grid"><label>Full name<input value={displayName} readOnly /></label><label>Email address<input value={user.email || 'Not recorded'} readOnly /></label><label>Contact number<input value={contactLabel} readOnly /></label><label>Address<input value={mother.address || 'Not recorded'} readOnly /></label><label>Birthdate<input value={mother.birth_date || 'Not recorded'} readOnly /></label><label>Maternal status<input value={maternalLabel} readOnly /></label>{mother.gestation_weeks !== null && mother.gestation_weeks !== undefined && <label>Pregnancy weeks<input value={`${mother.gestation_weeks} weeks`} readOnly /></label>}{mother.gestation_date && <label>Pregnancy assessment date<input value={mother.gestation_date} readOnly /></label>}{mother.maternal_status === 'pregnant' && <label>Expected delivery date<input value={mother.delivery_date || 'Not recorded'} readOnly /></label>}{mother.maternal_status === 'postnatal' && <label>Actual delivery date<input value={mother.delivery_date || 'Not recorded'} readOnly /></label>}</div></section>{editing && <div className="mother-profile-modal" onMouseDown={event => event.target === event.currentTarget && !busy && setEditing(false)}><form onSubmit={saveDetails}><button className="mother-profile-close" type="button" onClick={() => setEditing(false)} aria-label="Close">×</button><p>MediMama care</p><h2>Edit profile</h2><label>Full name<input name="full_name" defaultValue={mother.full_name || displayName} required /></label><label>Philippine mobile number<input name="phone" defaultValue={profile.phone || mother.contact_number || ''} onInput={event => { event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 11); }} placeholder="09XXXXXXXXX" inputMode="numeric" pattern="09[0-9]{9}" required /><small>Enter 11 digits starting with 09.</small></label><label>Address<input name="address" defaultValue={mother.address || ''} placeholder="House no., street, subdivision, or landmark" /></label><label>Maternal status<input value={maternalLabel} readOnly /><input type="hidden" name="maternal_status" value={mother.maternal_status || 'pregnant'} /></label>{mother.maternal_status === 'pregnant' && <label>Expected delivery date <small>Required for Prenatal</small><input name="delivery_date" type="date" min={today()} defaultValue={mother.delivery_date || ''} required /></label>}{mother.maternal_status === 'postnatal' && <p className="mother-profile-readonly-note">Actual delivery date and postnatal status are recorded by the health center.</p>}<div className="mother-profile-actions"><button type="button" className="mother-profile-cancel" onClick={() => setEditing(false)} disabled={busy}>Cancel</button><button className="family-primary" disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button></div></form></div>}</main></>;
 }

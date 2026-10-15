@@ -1,4 +1,6 @@
 export const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+export const appointmentCapacity = 30;
+export const appointmentSlotCapacity = 3;
 export const day = value => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return NaN;
   const parsed = Date.parse(`${value}T00:00:00Z`);
@@ -15,7 +17,7 @@ export function addMonths(date, amount) {
 export const uid = prefix => `${prefix}-${crypto.randomUUID()}`;
 export function session() { try { return JSON.parse(localStorage.getItem('medimama-current-session')) || {}; } catch { return {}; } }
 export function normalize(data) {
-  const next = { ...data, mothers: data.mothers || [], infants: data.infants || [], caregivers: data.caregivers || [], appointments: data.appointments || [], settings: { dailyCapacity: 20, capacityMode: 'per-service', ...data.settings } };
+  const next = { ...data, mothers: data.mothers || [], infants: data.infants || [], caregivers: data.caregivers || [], appointments: data.appointments || [], appointmentRequests: data.appointmentRequests || [], settings: { dailyCapacity: appointmentCapacity, capacityMode: 'per-service', ...data.settings } };
   // Only migrate an old appointment when its patient name has one exact match.
   next.appointments = next.appointments.map(a => {
     if (a.patientId) return a;
@@ -37,7 +39,31 @@ export function family(data, user) {
 }
 export const serviceGroup = service => /immunization|infant|newborn/i.test(service) ? 'infant' : 'maternal';
 export const services = ['Prenatal Checkup', 'Postnatal Checkup', 'Infant Immunization', 'Newborn Review', 'Infant Growth Review'];
-export function appointmentError(data, item, now = today()) {
+const appointmentTimes = appointment => {
+  const start = serviceGroup(appointment.service) === 'infant' ? 8 : 10;
+  return Array.from({ length: (17 - start) * 2 }, (_, index) => `${String(start + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`);
+};
+const appointmentsForDate = (data, date, group, excludeId) => (data.appointments || []).filter(item => item.id !== excludeId && item.date === date && !['Cancelled', 'cancelled'].includes(item.status) && serviceGroup(item.service) === group);
+export function availableAppointmentDates(data, appointment, limit = 8, from = today()) {
+  const dates = [];
+  const group = serviceGroup(appointment.service);
+  const cursor = new Date(`${from}T00:00:00Z`);
+  for (let offset = 1; offset <= 60 && dates.length < limit; offset += 1) {
+    const candidate = new Date(cursor);
+    candidate.setUTCDate(cursor.getUTCDate() + offset);
+    if (candidate.getUTCDay() !== 3) continue;
+    const date = candidate.toISOString().slice(0, 10);
+    if (date === appointment.date || appointmentsForDate(data, date, group, appointment.id).length >= appointmentCapacity) continue;
+    dates.push(date);
+  }
+  return dates;
+}
+export function availableAppointmentTimes(data, appointment, date) {
+  const group = serviceGroup(appointment.service);
+  const booked = appointmentsForDate(data, date, group, appointment.id);
+  return appointmentTimes(appointment).filter(time => booked.filter(item => item.time === time).length < appointmentSlotCapacity);
+}
+export function appointmentError(data, item, now = today(), options = {}) {
   if (!services.includes(item.service)) return 'Select a supported service.';
   const infant = data.infants.find(p => p.id === item.patientId);
   const mother = data.mothers.find(p => p.id === item.patientId);
@@ -48,7 +74,7 @@ export function appointmentError(data, item, now = today()) {
   if (item.service === 'Postnatal Checkup' && mother.status !== 'Postnatal') return 'Delivery must be recorded before booking postnatal care.';
   const activeStatuses = new Set(['pending', 'scheduled', 'approved', 'rescheduled', 'confirmed']);
   const activeAppointment = data.appointments.find(a => a.id !== item.id && a.patientId === item.patientId && a.date >= now && activeStatuses.has(String(a.status || '').toLowerCase()));
-  if (activeAppointment) return 'Wait until the current appointment date has passed before booking another.';
+  if (activeAppointment && !options.allowReschedule) return 'Wait until the current appointment date has passed before booking another.';
   if (!Number.isFinite(day(item.date)) || item.date < now) return 'Choose today or a future date.';
   if (new Date(day(item.date)).getUTCDay() !== 3) return 'Clinic appointments are available on Wednesdays only.';
   const start = serviceGroup(item.service) === 'infant' ? '08:00' : '10:00';
@@ -57,12 +83,12 @@ export function appointmentError(data, item, now = today()) {
     const clock = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
     if (item.time <= clock) return 'This time has already passed.';
   }
-  const sameDay = data.appointments.filter(a => a.id !== item.id && a.status !== 'Cancelled' && a.date === item.date);
+  const sameDay = data.appointments.filter(a => a.id !== item.id && !['Cancelled', 'cancelled'].includes(a.status) && a.date === item.date);
   const counted = data.settings.capacityMode === 'per-service' ? sameDay.filter(a => serviceGroup(a.service) === serviceGroup(item.service)) : sameDay;
-  if (counted.length >= Number(data.settings.dailyCapacity)) return 'This Wednesday is full. Choose another Wednesday.';
+  if (counted.length >= Number(data.settings.dailyCapacity || appointmentCapacity)) return `This Wednesday is full. The limit is ${Number(data.settings.dailyCapacity || appointmentCapacity)} ${serviceGroup(item.service) === 'infant' ? 'infant' : 'maternal'} appointments.`;
   if (sameDay.some(a => a.patientId === item.patientId && a.service === item.service)) return 'This patient already has this service booked on that date.';
   if (sameDay.some(a => a.time === item.time && a.patientId === item.patientId)) return 'This patient already has an appointment at that time.';
-  if (sameDay.filter(a => a.time === item.time && serviceGroup(a.service) === serviceGroup(item.service)).length >= 2) return 'This time slot is full. Choose another time.';
+  if (sameDay.filter(a => a.time === item.time && serviceGroup(a.service) === serviceGroup(item.service)).length >= appointmentSlotCapacity) return `This time slot is full. Choose another time; up to ${appointmentSlotCapacity} patients may use one slot.`;
   return '';
 }
 export const vaccineSchedule = [

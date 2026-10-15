@@ -27,6 +27,8 @@ export default function FamilyOverview({ caregiver = false, showReminders = true
   const recordsLink = caregiver ? '/caregiver?tab=records' : '/user/records';
   const infantsLink = caregiver ? recordsLink : '/user/records';
   const reminders = remindersFor(scope.infants);
+  const hasPostnatalMother = scope.mothers.some(mother => mother.status === 'Postnatal');
+  const showInfantCard = caregiver || scope.infants.length > 0 || hasPostnatalMother;
 
   return <section className="care-workspace family-overview" aria-label="Family care overview">
     {storageError && <p role="alert" className="care-error">{storageError}</p>}
@@ -37,8 +39,9 @@ export default function FamilyOverview({ caregiver = false, showReminders = true
           <h2>Next appointment</h2>
           {next ? <><h3>{next.date} at {next.time}</h3><p>{next.patient} · {next.service}</p><span className="care-badge">{appointmentStatus(next.status)}</span>{!caregiver && <ManageAppointment appointment={next} />}</> : <><p>No upcoming appointments.</p><p className="care-muted">Appointments are scheduled by the health center.</p></>}
         </article>
-        <article className="care-card"><span className="overview-icon"><i className="fa-solid fa-heart-pulse" aria-hidden="true" /></span><h2>Maternal care</h2>{scope.mothers.map(mother => { const stage = pregnancy(mother); return <div key={mother.id}><h3>{mother.name}</h3><p>{stage.label}{stage.weeks !== null ? ` · ${stage.weeks} weeks` : ''}{mother.deliveryDate ? ` · Delivered ${mother.deliveryDate}` : ''}</p></div>; })}<Link to={recordsLink}>View maternal records →</Link></article>
-        <article className="care-card infant-overview-card">
+        <article className="care-card"><span className="overview-icon"><i className="fa-solid fa-heart-pulse" aria-hidden="true" /></span><h2>Maternal care</h2>{scope.mothers.map(mother => { const stage = pregnancy(mother); const deliveryLabel = mother.status === 'Postnatal' ? 'Delivered' : 'Expected delivery'; return <div key={mother.id}><h3>{mother.name}</h3><p>{stage.label}{stage.weeks !== null ? ` · ${stage.weeks} weeks` : ''}{mother.deliveryDate ? ` · ${deliveryLabel} ${mother.deliveryDate}` : ''}</p></div>; })}<Link to={recordsLink}>View maternal records →</Link></article>
+        {!showInfantCard && scope.mothers.map(mother => { const stage = pregnancy(mother); return <article className="care-card pregnancy-overview-card" key={`pregnancy-${mother.id}`}><span className="overview-icon"><i className="fa-solid fa-person-pregnant" aria-hidden="true" /></span><h2>Pregnancy progress</h2><h3>{mother.name}</h3><span className="care-badge">{stage.label}</span><dl className="care-metrics"><div><dt>Pregnancy weeks</dt><dd>{stage.weeks !== null ? `${stage.weeks} weeks` : 'Not recorded'}</dd></div><div><dt>Expected delivery</dt><dd>{mother.deliveryDate || 'Not recorded'}</dd></div></dl></article>; })}
+        {showInfantCard && <article className="care-card infant-overview-card">
           <span className="overview-icon"><i className="fa-solid fa-baby" aria-hidden="true" /></span>
           <h2>{caregiver ? 'Linked infants' : 'My infants'}</h2>
           {scope.infants.length ? <div className="infant-overview-list">
@@ -60,7 +63,7 @@ export default function FamilyOverview({ caregiver = false, showReminders = true
             })}
           </div> : <p>No infants registered yet.</p>}
           <Link to={infantsLink}>View infant records →</Link>
-        </article>
+        </article>}
       </div>
       {showReminders && <ReminderCard reminders={reminders} infantsLink={infantsLink} />}
     </>}

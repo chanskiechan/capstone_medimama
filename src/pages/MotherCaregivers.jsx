@@ -42,7 +42,10 @@ function PasswordField({ name, value, onChange, visible, onToggle, required = tr
 export default function MotherCaregivers() {
   const user = session();
   const { data, loadingRecords, storageError } = useStore();
-  const infants = family(data, user).infants.filter(infant => !infant.archived);
+  const familyScope = family(data, user);
+  const mother = familyScope.mothers[0];
+  const infants = familyScope.infants.filter(infant => !infant.archived);
+  const canManageCaregiver = mother?.status === 'Postnatal';
   const [open, setOpen] = useState(false);
   const [motherName, setMotherName] = useState(user.name || '');
   const [notice, setNotice] = useState({ type: '', text: '' });
@@ -65,6 +68,10 @@ export default function MotherCaregivers() {
   };
 
   const openForm = () => {
+    if (!canManageCaregiver) {
+      setNotice({ type: 'error', text: 'Caregiver access becomes available after the mother is marked Postnatal by the health center.' });
+      return;
+    }
     resetCaregiverDraft();
     setNotice({ type: '', text: '' });
     setOpen(true);
@@ -115,6 +122,7 @@ export default function MotherCaregivers() {
 
   const submit = async event => {
     event.preventDefault();
+    if (!canManageCaregiver) return setNotice({ type: 'error', text: 'Caregiver registration is available only after delivery has been recorded.' });
     const form = new FormData(event.currentTarget);
     const get = key => String(form.get(key) || '').trim();
     const email = get('email').toLowerCase();
@@ -167,7 +175,7 @@ export default function MotherCaregivers() {
     <FamilyHeader />
     <main className="family-page mother-caregivers-page">
       <header className="mother-caregivers-heading">
-        <div><p>MediMama care</p><h1>Baby progress</h1><span>Track your baby’s growth and manage trusted caregiver access.</span></div>
+        <div><p>MediMama care</p><h1>Baby progress</h1><span>{canManageCaregiver ? 'Track your baby’s growth and manage trusted caregiver access.' : 'Track your pregnancy progress. Caregiver access will be available after delivery.'}</span></div>
       </header>
       {notice.text && <p className={`mother-caregiver-notice ${notice.type}`} role={notice.type === 'error' ? 'alert' : 'status'}>{notice.text}</p>}
       <section className="mother-baby-progress" aria-labelledby="baby-progress-title">
@@ -188,16 +196,18 @@ export default function MotherCaregivers() {
           </article>;
         })}</div> : <div className="mother-baby-progress-empty"><i className="fa-solid fa-baby" aria-hidden="true" /><h3>No baby records yet</h3><p>Register or open your baby’s record to see growth progress here.</p><Link className="family-secondary" to="/user/records">Go to records</Link></div>}
       </section>
-      <section className="mother-caregiver-intro">
-        <div className="mother-caregiver-icon"><i className="fa-solid fa-people-group" /></div>
-        <div><h2>Add a trusted caregiver</h2><p>Caregiver access is reviewed by the administrator. The caregiver cannot log in until the request and identity document have been approved.</p></div>
-        <button className="family-secondary" type="button" onClick={openForm}>Add caregiver <i className="fa-solid fa-arrow-right" /></button>
-      </section>
-      <section className="mother-caregiver-steps">
-        <article><b>1</b><div><h3>Submit details</h3><p>Provide the caregiver information and valid ID.</p></div></article>
-        <article><b>2</b><div><h3>Admin reviews</h3><p>The health center confirms the request.</p></div></article>
-        <article><b>3</b><div><h3>Caregiver gets access</h3><p>An approval email is sent after confirmation.</p></div></article>
-      </section>
+      {canManageCaregiver ? <>
+        <section className="mother-caregiver-intro">
+          <div className="mother-caregiver-icon"><i className="fa-solid fa-people-group" /></div>
+          <div><h2>Add a trusted caregiver</h2><p>Caregiver access is reviewed by the administrator. The caregiver cannot log in until the request and identity document have been approved.</p></div>
+          <button className="family-secondary" type="button" onClick={openForm}>Add caregiver <i className="fa-solid fa-arrow-right" /></button>
+        </section>
+        <section className="mother-caregiver-steps">
+          <article><b>1</b><div><h3>Submit details</h3><p>Provide the caregiver information and valid ID.</p></div></article>
+          <article><b>2</b><div><h3>Admin reviews</h3><p>The health center confirms the request.</p></div></article>
+          <article><b>3</b><div><h3>Caregiver gets access</h3><p>An approval email is sent after confirmation.</p></div></article>
+        </section>
+      </> : <section className="mother-caregiver-locked" aria-live="polite"><div className="mother-caregiver-icon"><i className="fa-solid fa-lock" /></div><div><h2>Caregiver access is not available yet</h2><p>You can add a trusted caregiver after the health center records the delivery and changes your maternal status to Postnatal.</p></div></section>}
       {open && <div className="mother-caregiver-modal" role="dialog" aria-modal="true" aria-labelledby="caregiver-form-title">
         <form ref={formRef} className="mother-caregiver-form" autoComplete="off" onSubmit={submit}>
           <button type="button" className="mother-caregiver-close" onClick={closeForm} aria-label="Close">×</button>

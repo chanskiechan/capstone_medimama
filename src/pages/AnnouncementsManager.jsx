@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AdminShell } from '../components/AdminShell';
 import { supabase } from '../lib/supabase';
 import { notifyEmailEvent } from '../lib/emailNotifications';
+import './AnnouncementsManager.css';
 
 const Icon = ({ name }) => <i className={`fa-solid fa-${name}`} />;
 

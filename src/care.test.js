@@ -16,9 +16,9 @@ test('infant clinic opens at 8; maternal clinic opens at 10', () => {
   assert.equal(appointmentError(base(), { ...appointment, patientId: 'i1', service: 'Infant Immunization', time: '08:00' }, '2099-01-01'), '');
   assert.ok(appointmentError(base(), { ...appointment, patientId: 'i1' }, '2099-01-01'));
 });
-test('20-per-group limit does not consume the other group capacity', () => {
+test('30-per-group limit does not consume the other group capacity', () => {
   const data = base();
-  data.appointments = Array.from({ length: 20 }, (_, i) => ({ ...appointment, id: `busy-${i}`, patientId: `m-${i}`, time: '12:00' }));
+  data.appointments = Array.from({ length: 30 }, (_, i) => ({ ...appointment, id: `busy-${i}`, patientId: `m-${i}`, time: '12:00' }));
   assert.match(appointmentError(data, appointment, '2099-01-01'), /full/);
   assert.equal(appointmentError(data, { ...appointment, patientId: 'i1', service: 'Infant Immunization', time: '08:00' }, '2099-01-01'), '');
 });
@@ -35,10 +35,19 @@ test('blocks a new appointment until the patient current appointment date passes
   data.appointments = [{ ...appointment, id: 'current', date: '2089-01-14', status: 'Confirmed' }];
   assert.equal(appointmentError(data, { ...appointment, date: '2099-01-21' }, '2099-01-01'), '');
 });
+test('rescheduling is allowed before the current appointment date passes', () => {
+  const data = base();
+  data.appointments = [
+    { ...appointment, id: 'current', date: '2099-01-14', status: 'Confirmed' },
+    { ...appointment, id: 'another-future-appointment', date: '2099-01-21', status: 'Pending' },
+  ];
+  assert.match(appointmentError(data, { ...appointment, id: 'current', date: '2099-01-28' }, '2099-01-01'), /current appointment date/);
+  assert.equal(appointmentError(data, { ...appointment, id: 'current', date: '2099-01-28' }, '2099-01-01', { allowReschedule: true }), '');
+});
 test('blocks duplicate patient services and full time slots', () => {
   const data = base(); data.appointments = [{ ...appointment, id: 'other' }];
   assert.match(appointmentError(data, appointment, '2099-01-01'), /already/);
-  data.appointments = [1, 2].map(i => ({ ...appointment, id: `other${i}`, patientId: `other${i}` }));
+  data.appointments = [1, 2, 3].map(i => ({ ...appointment, id: `other${i}`, patientId: `other${i}` }));
   assert.match(appointmentError(data, appointment, '2099-01-01'), /slot is full/);
 });
 test('pending infants cannot book and delivered mothers cannot book prenatal care', () => {

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { AdminShell } from '../components/AdminShell';
 import { useStore } from '../store';
 import CareWorkspace from '../components/CareWorkspace';
-import { today, serviceGroup } from '../care';
+import { appointmentCapacity, today, serviceGroup } from '../care';
 import { supabase } from '../lib/supabase';
 import './AdminDashboardAnnouncements.css';
 
@@ -43,7 +43,7 @@ export function AdminDashboard() {
   // also supports older locally saved appointment records.
   const maternalVisits = visits.filter(a => a.mother_id || a.motherId || (!a.infant_id && !a.infantId && serviceGroup(a.service) === 'maternal'));
   const infantVisits = visits.filter(a => a.infant_id || a.infantId || serviceGroup(a.service) === 'infant');
-  return <AdminShell page="dashboard"><main className="main-content care-admin"><header className="page-header"><div><p className="eyebrow">MediMama Admin</p><h1>Dashboard</h1><p>{today()} - Patient care and registration review</p></div></header><section className="stats-grid"><Stat icon="users" value={data.mothers.length} title="Registered mothers" text="Maternal records" color="teal" /><Stat icon="baby" value={data.infants.length} title="Registered infants" text={data.infants.filter(i => i.status === 'Pending approval').length + ' awaiting approval'} color="blue" /><Stat icon="calendar-check" value={maternalVisits.length + ' / 20'} title="Maternal appointments" text={`${nextClinicDate} clinic: 10 AM to 5 PM`} color="purple" /><Stat icon="syringe" value={infantVisits.length + ' / 20'} title="Infant appointments" text={`${nextClinicDate} clinic: 8 AM to 5 PM`} color="pink" /></section><DashboardAnnouncements /></main></AdminShell>;
+  return <AdminShell page="dashboard"><main className="main-content care-admin"><header className="page-header"><div><p className="eyebrow">MediMama Admin</p><h1>Dashboard</h1><p>{today()} - Patient care and registration review</p></div></header><section className="stats-grid"><Stat icon="users" value={data.mothers.length} title="Registered mothers" text="Maternal records" color="teal" /><Stat icon="baby" value={data.infants.length} title="Registered infants" text={data.infants.filter(i => i.status === 'Pending approval').length + ' awaiting approval'} color="blue" /><Stat icon="calendar-check" value={maternalVisits.length + ` / ${appointmentCapacity}`} title="Maternal appointments" text={`${nextClinicDate} clinic: 10 AM to 5 PM`} color="purple" /><Stat icon="syringe" value={infantVisits.length + ` / ${appointmentCapacity}`} title="Infant appointments" text={`${nextClinicDate} clinic: 8 AM to 5 PM`} color="pink" /></section><DashboardAnnouncements /></main></AdminShell>;
 }
 function Stat({ icon, value, title, text, color }) { return <article className={`stat-card ${color}`}><span className="stat-icon"><Icon name={icon} /></span><div><strong>{value}</strong><h2>{title}</h2><p>{text}</p></div></article>; }
 

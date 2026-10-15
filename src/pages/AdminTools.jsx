@@ -8,23 +8,225 @@ import { validateBackup } from '../lib/backup';
 import './Support.css';
 
 export default function AdminTools() {
-  const [params,setParams]=useSearchParams();
-  const tab=['backup','audit','archives'].includes(params.get('tab'))?params.get('tab'):'backup';
-  const setTab=value=>setParams({tab:value});
-  const [events,setEvents]=useState([]),[file,setFile]=useState(null),[preview,setPreview]=useState([]),[notice,setNotice]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[page,setPage]=useState(0);
-  const {refreshPatientData}=useStore();
+  const [params, setParams] = useSearchParams();
+  const tab = ['backup', 'audit', 'archives'].includes(params.get('tab')) ? params.get('tab') : 'backup';
+  const setTab = value => setParams({ tab: value });
+  const [events, setEvents] = useState([]);
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState([]);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [page, setPage] = useState(0);
+  const { refreshPatientData } = useStore();
   const project = new URL(import.meta.env.VITE_SUPABASE_URL).origin;
-  const loadAudit=async()=>{setBusy(true);setError('');try{const {data,error:problem}=await supabase.from('audit_events').select('*').order('created_at',{ascending:false}).order('id').range(page*50,page*50+49);if(problem)throw problem;setEvents(data);}catch(e){setError(e.message);}finally{setBusy(false);}};
-  useEffect(()=>{if(tab==='audit')loadAudit();},[tab,page]);
-  const download=async()=>{setBusy(true);setError('');try{const {data,error:problem}=await supabase.rpc('export_clinical_backup');if(problem)throw problem;const url=URL.createObjectURL(new Blob([JSON.stringify({...data,project},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`medimama-clinical-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setNotice('Clinical backup downloaded. Store it privately; it contains patient information.');}catch(e){setError(e.message);}finally{setBusy(false);}};
-  const choose=async e=>{setFile(null);setPreview([]);setNotice('');setError('');const selected=e.target.files[0];if(!selected)return;try{if(selected.size>25*1024*1024)throw Error('Choose a backup smaller than 25 MB.');const value=JSON.parse(await selected.text());setPreview(validateBackup(value,project));setFile(value);}catch(e){setError(e.message);}};
-  const restore=async()=>{if(!file)return;setBusy(true);setError('');try{const {data,error:problem}=await supabase.rpc('restore_clinical_backup',{backup_json:file});if(problem)throw problem;await refreshPatientData();setNotice(`Restored ${Object.values(data).reduce((a,b)=>a+b,0)} missing records. Existing records were kept.`);setFile(null);setPreview([]);}catch(e){setError(`Restore failed; no partial restore was saved. ${e.message}`);}finally{setBusy(false);}};
-  return <AdminShell page="system"><main className="main-content system-page"><header className="page-header"><div><h1>System Settings</h1><p>Archives, clinical backups and recorded account activity.</p></div></header><nav className="support-nav" aria-label="System tools"><button className="family-primary" onClick={()=>setTab('backup')} aria-pressed={tab==='backup'}>Backup & restore</button><button className="family-primary" onClick={()=>setTab('audit')} aria-pressed={tab==='audit'}>Audit logs</button><button className="family-primary" onClick={()=>setTab('archives')} aria-pressed={tab==='archives'}>Archives</button></nav>{error&&<p role="alert" className="support-message">{error}</p>}{notice&&<p role="status">{notice}</p>}{tab==='archives'?<Archives />:tab==='backup'?<><section className="support-panel"><h2>Download clinical backup</h2><p>Includes patient profiles, clinical histories and appointments from this project. Login accounts and account links are not included.</p><button onClick={download} disabled={busy}>Download backup</button></section><section className="support-panel"><h2>Restore missing records</h2><p>Choose a backup from this same project. Only missing record IDs are restored; current records are never overwritten. Referenced accounts must still exist.</p><label className="support-form">Backup file<input type="file" accept=".json,application/json" onChange={choose} disabled={busy}/></label>{file&&<><p>Exported: {file.exported_at}</p><ul>{preview.map(p=><li key={p.table}>{p.table}: {p.count} records</li>)}</ul><button onClick={restore} disabled={busy}>{busy?'Restoring…':'Restore missing records'}</button></>}</section></>:<section className="support-panel"><h2>Activity log</h2><p>Records actions after the audit update was installed. Patient details are not copied into the log.</p><button onClick={loadAudit} disabled={busy}>Refresh</button><div className="support-table-wrap"><table className="support-table"><thead><tr><th>Time</th><th>Action</th><th>Table</th><th>Record ID</th><th>Actor ID</th></tr></thead><tbody>{events.map(e=><tr key={e.id}><td>{new Date(e.created_at).toLocaleString()}</td><td>{e.action}</td><td>{e.entity}</td><td>{e.record_id}</td><td>{e.actor_id||'Database job'}</td></tr>)}</tbody></table></div>{!busy&&!events.length&&<p>No activity on this page.</p>}<div className="support-actions"><button disabled={busy||page===0} onClick={()=>setPage(page-1)}>Previous</button><span>Page {page+1}</span><button disabled={busy||events.length<50} onClick={()=>setPage(page+1)}>Next</button></div></section>}</main></AdminShell>;
+
+  const loadAudit = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const { data, error: problem } = await supabase
+        .from('audit_events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .order('id')
+        .range(page * 50, page * 50 + 49);
+      if (problem) throw problem;
+      setEvents(data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 'audit') loadAudit();
+  }, [tab, page]);
+
+  const download = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const { data, error: problem } = await supabase.rpc('export_clinical_backup');
+      if (problem) throw problem;
+      const url = URL.createObjectURL(new Blob([JSON.stringify({ ...data, project }, null, 2)], { type: 'application/json' }));
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `medimama-clinical-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setNotice('Clinical backup downloaded. Store it privately; it contains patient information.');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const choose = async event => {
+    setFile(null);
+    setPreview([]);
+    setNotice('');
+    setError('');
+    const selected = event.target.files[0];
+    if (!selected) return;
+    try {
+      if (selected.size > 25 * 1024 * 1024) throw Error('Choose a backup smaller than 25 MB.');
+      const value = JSON.parse(await selected.text());
+      setPreview(validateBackup(value, project));
+      setFile(value);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  const restore = async () => {
+    if (!file) return;
+    setBusy(true);
+    setError('');
+    try {
+      const { data, error: problem } = await supabase.rpc('restore_clinical_backup', { backup_json: file });
+      if (problem) throw problem;
+      await refreshPatientData();
+      setNotice(`Restored ${Object.values(data).reduce((total, count) => total + count, 0)} missing records. Existing records were kept.`);
+      setFile(null);
+      setPreview([]);
+    } catch (e) {
+      setError(`Restore failed; no partial restore was saved. ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AdminShell page="system">
+      <main className="main-content system-page">
+        <header className="page-header system-settings-header">
+          <div>
+            <p className="eyebrow">ADMINISTRATION</p>
+            <h1>System Settings</h1>
+            <p>Archives, clinical backups and recorded account activity.</p>
+          </div>
+        </header>
+
+        <nav className="support-nav system-settings-tabs" aria-label="System tools">
+          <button type="button" className="family-primary" onClick={() => setTab('backup')} aria-pressed={tab === 'backup'}>Backup &amp; restore</button>
+          <button type="button" className="family-primary" onClick={() => setTab('audit')} aria-pressed={tab === 'audit'}>Audit logs</button>
+          <button type="button" className="family-primary" onClick={() => setTab('archives')} aria-pressed={tab === 'archives'}>Archives</button>
+        </nav>
+
+        {(error || notice) && <div className="system-tools-feedback">
+          {error && <p role="alert" className="support-message">{error}</p>}
+          {notice && <p role="status">{notice}</p>}
+        </div>}
+
+        <div className="system-tools-content">
+          {tab === 'archives' ? <Archives /> : tab === 'backup' ? (
+            <div className="system-settings-grid">
+              <section className="support-panel system-settings-card">
+                <div className="system-card-heading">
+                  <div>
+                    <p className="system-card-eyebrow">CLINICAL DATA</p>
+                    <h2>Download clinical backup</h2>
+                  </div>
+                  <span className="system-card-icon" aria-hidden="true">↓</span>
+                </div>
+                <p>Includes patient profiles, clinical histories and appointments from this project. Login accounts and account links are not included.</p>
+                <div className="system-card-footer">
+                  <span className="system-card-meta">JSON export</span>
+                  <button type="button" onClick={download} disabled={busy}>{busy ? 'Preparing…' : 'Download backup'}</button>
+                </div>
+              </section>
+
+              <section className="support-panel system-settings-card">
+                <div className="system-card-heading">
+                  <div>
+                    <p className="system-card-eyebrow">SAFE RESTORE</p>
+                    <h2>Restore missing records</h2>
+                  </div>
+                  <span className="system-card-icon pink" aria-hidden="true">↺</span>
+                </div>
+                <p>Choose a backup from this same project. Only missing record IDs are restored; current records are never overwritten.</p>
+                <label className="system-file-field">
+                  <span>Backup file</span>
+                  <input type="file" accept=".json,application/json" onChange={choose} disabled={busy} />
+                </label>
+                {file && <div className="system-restore-preview">
+                  <p><strong>Exported:</strong> {file.exported_at}</p>
+                  <ul>{preview.map(item => <li key={item.table}>{item.table}: {item.count} records</li>)}</ul>
+                  <button type="button" onClick={restore} disabled={busy}>{busy ? 'Restoring…' : 'Restore missing records'}</button>
+                </div>}
+              </section>
+            </div>
+          ) : (
+            <section className="support-panel system-settings-card audit-log-card">
+              <div className="system-card-heading audit-card-heading">
+                <div>
+                  <p className="system-card-eyebrow">ACCOUNT ACTIVITY</p>
+                  <h2>Audit log</h2>
+                  <p>Records actions after the audit update was installed. Patient details are not copied into the log.</p>
+                </div>
+                <button type="button" className="system-secondary-button" onClick={loadAudit} disabled={busy}>{busy ? 'Loading…' : '↻ Refresh'}</button>
+              </div>
+              <div className="support-table-wrap system-table-wrap">
+                <table className="support-table">
+                  <thead><tr><th>Time</th><th>Action</th><th>Table</th><th>Record ID</th><th>Actor ID</th></tr></thead>
+                  <tbody>{events.map(event => <tr key={event.id}><td>{new Date(event.created_at).toLocaleString()}</td><td>{event.action}</td><td>{event.entity}</td><td>{event.record_id}</td><td>{event.actor_id || 'Database job'}</td></tr>)}</tbody>
+                </table>
+              </div>
+              {!busy && !events.length && <div className="system-empty-state"><strong>No activity on this page.</strong><span>Recorded account actions will appear here.</span></div>}
+              <div className="support-actions audit-pagination">
+                <button type="button" className="system-secondary-button" disabled={busy || page === 0} onClick={() => setPage(page - 1)}>Previous</button>
+                <span>Page {page + 1}</span>
+                <button type="button" className="system-secondary-button" disabled={busy || events.length < 50} onClick={() => setPage(page + 1)}>Next</button>
+              </div>
+            </section>
+          )}
+        </div>
+      </main>
+    </AdminShell>
+  );
 }
 
 export function AdminProfile() {
-  const [profile,setProfile]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
-  useEffect(()=>{(async()=>{try{const {data:auth,error:authError}=await supabase.auth.getUser();if(authError)throw authError;if(!auth.user)throw Error('Please sign in again.');const {data,error:problem}=await supabase.from('profiles').select('id,full_name,phone').eq('id',auth.user.id).single();if(problem)throw problem;setProfile({...data,email:auth.user.email});}catch(e){setError(e.message);}})();},[]);
-  const save=async e=>{e.preventDefault();const values=Object.fromEntries(new FormData(e.currentTarget));setBusy(true);setError('');try{const {error:problem}=await supabase.from('profiles').update({full_name:values.full_name.trim(),phone:values.phone.trim()}).eq('id',profile.id);if(problem)throw problem;const current=JSON.parse(localStorage.getItem('medimama-current-session')||'{}');localStorage.setItem('medimama-current-session',JSON.stringify({...current,name:values.full_name.trim()}));setNotice('Profile saved to your account.');}catch(e){setError(e.message);}finally{setBusy(false);}};
-  return <AdminShell page="system"><main className="main-content system-page"><h1>My profile</h1>{error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}{profile&&<section className="support-panel"><form className="support-form" onSubmit={save}><label>Full name<input name="full_name" required maxLength={150} defaultValue={profile.full_name}/></label><label>Contact number<input name="phone" type="tel" maxLength={30} defaultValue={profile.phone||''}/></label><label>Login email<input value={profile.email} readOnly/></label><button disabled={busy}>Save profile</button></form></section>}</main></AdminShell>;
+  const [profile, setProfile] = useState(null);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: auth, error: authError } = await supabase.auth.getUser();
+        if (authError) throw authError;
+        if (!auth.user) throw Error('Please sign in again.');
+        const { data, error: problem } = await supabase.from('profiles').select('id,full_name,phone').eq('id', auth.user.id).single();
+        if (problem) throw problem;
+        setProfile({ ...data, email: auth.user.email });
+      } catch (e) {
+        setError(e.message);
+      }
+    })();
+  }, []);
+
+  const save = async event => {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    setBusy(true);
+    setError('');
+    try {
+      const { error: problem } = await supabase.from('profiles').update({ full_name: values.full_name.trim(), phone: values.phone.trim() }).eq('id', profile.id);
+      if (problem) throw problem;
+      const current = JSON.parse(localStorage.getItem('medimama-current-session') || '{}');
+      localStorage.setItem('medimama-current-session', JSON.stringify({ ...current, name: values.full_name.trim() }));
+      setNotice('Profile saved to your account.');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return <AdminShell page="system"><main className="main-content system-page"><h1>My profile</h1>{error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}{profile && <section className="support-panel"><form className="support-form" onSubmit={save}><label>Full name<input name="full_name" required maxLength={150} defaultValue={profile.full_name} /></label><label>Contact number<input name="phone" type="tel" maxLength={30} defaultValue={profile.phone || ''} /></label><label>Login email<input value={profile.email} readOnly /></label><button disabled={busy}>Save profile</button></form></section>}</main></AdminShell>;
 }

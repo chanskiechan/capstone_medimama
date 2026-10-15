@@ -21,6 +21,11 @@ the future; booking is allowed once that date has passed.
 3. If Supabase reports an error, keep the full error message. The migration uses a transaction, so a failed run does not leave half the update applied. Do not rerun a successful migration.
 4. Restart the app with `npm run dev`. Log in with a real account to test saving and sharing records.
 
+For complete mother registration details, run
+`supabase/migrations/029_mother_registration_details.sql` after migration 028.
+This keeps the birthdate entered during registration in the mother record so it
+also appears in the administrator directory and edit form.
+
 ## Turn on scheduled reminders
 
 Enable the **pg_cron** extension from your project's database extensions screen. Then run `supabase/schedule-reminders.sql` in SQL Editor. This installs hourly appointment and vaccination reminder jobs and runs both once immediately.

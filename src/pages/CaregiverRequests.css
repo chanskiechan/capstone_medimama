@@ -1,0 +1,233 @@
+.caregiver-requests-page {
+  max-width: 100%;
+}
+
+.caregiver-requests-page > .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 0 24px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.caregiver-requests-page > .page-header .eyebrow {
+  margin: 0 0 7px;
+  color: #4d7cf4;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.caregiver-requests-page > .page-header h1 {
+  margin: 0 0 7px;
+  color: #17233d;
+  font-size: clamp(30px, 3.5vw, 44px);
+  line-height: 1.1;
+}
+
+.caregiver-requests-page > .page-header p:last-child {
+  margin: 0;
+  color: #63708a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.caregiver-page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.caregiver-page-actions .view-button,
+.caregiver-row-actions .view-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 9px 13px;
+  border: 1px solid #d7e3f3;
+  border-radius: 10px;
+  background: #fff;
+  color: #3568c8;
+  font: 700 12px Poppins, Arial, sans-serif;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.caregiver-page-actions .view-button:hover,
+.caregiver-row-actions .view-button:hover {
+  background: #edf4ff;
+}
+
+.caregiver-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 18px;
+}
+
+.caregiver-summary article {
+  min-height: 78px;
+  padding: 18px 20px;
+  border: 1px solid #e1e8f3;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(28, 49, 83, .05);
+}
+
+.caregiver-table-panel {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #e1e8f3;
+  border-radius: 18px;
+  box-shadow: 0 8px 22px rgba(28, 49, 83, .05);
+}
+
+.caregiver-table-head {
+  padding: 22px 24px;
+  border-bottom: 1px solid #e1e8f3;
+}
+
+.caregiver-table-head h2 {
+  font-size: 19px;
+}
+
+.caregiver-table-head p {
+  max-width: 720px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.caregiver-table-panel .table-wrap {
+  overflow-x: auto;
+}
+
+.caregiver-table-panel table {
+  min-width: 900px;
+}
+
+.caregiver-table-panel th {
+  padding: 12px 14px;
+  background: #f4f7fc;
+  color: #64748b;
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.caregiver-table-panel td {
+  padding: 16px 14px;
+  border-bottom: 1px solid #edf1f6;
+  color: #52627d;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.caregiver-table-panel tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.caregiver-table-panel tbody tr:hover td {
+  background: #fbfdff;
+}
+
+.caregiver-row-actions {
+  min-width: 190px;
+}
+
+.caregiver-actions {
+  min-width: 190px;
+}
+
+.caregiver-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.caregiver-actions .view-button,
+.caregiver-actions .caregiver-decline {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+.caregiver-actions .caregiver-approve {
+  border-color: #4d7cf4;
+  background: #4d7cf4;
+  color: #fff;
+}
+
+.caregiver-actions .caregiver-approve:hover {
+  background: #315fcf;
+}
+
+.caregiver-decline.modal-action {
+  min-height: 46px;
+}
+
+.admin-form-spacer {
+  flex: 1;
+}
+
+.caregiver-requests-page .admin-toast {
+  right: 28px;
+  bottom: 28px;
+}
+
+.archive-record-button {
+  background: #edf2ff !important;
+  color: #3568c8 !important;
+}
+
+.archive-record-button:hover {
+  background: #dce7ff !important;
+}
+
+@media (max-width: 900px) {
+  .caregiver-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .caregiver-requests-page > .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .caregiver-page-actions {
+    justify-content: stretch;
+  }
+
+  .caregiver-page-actions .view-button {
+    flex: 1;
+  }
+
+  .caregiver-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .caregiver-table-head {
+    align-items: flex-start;
+    gap: 12px;
+    flex-direction: column;
+  }
+
+  .admin-form-actions {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .admin-form-spacer {
+    display: none;
+  }
+}
