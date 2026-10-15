@@ -5,6 +5,7 @@ test('report requires linked patient, subject and actual past symptom time',()=>
   const values={patient:'baby',category:'Post-vaccination',subject:'Concern',description:'Details',started_at:'2026-01-01T10:00'};
   const now=Date.parse('2026-01-02T00:00:00Z');
   assert.equal(validateReport(values,[{id:'baby'}],now),'');
+  assert.equal(validateReport({...values,started_at:'2026-01-02'},[{id:'baby'}],Date.parse('2026-01-02T12:00:00+08:00')),'');
   assert.match(validateReport(values,[],now),/linked patient/);
   assert.match(validateReport({...values,subject:' '},[{id:'baby'}],now),/subject/);
   assert.match(validateReport({...values,started_at:'2027-01-01T10:00'},[{id:'baby'}],now),/future/);

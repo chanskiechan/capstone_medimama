@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { supabase } from '../lib/supabase';
 
 const isUuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || '');
-const displayDate = value => value ? new Date(`${value}T00:00:00Z`).toLocaleDateString('en-PH', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+const displayDate = value => value ? new Date(`${value}T00:00:00+08:00`).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
 export default function ManageAppointment({ appointment }) {
   const { data, save, refreshPatientData } = useStore();

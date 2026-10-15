@@ -44,7 +44,7 @@ function PatientForm({ type, initial = {}, onSave, onCancel, cancelLabel = 'Canc
 }
 
 function ClinicalHistoryModal({ record, mother, onBack }) {
-  const formatDate = value => value ? new Date(`${value}T00:00:00`).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Date not recorded';
+  const formatDate = value => value ? new Date(`${value}T00:00:00+08:00`).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: 'short', day: 'numeric' }) : 'Date not recorded';
   const entries = mother
     ? (record.records || []).map(item => ({ date: item.date, title: item.type || 'Maternal visit', details: item.details || item.notes || 'No additional details recorded.' }))
     : [

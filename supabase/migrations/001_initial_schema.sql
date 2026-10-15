@@ -61,7 +61,7 @@ create table public.infants (
   approved_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  check (birth_date <= current_date)
+  check (birth_date <= (now() at time zone 'Asia/Manila')::date)
 );
 
 create table public.caregiver_assignments (
@@ -106,7 +106,7 @@ create table public.care_tasks (
 create table public.maternal_records (
   id uuid primary key default gen_random_uuid(),
   mother_id uuid not null references public.mothers(id) on delete cascade,
-  record_date date not null default current_date check (record_date <= current_date),
+  record_date date not null default ((now() at time zone 'Asia/Manila')::date) check (record_date <= (now() at time zone 'Asia/Manila')::date),
   record_type text not null,
   details text,
   recorded_by uuid references public.profiles(id) on delete set null,
@@ -116,7 +116,7 @@ create table public.maternal_records (
 create table public.growth_records (
   id uuid primary key default gen_random_uuid(),
   infant_id uuid not null references public.infants(id) on delete cascade,
-  measured_at date not null check (measured_at <= current_date),
+  measured_at date not null check (measured_at <= (now() at time zone 'Asia/Manila')::date),
   weight_kg numeric(5,2) check (weight_kg >= 0),
   length_cm numeric(5,2) check (length_cm >= 0),
   muac_cm numeric(5,2) check (muac_cm >= 0),
@@ -131,7 +131,7 @@ create table public.vaccinations (
   infant_id uuid not null references public.infants(id) on delete cascade,
   vaccine text not null,
   dose text not null,
-  administered_at date not null check (administered_at <= current_date),
+  administered_at date not null check (administered_at <= (now() at time zone 'Asia/Manila')::date),
   provider text,
   notes text,
   recorded_by uuid references public.profiles(id) on delete set null,

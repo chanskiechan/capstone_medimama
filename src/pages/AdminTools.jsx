@@ -5,7 +5,32 @@ import { AdminShell } from '../components/AdminShell';
 import { supabase } from '../lib/supabase';
 import { useStore } from '../store';
 import { validateBackup } from '../lib/backup';
+import { today } from '../care';
 import './Support.css';
+
+const auditEntityNames = {
+  mothers: 'Mother profile',
+  infants: 'Infant profile',
+  maternal_records: 'Maternal health record',
+  growth_records: 'Growth record',
+  vaccinations: 'Immunization record',
+  infant_records: 'Infant health record',
+  appointments: 'Appointment',
+  health_concerns: 'Health report',
+  caregiver_assignments: 'Caregiver link',
+  announcements: 'Announcement',
+  profiles: 'Account profile'
+};
+
+const auditEntityName = entity => auditEntityNames[entity] || entity.replaceAll('_', ' ');
+const auditActionName = event => {
+  const action = { INSERT: 'Created', UPDATE: 'Updated', DELETE: 'Archived' }[event.action] || event.action;
+  return `${action} ${auditEntityName(event.entity).toLowerCase()}`;
+};
+const auditReference = recordId => recordId ? `Reference ${recordId.slice(0, 8).toUpperCase()}` : 'General system activity';
+const auditTechnicalId = recordId => recordId ? `ID: ${recordId.slice(0, 8)}...${recordId.slice(-4)}` : 'No linked record';
+const auditRoleName = role => ({ admin: 'Administrator', mother: 'Mother', caregiver: 'Caregiver' }[role] || role || 'System process');
+const auditTime = value => new Date(value).toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' });
 
 export default function AdminTools() {
   const [params, setParams] = useSearchParams();
@@ -18,6 +43,9 @@ export default function AdminTools() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(0);
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditAction, setAuditAction] = useState('All');
+  const [auditEntity, setAuditEntity] = useState('All');
   const { refreshPatientData } = useStore();
   const project = new URL(import.meta.env.VITE_SUPABASE_URL).origin;
 
@@ -25,14 +53,18 @@ export default function AdminTools() {
     setBusy(true);
     setError('');
     try {
-      const { data, error: problem } = await supabase
-        .from('audit_events')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .order('id')
-        .range(page * 50, page * 50 + 49);
+      let auditQuery = supabase.from('audit_events').select('*');
+      if (auditAction !== 'All') auditQuery = auditQuery.eq('action', auditAction);
+      if (auditEntity !== 'All') auditQuery = auditQuery.eq('entity', auditEntity);
+      const { data, error: problem } = await auditQuery.order('created_at', { ascending: false }).order('id').range(page * 50, page * 50 + 49);
       if (problem) throw problem;
-      setEvents(data);
+      const actorIds = [...new Set((data || []).map(event => event.actor_id).filter(Boolean))];
+      let actors = {};
+      if (actorIds.length) {
+        const { data: profiles } = await supabase.from('profiles').select('id,full_name,role').in('id', actorIds);
+        actors = Object.fromEntries((profiles || []).map(profile => [profile.id, profile]));
+      }
+      setEvents((data || []).map(event => ({ ...event, actor: actors[event.actor_id] })));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -42,7 +74,19 @@ export default function AdminTools() {
 
   useEffect(() => {
     if (tab === 'audit') loadAudit();
-  }, [tab, page]);
+  }, [tab, page, auditAction, auditEntity]);
+
+  const filteredEvents = events.filter(event => {
+    const search = auditSearch.trim().toLowerCase();
+    if (!search) return true;
+    return `${auditActionName(event)} ${auditEntityName(event.entity)} ${event.actor?.full_name || ''} ${auditReference(event.record_id)} ${event.record_id || ''}`.toLowerCase().includes(search);
+  });
+  const clearAuditFilters = () => {
+    setAuditSearch('');
+    setAuditAction('All');
+    setAuditEntity('All');
+    setPage(0);
+  };
 
   const download = async () => {
     setBusy(true);
@@ -53,7 +97,7 @@ export default function AdminTools() {
       const url = URL.createObjectURL(new Blob([JSON.stringify({ ...data, project }, null, 2)], { type: 'application/json' }));
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `medimama-clinical-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.download = `medimama-clinical-${today()}.json`;
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setNotice('Clinical backup downloaded. Store it privately; it contains patient information.');
@@ -112,7 +156,7 @@ export default function AdminTools() {
 
         <nav className="support-nav system-settings-tabs" aria-label="System tools">
           <button type="button" className="family-primary" onClick={() => setTab('backup')} aria-pressed={tab === 'backup'}>Backup &amp; restore</button>
-          <button type="button" className="family-primary" onClick={() => setTab('audit')} aria-pressed={tab === 'audit'}>Audit logs</button>
+          <button type="button" className="family-primary" onClick={() => setTab('audit')} aria-pressed={tab === 'audit'}>Activity log</button>
           <button type="button" className="family-primary" onClick={() => setTab('archives')} aria-pressed={tab === 'archives'}>Archives</button>
         </nav>
 
@@ -163,19 +207,26 @@ export default function AdminTools() {
             <section className="support-panel system-settings-card audit-log-card">
               <div className="system-card-heading audit-card-heading">
                 <div>
-                  <p className="system-card-eyebrow">ACCOUNT ACTIVITY</p>
-                  <h2>Audit log</h2>
-                  <p>Records actions after the audit update was installed. Patient details are not copied into the log.</p>
+                  <p className="system-card-eyebrow">SYSTEM ACTIVITY</p>
+                  <h2>Activity history</h2>
+                  <p>See when important records were created, updated, or archived and who performed the action.</p>
                 </div>
                 <button type="button" className="system-secondary-button" onClick={loadAudit} disabled={busy}>{busy ? 'Loading…' : '↻ Refresh'}</button>
               </div>
+              <div className="audit-filters" aria-label="Filter activity history">
+                <label>Search activity<input value={auditSearch} onChange={event => setAuditSearch(event.target.value)} placeholder="Search action, record, or person" /></label>
+                <label>Action<select value={auditAction} onChange={event => { setAuditAction(event.target.value); setPage(0); }}><option>All</option><option value="INSERT">Created</option><option value="UPDATE">Updated</option><option value="DELETE">Archived</option></select></label>
+                <label>Record type<select value={auditEntity} onChange={event => { setAuditEntity(event.target.value); setPage(0); }}><option>All</option>{Object.entries(auditEntityNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+                <button type="button" className="system-secondary-button audit-clear-button" onClick={clearAuditFilters} disabled={!auditSearch && auditAction === 'All' && auditEntity === 'All'}>Clear filters</button>
+              </div>
               <div className="support-table-wrap system-table-wrap">
                 <table className="support-table">
-                  <thead><tr><th>Time</th><th>Action</th><th>Table</th><th>Record ID</th><th>Actor ID</th></tr></thead>
-                  <tbody>{events.map(event => <tr key={event.id}><td>{new Date(event.created_at).toLocaleString()}</td><td>{event.action}</td><td>{event.entity}</td><td>{event.record_id}</td><td>{event.actor_id || 'Database job'}</td></tr>)}</tbody>
+                  <thead><tr><th>Date &amp; time</th><th>What happened</th><th>Record</th><th>Performed by</th></tr></thead>
+                  <tbody>{filteredEvents.map(event => <tr key={event.id}><td><time dateTime={event.created_at}>{auditTime(event.created_at)}</time></td><td className="audit-action-cell"><strong>{auditActionName(event)}</strong><small>{auditEntityName(event.entity)}</small></td><td className="audit-record-cell" title={event.record_id || undefined}><strong>{auditReference(event.record_id)}</strong><small>{auditTechnicalId(event.record_id)}</small></td><td className="audit-actor-cell"><strong>{event.actor?.full_name || (event.actor_id ? 'User account' : 'System process')}</strong><small>{event.actor ? auditRoleName(event.actor.role) : 'Automated action'}</small></td></tr>)}</tbody>
                 </table>
               </div>
               {!busy && !events.length && <div className="system-empty-state"><strong>No activity on this page.</strong><span>Recorded account actions will appear here.</span></div>}
+              {!busy && events.length > 0 && !filteredEvents.length && <div className="system-empty-state"><strong>No matching activity.</strong><span>Try another search or clear the filters.</span></div>}
               <div className="support-actions audit-pagination">
                 <button type="button" className="system-secondary-button" disabled={busy || page === 0} onClick={() => setPage(page - 1)}>Previous</button>
                 <span>Page {page + 1}</span>

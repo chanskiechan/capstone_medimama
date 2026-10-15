@@ -35,7 +35,7 @@ create trigger infant_archive_status before update on public.infants for each ro
 create table public.infant_records (
   id uuid primary key default gen_random_uuid(),
   infant_id uuid not null references public.infants(id) on delete cascade,
-  record_date date not null check(record_date <= current_date),
+  record_date date not null check(record_date <= (now() at time zone 'Asia/Manila')::date),
   record_type text not null,
   details text,
   notes text,

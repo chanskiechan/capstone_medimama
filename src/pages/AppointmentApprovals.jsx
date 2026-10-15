@@ -16,7 +16,7 @@ const requestSchedule = value => {
   const parsed = Object.fromEntries(parts.map(part => [part.type, part.value]));
   return { date: `${parsed.year}-${parsed.month}-${parsed.day}`, time: `${parsed.hour}:${parsed.minute}` };
 };
-const requestDateLabel = value => new Date(value).toLocaleDateString('en-PH', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+const requestDateLabel = value => new Date(value).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
 
 export default function AppointmentApprovals() {
   const { data, save, refreshPatientData } = useStore();

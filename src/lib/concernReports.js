@@ -7,7 +7,13 @@ export function validateReport(values, patients, now = Date.now()) {
   if (!reportCategories.includes(values.category)) return 'Choose a report topic.';
   if (!values.subject?.trim() || values.subject.trim().length > 160) return 'Enter a subject up to 160 characters.';
   if (!values.description?.trim() || values.description.trim().length > 3000) return 'Enter a description up to 3000 characters.';
-  if (values.started_at && (!Number.isFinite(Date.parse(`${values.started_at}:00+08:00`)) || Date.parse(`${values.started_at}:00+08:00`) > now)) return 'The symptom start must not be in the future.';
+  if (values.started_at) {
+    const startedAt = /^\d{4}-\d{2}-\d{2}$/.test(values.started_at)
+      ? `${values.started_at}T00:00:00+08:00`
+      : `${values.started_at}:00+08:00`;
+    const startedTimestamp = Date.parse(startedAt);
+    if (!Number.isFinite(startedTimestamp) || startedTimestamp > now) return 'The symptom start must not be in the future.';
+  }
   if (values.vaccination_date && Date.parse(`${values.vaccination_date}T00:00:00+08:00`) > now) return 'The vaccination date must not be in the future.';
   return '';
 }

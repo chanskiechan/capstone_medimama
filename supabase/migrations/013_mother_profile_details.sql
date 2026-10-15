@@ -36,10 +36,10 @@ begin
   if new_maternal_status = 'pregnant' and new_delivery_date is null then
     raise exception 'Enter the expected delivery date for a prenatal record';
   end if;
-  if new_maternal_status = 'pregnant' and new_delivery_date < current_date then
+  if new_maternal_status = 'pregnant' and new_delivery_date < (now() at time zone 'Asia/Manila')::date then
     raise exception 'Expected delivery date cannot be in the past';
   end if;
-  if new_maternal_status = 'postnatal' and new_delivery_date is not null and new_delivery_date > current_date then
+  if new_maternal_status = 'postnatal' and new_delivery_date is not null and new_delivery_date > (now() at time zone 'Asia/Manila')::date then
     raise exception 'Delivery date cannot be in the future';
   end if;
 
