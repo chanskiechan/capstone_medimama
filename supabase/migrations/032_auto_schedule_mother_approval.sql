@@ -73,7 +73,14 @@ begin
       continue;
     end if;
 
-    for clinic_time in select generate_series(time '10:00', time '16:30', interval '30 minutes')::time loop
+    for clinic_time in
+      select slot::time
+      from generate_series(
+        timestamp '2000-01-01 10:00:00',
+        timestamp '2000-01-01 16:30:00',
+        interval '30 minutes'
+      ) as slots(slot)
+    loop
       select count(*) into slot_count
       from public.appointments a
       where a.status <> 'cancelled'

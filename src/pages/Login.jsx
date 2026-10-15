@@ -42,7 +42,7 @@ export function Login() {
   const [otpBusy, setOtpBusy] = useState(false);
 
   const tell = (text, type = 'error') => {
-    if (type === 'success' && text.startsWith('Account created')) setSignup(false);
+    if (type === 'success' && text.startsWith('Registration submitted')) setSignup(false);
     setFeedback({ text, type });
   };
   const go = session => navigate(session.role === 'admin' ? '/dashboard' : session.role === 'caregiver' ? '/caregiver' : '/user');
@@ -156,7 +156,7 @@ export function Login() {
     setBusy(false);
     if (error) return tell(error.message);
     if (!data.user) return tell('Account could not be created. Please try again.');
-    tell('Account created. Check your email and confirm your account before logging in.', 'success');
+    tell('Registration submitted. Please wait for an email from MediMama confirming whether the health center approved or declined your registration. You can log in only after approval.', 'success');
   };
 
   const passwordField = (name, placeholder, key, extra = {}) => (

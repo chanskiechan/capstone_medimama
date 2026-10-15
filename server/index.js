@@ -258,6 +258,36 @@ async function notifyCaregiverApproved(context, body) {
   return { status: 200, body: { sent: recipients.length } };
 }
 
+async function notifyMotherApproval(context, body) {
+  if (context.profile.role !== 'admin') return { status: 403, body: { error: 'Only administrators can send approval notifications.' } };
+  const motherId = String(body.motherId || '');
+  const decision = String(body.decision || '').toLowerCase();
+  if (!motherId || !['approved', 'declined'].includes(decision)) return { status: 400, body: { error: 'motherId and a valid approval decision are required.' } };
+
+  const { data: mother, error: motherError } = await supabase
+    .from('mothers')
+    .select('id,full_name,record_code,status')
+    .eq('id', motherId)
+    .single();
+  if (motherError || !mother) return { status: 404, body: { error: 'Mother record not found.' } };
+
+  const { data: links, error: linksError } = await supabase.from('mother_accounts').select('user_id').eq('mother_id', motherId);
+  if (linksError) throw linksError;
+  const recipients = await emailsForUserIds((links || []).map(link => link.user_id));
+  for (const recipient of recipients) {
+    const approved = decision === 'approved';
+    await sendMail({
+      to: recipient.email,
+      subject: approved ? 'Your MediMama account has been approved' : 'MediMama registration update',
+      title: approved ? 'Your MediMama account has been approved' : 'Registration needs further review',
+      intro: approved
+        ? 'Your account in MediMama has been approved. You can now log in.'
+        : 'The health center could not approve your MediMama registration at this time. Please contact the health center for assistance or clarification.',
+    });
+  }
+  return { status: 200, body: { sent: recipients.length } };
+}
+
 async function processReminderEmails() {
   if (reminderJobRunning || !transporter) return;
   reminderJobRunning = true;
@@ -301,7 +331,7 @@ const server = createServer(async (request, response) => {
       await sendMail({ to: context.user.email, subject: 'MediMama login notification', title: 'New login detected', intro: 'Your MediMama account was signed in successfully.', details: [['Account', context.user.email], ['Role', context.profile.role], ['Login time', formatDate(new Date())]] });
       return json(response, 200, { sent: 1 });
     }
-    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverApproved(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
+    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverApproved(context, body) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
     return json(response, result.status, result.body);
   } catch (error) {
     console.error('Email request failed:', error.message);

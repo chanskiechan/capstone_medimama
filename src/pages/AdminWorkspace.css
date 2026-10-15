@@ -1,0 +1,398 @@
+.mother-approval-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mother-approval-actions .primary-button,
+.mother-approval-actions .danger-button {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.mother-approval-actions .danger-button {
+  padding: 10px 14px;
+}
+
+/* Mother and infant directory layout */
+.directory-page {
+  color: #2d4058;
+}
+
+.directory-page > .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.directory-page > .page-header .eyebrow {
+  margin: 0 0 7px;
+  color: #4d7cf4;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.directory-page > .page-header h1 {
+  margin: 0 0 7px;
+  color: #203252;
+  font-size: clamp(34px, 3.7vw, 48px);
+  line-height: 1.05;
+  letter-spacing: -.045em;
+}
+
+.directory-page > .page-header > div > p:last-child {
+  margin: 0;
+  color: #63708a;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.directory-page > .page-header > .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 11px 17px;
+  border: 0;
+  border-radius: 12px;
+  background: #4d7cf4;
+  color: #fff;
+  font: 700 13px Poppins, Arial, sans-serif;
+  box-shadow: 0 8px 18px rgba(77, 124, 244, .2);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.directory-page > .page-header > .primary-button:hover {
+  background: #315fcf;
+  box-shadow: 0 10px 22px rgba(77, 124, 244, .26);
+  transform: translateY(-1px);
+}
+
+.directory-page > .summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 20px;
+}
+
+.directory-page > .summary-grid > article {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 88px;
+  padding: 18px 20px;
+  border: 1px solid #e1e8f1;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(28, 49, 83, .05);
+}
+
+.directory-page > .summary-grid > article > i {
+  display: grid;
+  flex: 0 0 48px;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #edf2ff;
+  color: #4d7cf4;
+  font-size: 20px;
+}
+
+.directory-page > .summary-grid > article:nth-child(2) > i {
+  background: #fff0f6;
+  color: #d75f91;
+}
+
+.directory-page > .summary-grid > article:nth-child(3) > i {
+  background: #eaf8ef;
+  color: #29926c;
+}
+
+.directory-page > .summary-grid > article > span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.directory-page > .summary-grid > article b {
+  color: #17233d;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.directory-page > .summary-grid > article small {
+  color: #63708a;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.directory-page > .directory-panel {
+  margin: 0 0 20px;
+  overflow: hidden;
+  border: 1px solid #e1e8f1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(28, 49, 83, .05);
+}
+
+.directory-page > .directory-panel .directory-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 82px;
+  margin: 0;
+  padding: 18px 24px;
+  border-bottom: 1px solid #e8edf5;
+  background: #fff;
+}
+
+.directory-page > .directory-panel .directory-tools > div h2 {
+  margin: 0 0 5px;
+  color: #203252;
+  font-size: 24px;
+  line-height: 1.15;
+  letter-spacing: -.025em;
+}
+
+.directory-page > .directory-panel .directory-tools > div p {
+  margin: 0;
+  color: #63708a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.directory-page > .directory-panel .directory-tools > span {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #edf2ff;
+  color: #315fcf;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.directory-page > .directory-panel .directory-tools:has(.search) {
+  min-height: 0;
+  padding: 16px 24px;
+  background: #fbfcff;
+}
+
+.directory-page > .directory-panel .directory-tools .search {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  gap: 9px;
+  min-width: 0;
+  height: 46px;
+  padding: 0 13px;
+  border: 1px solid #dce5f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #4d7cf4;
+}
+
+.directory-page > .directory-panel .directory-tools .search:focus-within {
+  border-color: #4d7cf4;
+  outline: 3px solid rgba(77, 124, 244, .12);
+}
+
+.directory-page > .directory-panel .directory-tools .search input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #40506a;
+  font: 13px Poppins, Arial, sans-serif;
+}
+
+.directory-page > .directory-panel .directory-tools > select {
+  flex: 0 0 190px;
+  height: 46px;
+  padding: 0 12px;
+  border: 1px solid #dce5f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #40506a;
+  font: 13px Poppins, Arial, sans-serif;
+}
+
+.directory-page > .directory-panel .table-wrap {
+  overflow-x: auto;
+}
+
+.directory-page > .directory-panel table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.directory-page > .directory-panel th,
+.directory-page > .directory-panel td {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e8edf5;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.directory-page > .directory-panel th {
+  background: #f6f8fd;
+  color: #63708a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.directory-page > .directory-panel td {
+  color: #40506a;
+  font-size: 12px;
+}
+
+.directory-page > .directory-panel tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.directory-page > .directory-panel tbody tr:hover td {
+  background: #fbfdff;
+}
+
+.directory-page > .directory-panel td strong,
+.directory-page > .directory-panel td small {
+  display: block;
+}
+
+.directory-page > .directory-panel td strong {
+  color: #2d4058;
+  font-size: 13px;
+}
+
+.directory-page > .directory-panel td small {
+  margin-top: 4px;
+  color: #7b899f;
+  font-size: 11px;
+}
+
+.directory-page > .directory-panel .status {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eaf8ef;
+  color: #218457;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.directory-page > .directory-panel .view-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: #eaf0ff;
+  color: #4d7cf4;
+  font: 700 11px Poppins, Arial, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.directory-page > .directory-panel .view-button:hover {
+  background: #dce7ff;
+}
+
+.directory-page .mother-approval-actions {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.directory-page .mother-approval-actions .primary-button,
+.directory-page .mother-approval-actions .danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border-radius: 9px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.directory-page .mother-approval-actions .primary-button {
+  padding: 10px 15px;
+  border: 0;
+  background: #4d7cf4;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(77, 124, 244, .16);
+}
+
+.directory-page .mother-approval-actions .primary-button:hover {
+  background: #315fcf;
+}
+
+.directory-page .mother-approval-actions .danger-button {
+  padding: 10px 13px;
+  background: #fff0f6;
+  color: #ca4a79;
+}
+
+.directory-page .mother-approval-actions .danger-button:hover {
+  background: #ffe3ee;
+}
+
+@media (max-width: 860px) {
+  .directory-page > .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .directory-page > .page-header > .primary-button {
+    width: 100%;
+  }
+
+  .directory-page > .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .directory-page > .directory-panel .directory-tools,
+  .directory-page > .directory-panel .directory-tools:has(.search) {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .directory-page > .directory-panel .directory-tools > select {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .directory-page > .directory-panel th,
+  .directory-page > .directory-panel td {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .directory-page .mother-approval-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .directory-page .mother-approval-actions button {
+    width: 100%;
+  }
+}
