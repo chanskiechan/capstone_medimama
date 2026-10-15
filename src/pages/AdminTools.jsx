@@ -254,7 +254,20 @@ export function AdminProfile() {
         if (!auth.user) throw Error('Please sign in again.');
         const { data, error: problem } = await supabase.from('profiles').select('id,full_name,phone').eq('id', auth.user.id).single();
         if (problem) throw problem;
-        setProfile({ ...data, email: auth.user.email });
+        let savedSession = {};
+        try { savedSession = JSON.parse(localStorage.getItem('medimama-current-session') || '{}'); } catch { savedSession = {}; }
+        const metadata = auth.user.user_metadata || {};
+        const email = auth.user.email || 'Not recorded';
+        const name = [data.full_name, metadata.full_name, metadata.name, savedSession.name]
+          .map(value => String(value || '').trim())
+          .find(value => value && value.toLowerCase() !== email.toLowerCase()) || '';
+        setProfile({
+          ...data,
+          full_name: name,
+          phone: data.phone || metadata.phone || '',
+          email,
+          role: 'Administrator'
+        });
       } catch (e) {
         setError(e.message);
       }
@@ -279,5 +292,5 @@ export function AdminProfile() {
     }
   };
 
-  return <AdminShell page="system"><main className="main-content system-page"><h1>My profile</h1>{error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}{profile && <section className="support-panel"><form className="support-form" onSubmit={save}><label>Full name<input name="full_name" required maxLength={150} defaultValue={profile.full_name} /></label><label>Contact number<input name="phone" type="tel" maxLength={30} defaultValue={profile.phone || ''} /></label><label>Login email<input value={profile.email} readOnly /></label><button disabled={busy}>Save profile</button></form></section>}</main></AdminShell>;
+  return <AdminShell page="system"><main className="main-content system-page admin-profile-page"><header className="page-header system-settings-header"><div><p className="eyebrow">MY ACCOUNT</p><h1>My profile</h1><p>Manage your administrator details and account information.</p></div><span className="admin-profile-role"><i className="fa-solid fa-shield-halved" aria-hidden="true" /> Administrator</span></header>{error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}{profile && <section className="support-panel admin-profile-card"><div className="admin-profile-card-heading"><div className="admin-profile-avatar"><i className="fa-solid fa-user" aria-hidden="true" /></div><div><p className="system-card-eyebrow">ACCOUNT DETAILS</p><h2>Administrator profile</h2><p>Keep your contact information updated so the health center team can identify you.</p></div></div><form className="support-form admin-profile-form" onSubmit={save}><label>Full name<input name="full_name" required maxLength={150} defaultValue={profile.full_name} placeholder="Enter your full name" /></label><label>Contact number<input name="phone" type="tel" maxLength={30} defaultValue={profile.phone || ''} placeholder="09XXXXXXXXX" /></label><label className="admin-profile-form-full">Login email<input value={profile.email} readOnly /><small>Your login email is managed by your account and cannot be changed here.</small></label><div className="admin-profile-form-footer"><span><i className="fa-solid fa-circle-info" aria-hidden="true" /> Changes are saved to your administrator account.</span><button disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button></div></form></section>}</main></AdminShell>;
 }

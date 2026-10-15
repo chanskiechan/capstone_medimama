@@ -396,3 +396,4 @@
     width: 100%;
   }
 }
+.admin-form-full{grid-column:1/-1}.mother-picker{position:relative}.mother-picker>input[type=search]{width:100%}.mother-picker-results{position:absolute;z-index:20;top:calc(100% + 5px);left:0;right:0;max-height:220px;overflow:auto;padding:6px;border:1px solid #d7e1f0;border-radius:12px;background:#fff;box-shadow:0 14px 30px rgba(23,35,61,.16)}.mother-picker-results button{display:grid;width:100%;gap:2px;padding:10px 11px;border:0;border-radius:8px;background:transparent;color:#293854;text-align:left;cursor:pointer}.mother-picker-results button:hover,.mother-picker-results button[aria-selected=true]{background:#edf3ff}.mother-picker-results strong{font-size:13px}.mother-picker-results small,.mother-picker-selected{color:#64748b;font-size:11px}.mother-picker-results>p{margin:8px 10px;color:#64748b;font-size:12px}.mother-picker-selected{display:block;margin-top:5px}

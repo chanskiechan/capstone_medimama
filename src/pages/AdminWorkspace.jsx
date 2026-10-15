@@ -18,6 +18,50 @@ function Modal({ title, children, close, showClose = true }) {
   return <div className="admin-modal" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && canClose && close()}><section role="dialog" aria-modal="true" aria-label={title}>{canClose && <button className="close" type="button" onClick={() => close()} aria-label="Close">×</button>}<p className="eyebrow">MediMama Admin</p><h2>{title}</h2>{children}</section></div>;
 }
 
+function MotherPicker({ mothers, value, onChange }) {
+  const selected = mothers.find(mother => mother.id === value);
+  const [query, setQuery] = useState(selected?.name || '');
+  const [open, setOpen] = useState(false);
+  const results = mothers
+    .filter(mother => !mother.archived && mother.status !== 'Archived')
+    .filter(mother => `${mother.name} ${mother.recordCode || mother.id} ${mother.address || ''}`.toLowerCase().includes(query.toLowerCase()))
+    .slice(0, 50);
+  const choose = mother => { onChange(mother.id); setQuery(mother.name); setOpen(false); };
+  return <div className="mother-picker">
+    <input name="motherSearch" type="search" value={query} required={!value} placeholder="Search mother or record ID" autoComplete="off" onFocus={() => setOpen(true)} onChange={event => { setQuery(event.target.value); onChange(''); setOpen(true); }} />
+    <input type="hidden" name="motherId" value={value || ''} />
+    {open && <div className="mother-picker-results" role="listbox" aria-label="Mother results">
+      {results.length ? results.map(mother => <button type="button" role="option" aria-selected={mother.id === value} key={mother.id} onMouseDown={event => event.preventDefault()} onClick={() => choose(mother)}><strong>{mother.name}</strong><small>{mother.recordCode || mother.id} · {mother.status}</small></button>) : <p>No mothers found.</p>}
+    </div>}
+    {selected && <small className="mother-picker-selected">Selected: {selected.name} · {selected.recordCode || selected.id}</small>}
+  </div>;
+}
+
+function InfantPatientForm({ data, initial, onSave, onCancel }) {
+  const latestGrowth = [...(initial.growth || [])].sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).at(-1);
+  const nameParts = String(initial.name || '').trim().split(/\s+/).filter(Boolean);
+  const firstName = initial.firstName || nameParts[0] || '';
+  const lastName = initial.lastName || (nameParts.length > 1 ? nameParts[nameParts.length - 1] : '');
+  const middleInitial = initial.middleInitial || (nameParts.length > 2 ? nameParts[1].replace('.', '') : '');
+  const [motherId, setMotherId] = useState(initial.motherId || '');
+  const blockLot = initial.blockLot || String(initial.address || '').replace(/,?\s*Imus City,?\s*Cavite\s*4103$/i, '');
+  return <form className="admin-form" onSubmit={event => { event.preventDefault(); onSave(Object.fromEntries(new FormData(event.currentTarget))); }}>
+    <label className="admin-form-full">Mother<MotherPicker mothers={data.mothers} value={motherId} onChange={setMotherId} /></label>
+    <label>First name<input name="firstName" required defaultValue={firstName} /></label>
+    <label>Middle initial (optional)<input name="middleInitial" maxLength="1" pattern="[A-Za-z]?" defaultValue={middleInitial} /></label>
+    <label>Last name<input name="lastName" required defaultValue={lastName} /></label>
+    <label>Suffix (optional)<input name="suffix" maxLength="10" defaultValue={initial.suffix || ''} /></label>
+    <label>Address (Block and Lot)<input name="blockLot" required placeholder="e.g., Block 1 Lot 2" defaultValue={blockLot} /><small>Imus City, Cavite 4103</small></label>
+    <label>Date of birth<input name="birthDate" type="date" max={today()} required defaultValue={initial.birthDate || ''} /></label>
+    <label>Gender<select name="sex" defaultValue={initial.sex || 'Female'}><option>Female</option><option>Male</option></select></label>
+    <label>Weight (kg)<input name="weight" type="number" min="0.1" max="60" step="0.01" required defaultValue={initial.weight ?? latestGrowth?.weight ?? ''} /></label>
+    <label>Height (cm)<input name="height" type="number" min="1" max="180" step="0.1" required defaultValue={initial.height ?? initial.length ?? latestGrowth?.length ?? ''} /></label>
+    <label>MUAC (cm)<input name="muac" type="number" min="1" max="40" step="0.1" required defaultValue={initial.muac ?? latestGrowth?.muac ?? ''} /></label>
+    <label>Record status<select name="status" defaultValue={initial.status || 'Active'}><option>Active</option><option>Needs follow-up</option></select><small>Choose “Needs follow-up” only when the midwife requests another check or more information.</small></label>
+    <div className="admin-form-actions"><button type="button" className="secondary" onClick={() => onCancel(Boolean(initial.id))}><Icon name={initial.id ? 'arrow-left' : 'xmark'} /> {initial.id ? 'Back to profile' : 'Cancel'}</button><button className="primary-button"><Icon name="floppy-disk" /> Save record</button></div>
+  </form>;
+}
+
 function PatientForm({ type, initial = {}, onSave, onCancel, cancelLabel = 'Cancel' }) {
   const mother = type === 'mothers';
   const { data } = useStore();
@@ -37,6 +81,7 @@ function PatientForm({ type, initial = {}, onSave, onCancel, cancelLabel = 'Canc
   const motherSuffix = initial.suffix || parsedMotherSuffix;
   const blockLot = initial.blockLot || String(initial.address || '').replace(/,?\s*Imus City,?\s*Cavite\s*4103$/i, '');
   const linkedMother = Boolean(initial.motherId);
+  if (!mother && !linkedMother) return <InfantPatientForm data={data} initial={initial} onSave={onSave} onCancel={onCancel} />;
   return <form className="admin-form" onSubmit={(event) => { event.preventDefault(); onSave(Object.fromEntries(new FormData(event.currentTarget))); }}>
     {mother ? <><label>First name<input name="firstName" required defaultValue={motherFirstName} /></label><label>Middle name (optional)<input name="middleName" defaultValue={motherMiddleName} /></label><label>Last name<input name="lastName" required defaultValue={motherLastName} /></label><label>Suffix (optional)<input name="suffix" maxLength="10" defaultValue={motherSuffix} /></label><label>Address<input name="address" required defaultValue={initial.address || ''} /></label><label>Birthdate<input name="birthDate" type="date" max={today()} defaultValue={initial.birthDate || ''} /></label><label>Contact number<input name="contact" required inputMode="numeric" pattern="09[0-9]{9}" maxLength="11" defaultValue={initial.contact || ''} placeholder="09XXXXXXXXX" /></label><label>Status<select name="status" value={maternalStatus} onChange={event => setMaternalStatus(event.target.value)}><option>Pregnant</option><option>Postnatal</option></select></label><label>{maternalStatus === 'Postnatal' ? 'Actual delivery date' : 'Expected delivery date'}<input name="deliveryDate" type="date" max={today()} required={maternalStatus === 'Postnatal'} defaultValue={initial.deliveryDate || ''} /></label><label>Pregnancy weeks (optional)<input name="gestationWeeks" type="number" min="0" max="45" defaultValue={initial.gestationWeeks ?? ''} /></label><label>Assessment date (optional)<input name="gestationDate" type="date" max={today()} defaultValue={initial.gestationDate || ''} /></label></> : <><label>Mother{linkedMother ? <><input value={data.mothers.find(m => m.id === initial.motherId)?.name || 'Linked mother'} readOnly /><input type="hidden" name="motherId" value={initial.motherId || ''} /></> : <select name="motherId" required defaultValue=""><option value="">Select mother</option>{data.mothers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>}</label><label>First name<input name="firstName" required defaultValue={firstName} /></label><label>Middle initial (optional)<input name="middleInitial" maxLength="1" pattern="[A-Za-z]?" defaultValue={middleInitial} /></label><label>Last name<input name="lastName" required defaultValue={lastName} /></label><label>Suffix (optional)<input name="suffix" maxLength="10" defaultValue={initial.suffix || ''} /></label><label>Address (Block and Lot)<input name="blockLot" required placeholder="e.g., Block 1 Lot 2" defaultValue={blockLot} /><small>Imus City, Cavite 4103</small></label><label>Date of birth<input name="birthDate" type="date" max={today()} required defaultValue={initial.birthDate || ''} /></label><label>Gender<select name="sex" defaultValue={initial.sex || 'Female'}><option>Female</option><option>Male</option></select></label><label>Weight (kg)<input name="weight" type="number" min="0.1" max="60" step="0.01" required defaultValue={initial.weight ?? latestGrowth?.weight ?? ''} /></label><label>Height (cm)<input name="height" type="number" min="1" max="180" step="0.1" required defaultValue={initial.height ?? initial.length ?? latestGrowth?.length ?? ''} /></label><label>MUAC (cm)<input name="muac" type="number" min="1" max="40" step="0.1" required defaultValue={initial.muac ?? latestGrowth?.muac ?? ''} /></label><label>Status<select name="status" defaultValue={initial.status || 'Active'}><option>Pending approval</option><option>Active</option><option>Needs follow-up</option></select></label></>}
     <div className="admin-form-actions"><button type="button" className="secondary admin-form-back" onClick={() => onCancel(Boolean(initial.id))}><Icon name={resolvedCancelLabel === 'Cancel' ? 'xmark' : 'arrow-left'} /> {resolvedCancelLabel}</button><button className="primary-button"><Icon name="floppy-disk" /> Save record</button></div>

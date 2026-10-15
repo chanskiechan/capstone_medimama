@@ -175,10 +175,10 @@ export default function MotherCaregivers() {
     <FamilyHeader />
     <main className="family-page mother-caregivers-page">
       <header className="mother-caregivers-heading">
-        <div><p>MediMama care</p><h1>Baby progress</h1><span>{canManageCaregiver ? 'Track your baby’s growth and manage trusted caregiver access.' : 'Track your pregnancy progress. Caregiver access will be available after delivery.'}</span></div>
+        <div><p>MediMama care</p><h1>Caregiver access</h1><span>{canManageCaregiver ? 'Manage trusted caregiver access to your family records.' : 'Caregiver access will be available after delivery.'}</span></div>
       </header>
       {notice.text && <p className={`mother-caregiver-notice ${notice.type}`} role={notice.type === 'error' ? 'alert' : 'status'}>{notice.text}</p>}
-      <section className="mother-baby-progress" aria-labelledby="baby-progress-title">
+      {false && <section className="mother-baby-progress" aria-labelledby="baby-progress-title">
         <div className="mother-baby-progress-heading"><div><p className="caregiver-eyebrow">Family care</p><h2 id="baby-progress-title">Baby progress</h2><span>Review the latest recorded measurements and growth history.</span></div><Link className="family-secondary" to="/user/records">View full records <i className="fa-solid fa-arrow-right" /></Link></div>
         {storageError && <p className="mother-caregiver-notice error" role="alert">{storageError}</p>}
         {loadingRecords ? <p className="mother-baby-progress-empty">Loading baby records...</p> : infants.length ? <div className="mother-baby-progress-grid">{infants.map(baby => {
@@ -195,7 +195,7 @@ export default function MotherCaregivers() {
             <Link to="/user/records">Open baby records <i className="fa-solid fa-arrow-right" /></Link>
           </article>;
         })}</div> : <div className="mother-baby-progress-empty"><i className="fa-solid fa-baby" aria-hidden="true" /><h3>No baby records yet</h3><p>Register or open your baby’s record to see growth progress here.</p><Link className="family-secondary" to="/user/records">Go to records</Link></div>}
-      </section>
+      </section>}
       {canManageCaregiver ? <>
         <section className="mother-caregiver-intro">
           <div className="mother-caregiver-icon"><i className="fa-solid fa-people-group" /></div>
