@@ -9,10 +9,11 @@ export function dueReminders(data, user, now = today()) {
     .filter(item => item.date && item.date <= addDays(now, 7)));
 }
 export function assistantReply(question, data, user, availability = {}) {
-  const q = question.toLowerCase();
-  if (/pain|bleed|fever|sick|symptom|breath|unconscious|seizure|emergency|lagnat|masakit|dumudugo|hirap huminga|kombulsyon/.test(q)) return { text: 'I cannot assess symptoms or diagnose a condition. Contact a qualified health worker for medical advice. If you believe this is an emergency, seek immediate medical care; do not wait for a reply in MediMama.' };
-  const appointmentQuestion = /appointment|next visit|schedule.*visit|check.?up|konsulta/.test(q);
-  const vaccineQuestion = /due|next vaccine|susunod.*bakuna|kailan.*bakuna/.test(q);
+  const q = question.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[?!.,]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (/pain|ache|bleed|bleeding|fever|sick|symptom|breath|breathing|unconscious|faint|seizure|emergency|vomit|vomiting|cough|dizzy|lagnat|masakit|sakit|dumudugo|hirap huminga|hindi makahinga|nahimatay|kombulsyon|sumusuka|pagsusuka|ubo|nahihilo/.test(q)) return { text: 'I cannot assess symptoms or diagnose a condition. Hindi ligtas magbigay ng diagnosis dito. Contact a qualified health worker for medical advice. If you believe this is an emergency, seek immediate medical care; do not wait for a reply in MediMama.' };
+  const appointmentQuestion = /appointment|next visit|schedule|scheduled|check.?up|konsulta|iskedyul|susunod na (pagbisita|check|appointment)|kailan.*(visit|check|appointment)|schedule ko/.test(q);
+  const vaccineTopic = /vaccine|vaccination|immuniz|bakuna|bakunahan/.test(q);
+  const vaccineQuestion = vaccineTopic && /due|next|susunod|kailan|schedule|iskedyul|missed|late|nakaligtaan|kailangan/.test(q);
   if ((appointmentQuestion || vaccineQuestion) && (availability.loading || availability.error)) return { text: availability.loading ? 'Your linked records are still loading. Please try this question again shortly. You can ask an education question in the meantime.' : 'I cannot check your linked records right now. Refresh the page or contact the health center if the problem continues. Education questions are still available.' };
   const scope = family(data, user), ids = [...scope.mothers, ...scope.infants].map(p => p.id);
   if (appointmentQuestion) {
@@ -23,7 +24,7 @@ export function assistantReply(question, data, user, availability = {}) {
     const reminders = dueReminders(data, user);
     return { text: reminders.length ? reminders.map(r => `${r.date}: ${r.message}`).join('\n') : 'No vaccine reminders are due in the next seven days in the loaded records. Open infant records for the full checklist; your health worker confirms the schedule.' };
   }
-  const aliases = { pregnancy: ['buntis','pagbubuntis'], postnatal:['pagkapanganak','bagong panganak'], feeding:['pagpapasuso','gatas'], nutrition:['pagkain','nutrisyon'], planning:['pagpaplano','pagitan ng anak'], vaccines:['bakuna'] };
+  const aliases = { pregnancy: ['buntis','pagbubuntis','prenatal'], postnatal:['pagkapanganak','bagong panganak','pagkatapos manganak'], feeding:['pagpapasuso','pagpapadede','gatas','breastfeed'], nutrition:['pagkain','nutrisyon','diet'], planning:['pagpaplano','pagitan ng anak','contraceptive','birth control'], vaccines:['bakuna','bakunahan','immunization'] };
   const resource = healthResources.find(r => [...r.keywords,...(aliases[r.id]||[])].some(k => q.includes(k)));
   return resource ? { text: resource.text, url: resource.url } : { text: 'I can explain the education topics and look up appointments or vaccine reminders in your linked records. Try “family planning”, “infant feeding”, “next appointment”, or “vaccines due”. For a personal health concern, use Health concerns to contact the health center.' };
 }

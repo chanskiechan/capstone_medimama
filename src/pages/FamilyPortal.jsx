@@ -16,6 +16,21 @@ function AssistantWidget() {
   return <aside className={`assistant-widget${open ? ' open' : ''}`} aria-label="MediMama Assistant">{open && <section className="assistant-window"><header><strong>MediMama Assistant</strong><button type="button" onClick={() => setOpen(false)} aria-label="Close assistant">×</button></header><Assistant /></section>}<button type="button" className="assistant-launcher" onClick={() => setOpen(!open)}><i className="fa-solid fa-robot" /><span>Chat with us</span></button></aside>;
 }
 
+function NotificationHistoryModal({ open, onClose, onMarkRead, busy, error, unread, announcements, reminders, notifications }) {
+  const [filter, setFilter] = useState('all');
+  useEffect(() => { if (open) setFilter('all'); }, [open]);
+  if (!open) return null;
+  const formatDate = value => new Date(value).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+  const entries = [
+    ...announcements.map(item => ({ key: `announcement-${item.id}`, kind: 'announcement', label: 'Announcement', title: item.title, message: item.description, icon: 'fa-bullhorn', className: 'announcement', href: '/support/education', createdAt: item.created_at, dateText: formatDate(item.created_at) })),
+    ...reminders.map(item => ({ key: `reminder-${item.id}`, kind: 'reminder', label: 'Reminder', title: 'Immunization reminder', message: item.message, icon: 'fa-syringe', className: 'reminder', href: '/user/records', createdAt: `${item.date}T00:00:00+08:00`, dateText: `Due ${item.date}` })),
+    ...notifications.map(item => { const appointment = item.message?.toLowerCase().includes('appointment'); return { key: `notification-${item.id}`, kind: 'inbox', label: 'Inbox update', title: appointment ? 'Appointment update' : 'Health update', message: item.message, icon: appointment ? 'fa-calendar-check' : 'fa-heart-pulse', className: appointment ? 'appointment' : 'health', href: item.link_path || '/support/notifications', createdAt: item.created_at, dateText: formatDate(item.created_at), unread: !item.read_at }; }),
+  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const shown = filter === 'all' ? entries : entries.filter(item => item.kind === filter);
+  const emptyMessage = { all: 'No notifications yet.', announcement: 'No announcements yet.', reminder: 'No reminders yet.', inbox: 'No inbox updates yet.' }[filter];
+  return <div className="family-notification-modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}><section className="family-notification-modal" role="dialog" aria-modal="true" aria-labelledby="all-notifications-title"><header className="family-notification-modal-head"><div><p>MEDIMAMA UPDATES</p><h2 id="all-notifications-title">All notifications</h2><span>View announcements, reminders, and messages in one timeline.</span></div><button type="button" className="family-notification-modal-close" onClick={onClose} aria-label="Close notifications"><i className="fa-solid fa-xmark" aria-hidden="true" /></button></header><div className="family-notification-modal-actions"><label>Filter<select value={filter} onChange={event => setFilter(event.target.value)}><option value="all">All notifications</option><option value="announcement">Announcements</option><option value="reminder">Reminders</option><option value="inbox">Inbox updates</option></select></label><button type="button" className="family-notification-mark-all" onClick={onMarkRead} disabled={!unread || busy}>{busy ? 'Updating...' : unread ? 'Mark all as read' : 'All caught up'}</button></div>{error && <p className="family-notification-error" role="alert">{error}</p>}{!shown.length ? <div className="family-notification-empty"><i className="fa-regular fa-bell-slash" aria-hidden="true" /><strong>{emptyMessage}</strong><span>Try another filter or check back later.</span></div> : <div className="family-notification-history-list">{shown.map(item => <Link key={item.key} className={`family-notification-item ${item.className}${item.unread ? ' unread' : ''}`} to={item.href} onClick={onClose}><i className={`fa-solid ${item.icon}`} aria-hidden="true" /><span><strong className="family-notification-title">{item.title}</strong><span className="family-notification-type">{item.label}</span><span className="family-notification-message">{item.message}</span><small>{item.dateText}</small></span>{item.unread && <b>New</b>}</Link>)}</div>}</section></div>;
+}
+
 export function FamilyHeader() {
   const user = session(), navigate = useNavigate();
   const { data } = useStore();
@@ -23,12 +38,16 @@ export function FamilyHeader() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const profileMenu = useRef(null), notificationMenu = useRef(null), location = useLocation();
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notificationHistoryOpen, setNotificationHistoryOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [notificationBusy, setNotificationBusy] = useState(false);
+  const [notificationError, setNotificationError] = useState('');
   const [logoutError, setLogoutError] = useState('');
   useEffect(() => {
     if (profileMenu.current) profileMenu.current.open = false;
     setNotificationOpen(false);
+    setNotificationHistoryOpen(false);
   }, [location.pathname]);
   useEffect(() => {
     const close = event => {
@@ -39,17 +58,18 @@ export function FamilyHeader() {
       if (event.key !== 'Escape') return;
       if (profileMenu.current?.open) { profileMenu.current.open = false; profileMenu.current.querySelector('summary')?.focus(); }
       if (notificationOpen) setNotificationOpen(false);
+      if (notificationHistoryOpen) setNotificationHistoryOpen(false);
     };
     document.addEventListener('pointerdown', close); document.addEventListener('keydown', escape);
     return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
-  }, [notificationOpen]);
+  }, [notificationOpen, notificationHistoryOpen]);
   useEffect(() => {
     if (!user.id || user.demo) return undefined;
     let active = true;
     const loadNotifications = async () => {
       const [{ data: rows }, { data: announcementRows }] = await Promise.all([
-        supabase.from('notifications').select('id,message,created_at,read_at,link_path').order('created_at', { ascending: false }).limit(10),
-        supabase.from('announcements').select('id,title,description,priority,created_at').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(10),
+        supabase.from('notifications').select('id,message,created_at,read_at,link_path').order('created_at', { ascending: false }).limit(100),
+        supabase.from('announcements').select('id,title,description,priority,created_at').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(100),
       ]);
       if (active) { setNotifications(rows || []); setAnnouncements(announcementRows || []); }
     };
@@ -57,6 +77,26 @@ export function FamilyHeader() {
     const timer = setInterval(loadNotifications, 30000);
     return () => { active = false; clearInterval(timer); };
   }, [user.id, user.demo]);
+  const markNotificationsRead = async () => {
+    if (notificationBusy || user.demo || !notifications.some(item => !item.read_at)) return;
+    setNotificationBusy(true);
+    const markedAt = new Date().toISOString();
+    try {
+      const { error } = await supabase.from('notifications').update({ read_at: markedAt }).eq('user_id', user.id).is('read_at', null);
+      if (error) throw error;
+      setNotifications(previous => previous.map(item => item.read_at ? item : { ...item, read_at: markedAt }));
+      setNotificationError('');
+    } catch (error) {
+      setNotificationError(error.message || 'Could not mark notifications as read.');
+    } finally {
+      setNotificationBusy(false);
+    }
+  };
+  const openNotificationHistory = () => {
+    setNotificationOpen(false);
+    setNotificationError('');
+    setNotificationHistoryOpen(true);
+  };
   const logout = async () => {
     if (!user.demo) { const { error } = await supabase.auth.signOut(); if (error) { setLogoutError('Could not log out. Please try again.'); return; } }
     localStorage.removeItem('medimama-current-session'); navigate('/login', { replace: true });
@@ -77,7 +117,10 @@ export function FamilyHeader() {
   }, [caregiver, user.id]);
   const photo = avatarUrl ? <img className="header-avatar-image" src={avatarUrl} alt="" /> : initials;
   const reminders = dueReminders(data, user);
-  const hasUnread = notifications.some(item => !item.read_at) || announcements.length > 0 || reminders.length > 0;
+  const unreadNotifications = notifications.some(item => !item.read_at);
+  // The red bell dot represents inbox items with a read state. Announcements
+  // and reminders stay visible in the popup but are informational feed items.
+  const hasUnread = unreadNotifications;
   return <><header className="app-header family-header">
     <Link className="family-brand" to={caregiver ? '/caregiver' : '/user'} aria-label="MediMama home"><img src="/medimama/medimamalogo.png" alt="MediMama" /></Link>
     <nav className="family-navigation" aria-label="Main navigation">
@@ -92,7 +135,8 @@ export function FamilyHeader() {
           {hasUnread && <span className="family-notification-dot" aria-label="Unread notifications" />}
         </button>
         {notificationOpen && <div className="family-notification-menu" role="dialog" aria-label="Recent notifications">
-          <div className="family-notification-menu-head"><div><strong>Inbox</strong><small>Latest MediMama updates</small></div><Link to="/support/notifications" onClick={() => setNotificationOpen(false)}>View all</Link></div>
+          <div className="family-notification-menu-head"><div><strong>Inbox</strong><small>Latest MediMama updates</small></div><div className="family-notification-menu-head-actions"><button type="button" className="family-notification-mark-all" onClick={markNotificationsRead} disabled={!unreadNotifications || notificationBusy} title="Mark personal inbox updates as read">{notificationBusy ? 'Updating...' : unreadNotifications ? 'Mark all as read' : 'All caught up'}</button><button type="button" className="family-notification-view-all" onClick={openNotificationHistory}>View all</button></div></div>
+          {notificationError && <p className="family-notification-error" role="alert">{notificationError}</p>}
           {!notifications.length && !announcements.length && !reminders.length ? <p className="family-notification-empty">No messages or reminders yet.</p> : <div className="family-notification-list">
             {announcements.length > 0 && <section className="family-notification-group"><h3><i className="fa-solid fa-bullhorn" aria-hidden="true" /> Announcements</h3>{announcements.map(item => <Link key={`announcement-${item.id}`} className={`family-notification-item announcement ${item.priority?.toLowerCase() || ''}`} to="/support/education" onClick={() => setNotificationOpen(false)}><i className="fa-solid fa-bullhorn" aria-hidden="true" /><span><strong className="family-notification-title">{item.title}</strong><span className="family-notification-message">{item.description}</span><small>{new Date(item.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</small></span></Link>)}</section>}
             {reminders.length > 0 && <section className="family-notification-group"><h3><i className="fa-solid fa-syringe" aria-hidden="true" /> Reminders</h3>{reminders.map(item => <Link key={`reminder-${item.id}`} className="family-notification-item reminder" to="/user/records" onClick={() => setNotificationOpen(false)}><i className="fa-solid fa-syringe" aria-hidden="true" /><span><strong className="family-notification-title">Immunization reminder</strong><span className="family-notification-message">{item.message}</span><small>Due {item.date}</small></span></Link>)}</section>}
@@ -105,7 +149,7 @@ export function FamilyHeader() {
         <div className="family-profile-menu"><p>My account</p><Link to={caregiver ? '/caregiver/profile' : '/user/profile'}><i className="fa-solid fa-user" aria-hidden="true" />View profile</Link><button type="button" onClick={logout}><i className="fa-solid fa-arrow-right-from-bracket" aria-hidden="true" />Log out</button>{logoutError && <p role="alert">{logoutError}</p>}</div>
       </details>
     </div>
-  </header>{!caregiver && <AssistantWidget />}</>;
+  </header><NotificationHistoryModal open={notificationHistoryOpen} onClose={() => setNotificationHistoryOpen(false)} onMarkRead={markNotificationsRead} busy={notificationBusy} error={notificationError} unread={unreadNotifications} announcements={announcements} reminders={reminders} notifications={notifications} />{!caregiver && <AssistantWidget />}</>;
 }
 
 export default function FamilyPortal({ page }) {
