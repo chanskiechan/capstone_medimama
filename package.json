@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "server": "node server/index.js",
+    "server:dev": "node --watch server/index.js",
     "test": "node --test src/care.test.js src/support.test.js",
     "test:ui": "node scripts/check-support-ui.mjs",
     "test:database": "node scripts/check-database.mjs"
@@ -14,6 +16,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
     "@vitejs/plugin-react": "latest",
+    "dotenv": "^18.0.7",
+    "nodemailer": "^10.1.1",
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "latest",

@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { addDays, appointmentError, completedDose, day, daysBetween, family, nextPrenatal, pregnancy, serviceGroup, services, session, today, uid, vaccineDue, vaccineError, vaccineSchedule } from '../care';
 import './CareWorkspace.css';
 import { supabase } from '../lib/supabase';
+import { notifyEmailEvent } from '../lib/emailNotifications';
 
 const fields = event => Object.fromEntries(new FormData(event.currentTarget));
 function Field({ label, name, type = 'text', value, ...props }) { return <label>{label}<input name={name} type={type} defaultValue={value ?? ''} {...props} /></label>; }
@@ -79,6 +80,7 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
     // Pull the saved appointment back from Supabase straight away so the
     // appointment list and the admin dashboard use the same record.
     await refreshPatientData?.();
+    void notifyEmailEvent('/api/email/appointment', { appointmentId: next.id });
     finish(old ? 'Appointment rescheduled. The reason and previous schedule are visible to the health center.' : 'Appointment booked.');
   };
 

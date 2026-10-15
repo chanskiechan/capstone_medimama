@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AdminShell } from '../components/AdminShell';
 import { supabase } from '../lib/supabase';
+import { notifyEmailEvent } from '../lib/emailNotifications';
 
 const Icon = ({ name }) => <i className={`fa-solid fa-${name}`} />;
 
@@ -16,9 +17,17 @@ export default function AnnouncementsManager() {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(event.currentTarget));
     const payload = { title: values.title.trim(), description: values.description.trim(), audience: values.audience, priority: values.priority };
-    const query = editing?.id ? supabase.from('announcements').update(payload).eq('id', editing.id) : supabase.from('announcements').insert(payload);
-    const { error } = await query;
+    let announcementId = editing?.id;
+    let error;
+    if (editing?.id) {
+      ({ error } = await supabase.from('announcements').update(payload).eq('id', editing.id));
+    } else {
+      const result = await supabase.from('announcements').insert(payload).select('id').single();
+      error = result.error;
+      announcementId = result.data?.id;
+    }
     if (error) return setNotice(`Could not publish announcement: ${error.message}`);
+    if (!editing?.id && announcementId) void notifyEmailEvent('/api/email/announcement', { announcementId });
     setEditing(null); setNotice(editing?.id ? 'Announcement updated.' : 'Announcement published.'); load();
   };
   const archive = async item => { const { error } = await supabase.from('announcements').update({ archived: !item.archived }).eq('id', item.id); if (error) return setNotice(`Could not update announcement: ${error.message}`); setNotice(item.archived ? 'Announcement restored.' : 'Announcement archived.'); load(); };

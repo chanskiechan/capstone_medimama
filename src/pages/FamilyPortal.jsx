@@ -61,7 +61,7 @@ export function FamilyHeader() {
     if (!user.demo) { const { error } = await supabase.auth.signOut(); if (error) { setLogoutError('Could not log out. Please try again.'); return; } }
     localStorage.removeItem('medimama-current-session'); navigate('/login', { replace: true });
   };
-  const links = caregiver ? [['/caregiver', 'hand-holding-heart', 'Care workspace']] : [['/user', 'house', 'Home'], ['/user/records', 'clipboard', 'Records']];
+  const links = caregiver ? [['/caregiver', 'hand-holding-heart', 'Care workspace']] : [['/user', 'house', 'Home'], ['/user/records', 'clipboard', 'Records'], ['/user/caregivers', 'people-group', 'Caregiver']];
   const initials = (user.name || 'M').split(' ').map(p => p[0]).join('').slice(0, 2);
   useEffect(() => {
     if (!user.id || user.demo) return undefined;

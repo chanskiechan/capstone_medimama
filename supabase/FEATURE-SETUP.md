@@ -1,13 +1,20 @@
 # Activate the added features
 
-The app changes are implemented locally. Your live Supabase database has not been changed.
+The app changes are implemented locally. The linked Supabase project now has the
+email tracking migration applied; the remaining feature migrations should still
+be run in the order documented below if they are not already present.
 Migration 016 is based on the schema CSV you supplied. It preserves existing tables and records.
 
-For Mother-side appointment confirmation and time-only rescheduling, also run
-`supabase/migrations/021_mother_appointment_actions.sql` after migration 020.
-The Mother can confirm an appointment scheduled by the health center or submit a
-new-time request; the appointment date and service remain controlled by the
-health center.
+For the Mother-side appointment response flow, run
+`supabase/migrations/021_mother_appointment_actions.sql` after migration 020,
+then run `supabase/migrations/022_pending_appointment_workflow.sql`.
+The administrator creates the appointment directly. It starts as **Pending**;
+the mother can then choose **Confirmed** or **Rescheduled**. There is no admin
+accept/approve step for appointments. Finally, run
+`supabase/migrations/023_one_active_appointment.sql` and then
+`supabase/migrations/024_active_appointment_date_window.sql`. A patient cannot
+receive another appointment while the current appointment date is today or in
+the future; booking is allowed once that date has passed.
 
 1. In VS Code, press **Ctrl+P**, type `016_complete_care_features.sql`, then press Enter.
 2. Copy all the SQL. In your Supabase project, open **SQL Editor**, create a new query, paste it, and click **Run** once.
@@ -18,7 +25,25 @@ health center.
 
 Enable the **pg_cron** extension from your project's database extensions screen. Then run `supabase/schedule-reminders.sql` in SQL Editor. This installs hourly appointment and vaccination reminder jobs and runs both once immediately.
 
-These are **in-app inbox notifications**. No email, SMS, or push delivery service is configured. Notifications are generated in the database even with the browser closed, and the inbox refreshes while open. Appointment updates and concern replies use database triggers and do not depend on cron. Vaccine reminders require health-worker review and are not medical clearance to administer a dose.
+These are **in-app inbox notifications**. Appointment updates and concern replies use database triggers and do not depend on cron. Vaccine reminders require health-worker review and are not medical clearance to administer a dose.
+
+## Email notifications with Nodemailer
+
+Email delivery runs in the server-side Node service under `server/`. It sends
+login alerts, appointment updates, announcements, and the reminder rows created
+by the scheduled Supabase jobs. SMTP credentials never go into the React app.
+
+1. Copy `server/.env.example` to `server/.env` and fill in your SMTP provider's
+   host, port, username, app password, and `MAIL_FROM` address.
+2. `supabase/migrations/026_email_notification_tracking.sql` has already been
+   applied to the linked project during setup. If you use another project, apply
+   it once in that project's Supabase SQL Editor.
+3. Start the frontend with `npm run dev` and the email service in a second
+   terminal with `npm run server`.
+
+The frontend calls `VITE_EMAIL_API_URL` from `.env.local` (default:
+`http://localhost:3001`). Demo accounts do not send email. Do not commit
+`server/.env` or place SMTP credentials in any `VITE_` variable.
 
 ## Where to find the features
 

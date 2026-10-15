@@ -5,7 +5,9 @@ import MotherDashboard from './pages/MotherExperience';
 import FamilyPortal from './pages/FamilyPortal';
 import { Login } from './pages/Login';
 import MotherProfile from './pages/MotherProfile';
+import MotherCaregivers from './pages/MotherCaregivers';
 import CaregiverProfile from './pages/CaregiverProfile';
+import CaregiverRequests from './pages/CaregiverRequests';
 import Support from './pages/Support';
 import AdminReports from './pages/AdminReports';
 import AdminTools, { AdminProfile } from './pages/AdminTools';
@@ -36,6 +38,7 @@ export default function App() {
     <Route path="/reset-password" element={<PasswordRecovery reset />} />
     <Route path="/dashboard" element={admin(<AdminDashboard />)} />
     <Route path="/mothers" element={admin(<Directory type="mothers" />)} />
+    <Route path="/caregiver-requests" element={admin(<CaregiverRequests />)} />
     <Route path="/infants" element={admin(<Directory type="infants" />)} />
     <Route path="/healthcare" element={admin(<Healthcare />)} />
     <Route path="/announcements" element={admin(<Announcements />)} />
@@ -49,6 +52,7 @@ export default function App() {
     <Route path="/caregiver/profile" element={caregiver(<CaregiverProfile />)} />
     <Route path="/user" element={mother(<MotherDashboard />)} />
     <Route path="/user/profile" element={mother(<MotherProfile />)} />
+    <Route path="/user/caregivers" element={mother(<MotherCaregivers />)} />
     <Route path="/user/appointments" element={mother(<Navigate to="/user" replace />)} />
     <Route path="/user/infants" element={mother(<Navigate to="/user/records" replace />)} />
     <Route path="/user/records" element={mother(<FamilyPortal page="records" />)} />

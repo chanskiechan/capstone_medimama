@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
-import { completedDose, family, pregnancy, session, today, vaccineDue, vaccineSchedule } from '../care';
+import { completedDose, daysBetween, family, pregnancy, session, today, vaccineDue, vaccineSchedule } from '../care';
 import ManageAppointment from './ManageAppointment';
 import './CareWorkspace.css';
 
@@ -38,7 +38,29 @@ export default function FamilyOverview({ caregiver = false, showReminders = true
           {next ? <><h3>{next.date} at {next.time}</h3><p>{next.patient} · {next.service}</p><span className="care-badge">{appointmentStatus(next.status)}</span>{!caregiver && <ManageAppointment appointment={next} />}</> : <><p>No upcoming appointments.</p><p className="care-muted">Appointments are scheduled by the health center.</p></>}
         </article>
         <article className="care-card"><span className="overview-icon"><i className="fa-solid fa-heart-pulse" aria-hidden="true" /></span><h2>Maternal care</h2>{scope.mothers.map(mother => { const stage = pregnancy(mother); return <div key={mother.id}><h3>{mother.name}</h3><p>{stage.label}{stage.weeks !== null ? ` · ${stage.weeks} weeks` : ''}{mother.deliveryDate ? ` · Delivered ${mother.deliveryDate}` : ''}</p></div>; })}<Link to={recordsLink}>View maternal records →</Link></article>
-        <article className="care-card"><span className="overview-icon"><i className="fa-solid fa-baby" aria-hidden="true" /></span><h2>{caregiver ? 'Linked infants' : 'My infants'}</h2><h3>{scope.infants.length} {scope.infants.length === 1 ? 'infant' : 'infants'}</h3><p>{scope.infants.map(infant => infant.name).join(', ') || 'No infants registered yet.'}</p><Link to={infantsLink}>{caregiver ? 'View infant records' : 'View infant records'} →</Link></article>
+        <article className="care-card infant-overview-card">
+          <span className="overview-icon"><i className="fa-solid fa-baby" aria-hidden="true" /></span>
+          <h2>{caregiver ? 'Linked infants' : 'My infants'}</h2>
+          {scope.infants.length ? <div className="infant-overview-list">
+            {scope.infants.map(baby => {
+              const growth = [...(baby.growth || [])].filter(item => item.date).sort((a, b) => a.date.localeCompare(b.date));
+              const latest = growth.at(-1);
+              const ageDays = daysBetween(baby.birthDate, today());
+              const age = Number.isFinite(ageDays) && ageDays >= 0 ? `${Math.floor(ageDays / 7)} weeks` : 'Age not recorded';
+              return <div className="infant-overview-item" key={baby.id}>
+                <h3>{baby.name}</h3>
+                <div className="infant-overview-baby-icon"><i className="fa-solid fa-baby" aria-hidden="true" /></div>
+                <dl className="infant-overview-metrics">
+                  <div><dt>Age</dt><dd>{age}</dd></div>
+                  <div><dt>Height</dt><dd>{latest?.length != null ? `${latest.length} cm` : baby.birthLength != null ? `${baby.birthLength} cm` : '—'}</dd></div>
+                  <div><dt>Weight</dt><dd>{latest?.weight != null ? `${latest.weight} kg` : baby.birthWeight != null ? `${baby.birthWeight} kg` : '—'}</dd></div>
+                  <div><dt>MUAC</dt><dd>{latest?.muac != null ? `${latest.muac} cm` : '—'}</dd></div>
+                </dl>
+              </div>;
+            })}
+          </div> : <p>No infants registered yet.</p>}
+          <Link to={infantsLink}>View infant records →</Link>
+        </article>
       </div>
       {showReminders && <ReminderCard reminders={reminders} infantsLink={infantsLink} />}
     </>}
