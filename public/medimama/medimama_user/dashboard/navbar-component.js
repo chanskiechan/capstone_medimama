@@ -20,7 +20,6 @@
                 <a class="nav-link${isActive('appointments.html')}" href="appointments.html"><i class="fa-regular fa-calendar-days"></i><span>Appointments</span></a>
                 <a class="nav-link${isActive('records.html')}" href="records.html"><i class="fa-regular fa-clipboard"></i><span>Records</span></a>
                 <a class="nav-link${isActive('infants.html')}" href="infants.html"><i class="fa-solid fa-baby"></i><span>My Infants</span></a>
-                <button class="nav-link" type="button" data-open="facilityLocator"><i class="fa-solid fa-hand-holding-heart"></i><span>Services</span></button>
             </nav>
             <div class="header-actions">
                 <div class="notification-wrap">

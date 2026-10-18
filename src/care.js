@@ -14,6 +14,13 @@ export function addMonths(date, amount) {
   const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
   return new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), Math.min(start.getUTCDate(), last))).toISOString().slice(0, 10);
 }
+export function infantAgeStatus(birthDate, date = today()) {
+  if (!Number.isFinite(day(birthDate)) || !Number.isFinite(day(date)) || daysBetween(birthDate, date) < 0) return 'Age not recorded';
+  if (daysBetween(birthDate, date) <= 28) return 'Newborn';
+  if (day(date) < day(addMonths(birthDate, 12))) return 'Infant';
+  if (day(date) < day(addMonths(birthDate, 36))) return 'Toddler';
+  return 'Child';
+}
 export const uid = prefix => `${prefix}-${crypto.randomUUID()}`;
 export function session() { try { return JSON.parse(localStorage.getItem('medimama-current-session')) || {}; } catch { return {}; } }
 export function normalize(data) {
@@ -74,7 +81,7 @@ export function appointmentError(data, item, now = today(), options = {}) {
   if (item.service === 'Postnatal Checkup' && mother.status !== 'Postnatal') return 'Delivery must be recorded before booking postnatal care.';
   const activeStatuses = new Set(['pending', 'scheduled', 'approved', 'rescheduled', 'confirmed']);
   const activeAppointment = data.appointments.find(a => a.id !== item.id && a.patientId === item.patientId && a.date >= now && activeStatuses.has(String(a.status || '').toLowerCase()));
-  if (activeAppointment && !options.allowReschedule) return 'Wait until the current appointment date has passed before booking another.';
+  if (activeAppointment && !options.allowReschedule && !options.allowMultipleAppointments) return 'Wait until the current appointment date has passed before booking another.';
   if (!Number.isFinite(day(item.date)) || item.date < now) return 'Choose today or a future date.';
   if (new Date(day(item.date)).getUTCDay() !== 3) return 'Clinic appointments are available on Wednesdays only.';
   const start = serviceGroup(item.service) === 'infant' ? '08:00' : '10:00';
@@ -86,6 +93,7 @@ export function appointmentError(data, item, now = today(), options = {}) {
   const sameDay = data.appointments.filter(a => a.id !== item.id && !['Cancelled', 'cancelled'].includes(a.status) && a.date === item.date);
   const counted = data.settings.capacityMode === 'per-service' ? sameDay.filter(a => serviceGroup(a.service) === serviceGroup(item.service)) : sameDay;
   if (counted.length >= Number(data.settings.dailyCapacity || appointmentCapacity)) return `This Wednesday is full. The limit is ${Number(data.settings.dailyCapacity || appointmentCapacity)} ${serviceGroup(item.service) === 'infant' ? 'infant' : 'maternal'} appointments.`;
+  if (options.rejectOccupiedTime && sameDay.some(a => a.time === item.time && serviceGroup(a.service) === serviceGroup(item.service))) return 'This time slot is already booked. Please choose another time.';
   if (sameDay.some(a => a.patientId === item.patientId && a.service === item.service)) return 'This patient already has this service booked on that date.';
   if (sameDay.some(a => a.time === item.time && a.patientId === item.patientId)) return 'This patient already has an appointment at that time.';
   if (sameDay.filter(a => a.time === item.time && serviceGroup(a.service) === serviceGroup(item.service)).length >= appointmentSlotCapacity) return `This time slot is full. Choose another time; up to ${appointmentSlotCapacity} patients may use one slot.`;

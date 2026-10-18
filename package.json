@@ -17,6 +17,7 @@
     "@supabase/supabase-js": "^2.116.0",
     "@vitejs/plugin-react": "latest",
     "dotenv": "^18.0.7",
+    "jspdf": "^4.2.1",
     "nodemailer": "^10.1.1",
     "react": "latest",
     "react-dom": "latest",

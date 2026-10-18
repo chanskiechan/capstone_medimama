@@ -50,15 +50,6 @@ const modalViews = {
                 <div class="record-row"><i class="fa-solid fa-file-medical"></i><span><strong>Lab and Ultrasound</strong><small>No new uploaded result yet.</small></span><b class="status-pill">Open</b></div>
             </div>`
     },
-    facilityLocator: {
-        kicker: 'Services',
-        title: 'Nearby Healthcare Facilities',
-        body: `
-            <div class="detail-list">
-                <div class="detail-row"><i class="fa-regular fa-hospital"></i><span><strong>Barangay Health Center</strong><small>0.8 km away, open 8:00 AM to 5:00 PM</small></span><b class="status-pill">Open</b></div>
-                <div class="detail-row"><i class="fa-solid fa-house-medical"></i><span><strong>Imus City Health Office</strong><small>4.2 km away, maternal and infant services available.</small></span><b class="status-pill">Open</b></div>
-            </div>`
-    },
     healthEducation: {
         kicker: 'Health Education',
         title: 'Recommended Guides',
@@ -243,7 +234,7 @@ document.querySelectorAll('[data-nav]').forEach(button => {
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         if (button.classList.contains('nav-link')) button.classList.add('active');
         const label = button.textContent.trim() || 'Home';
-        if (button.dataset.nav !== 'home') openModal(button.dataset.nav === 'appointments' ? 'bookAppointment' : button.dataset.nav === 'records' ? 'healthRecords' : 'facilityLocator');
+        if (button.dataset.nav !== 'home') openModal(button.dataset.nav === 'appointments' ? 'bookAppointment' : button.dataset.nav === 'records' ? 'healthRecords' : 'healthEducation');
         showToast(`${label} selected`);
     });
 });
