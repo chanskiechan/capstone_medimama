@@ -33,7 +33,8 @@ const resendConfigured = Boolean(process.env.RESEND_API_KEY && (process.env.RESE
 const emailConfigured = brevoConfigured || resendConfigured || smtpConfigured;
 const emailProvider = brevoConfigured ? 'brevo' : resendConfigured ? 'resend' : smtpConfigured ? 'smtp' : 'none';
 const port = Number(process.env.PORT || 3001);
-const frontendOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173,http://localhost:5174').split(',').map(origin => origin.trim()).filter(Boolean);
+const configuredFrontendOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173,http://localhost:5174').split(',').map(origin => origin.trim()).filter(Boolean);
+const frontendOrigins = [...new Set([...configuredFrontendOrigins, 'http://localhost', 'https://localhost', 'capacitor://localhost', 'ionic://localhost'])];
 const reminderPollMs = Math.max(30_000, Number(process.env.REMINDER_POLL_MS || 60_000));
 let reminderJobRunning = false;
 const registrationOtps = new Map();
@@ -353,7 +354,7 @@ async function processReminderEmails() {
 
 const server = createServer(async (request, response) => {
   const requestOrigin = request.headers.origin;
-  response.setHeader('Access-Control-Allow-Origin', frontendOrigins.includes(requestOrigin) ? requestOrigin : frontendOrigins[0]);
+  response.setHeader('Access-Control-Allow-Origin', requestOrigin && frontendOrigins.includes(requestOrigin) ? requestOrigin : frontendOrigins[0]);
   response.setHeader('Vary', 'Origin');
   response.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
