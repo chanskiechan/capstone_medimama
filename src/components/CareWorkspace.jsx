@@ -16,18 +16,35 @@ const manilaDateTime = value => value ? new Intl.DateTimeFormat('en-PH', { timeZ
 const appointmentLabel = status => ({ Pending: 'Pending', Scheduled: 'Pending', Approved: 'Pending', Rescheduled: 'Rescheduled', Confirmed: 'Confirmed', Completed: 'Done', Cancelled: 'Cancelled' }[status] || status);
 const appointmentFilterStatus = status => ({ Scheduled: 'Pending', Approved: 'Pending' }[status] || status);
 const isUuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || '');
-const pdfValue = value => String(value ?? '').replace(/[^\x20-\x7E\n]/g, ' ').replace(/\s+/g, ' ').trim();
+const pdfValue = value => String(value ?? '').replace(/[^\x20-\x7E\n]/g, ' ').split('\n').map(line => line.replace(/\s+/g, ' ').trim()).join('\n').trim();
 const pdfFileName = value => pdfValue(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'patient';
-function downloadHistoryPdf(patientName, records) {
+const loadPdfLogo = async () => {
+  try {
+    const response = await fetch('/medimama/medimamalogo.png');
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+};
+async function downloadCombinedHistoryPdf(patientName, records, recordType) {
+  const logo = await loadPdfLogo();
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const margin = 36;
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const columns = [
-    { label: 'Date', width: 78 },
-    { label: 'Record', width: 132 },
-    { label: 'Details', width: 242 },
-    { label: 'Recorded by', width: pageWidth - (margin * 2) - 78 - 132 - 242 },
+    { label: 'Date', width: 66 },
+    { label: 'Record type', width: 88 },
+    { label: 'Record', width: 120 },
+    { label: 'Details', width: 169 },
+    { label: 'Recorded by', width: pageWidth - (margin * 2) - 66 - 88 - 120 - 169 },
   ];
   const ordered = chronological(records);
   let y = margin;
@@ -44,7 +61,8 @@ function downloadHistoryPdf(patientName, records) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(23, 35, 61);
-  doc.text('MediMama Record History', margin, y + 18);
+  if (logo) doc.addImage(logo, 'PNG', pageWidth - margin - 70, margin - 4, 70, 56);
+  doc.text('MediMama Record History', pageWidth / 2, y + 18, { align: 'center' });
   y += 38;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
@@ -58,6 +76,7 @@ function downloadHistoryPdf(patientName, records) {
   ordered.forEach((record, index) => {
     const values = [
       pdfValue(record.date || 'Not recorded'),
+      pdfValue(recordType || 'Patient record'),
       pdfValue(record.type || 'Clinical record'),
       pdfValue([record.details, record.notes].filter(Boolean).join(' · ') || 'No details recorded.'),
       pdfValue(record.actor || 'Not recorded'),
@@ -82,6 +101,108 @@ function downloadHistoryPdf(patientName, records) {
     doc.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
     y += rowHeight;
   });
+  doc.save(`${pdfFileName(patientName)}-record-history.pdf`);
+}
+
+async function downloadHistoryPdf(patientName, records, recordType, growthRecords = []) {
+  const logo = await loadPdfLogo();
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const margin = 36;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const recordColumns = [
+    { label: 'Date', width: 66 },
+    { label: 'Record type', width: 88 },
+    { label: 'Record', width: 120 },
+    { label: 'Details', width: 169 },
+    { label: 'Recorded by', width: pageWidth - (margin * 2) - 66 - 88 - 120 - 169 },
+  ];
+  const growthColumns = [
+    { label: 'Date', width: 66 },
+    { label: 'Weight (kg)', width: 76 },
+    { label: 'Length (cm)', width: 82 },
+    { label: 'MUAC (cm)', width: 76 },
+    { label: 'Notes / source', width: pageWidth - (margin * 2) - 66 - 76 - 82 - 76 },
+  ];
+  let y = margin;
+  const drawTable = (title, columns, rows) => {
+    if (!rows.length) return;
+    if (y + 62 > pageHeight - margin) {
+      doc.addPage();
+      y = margin;
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(47, 93, 194);
+    doc.text(title, margin, y + 14);
+    y += 24;
+    const drawHeader = () => {
+      doc.setFillColor(245, 248, 253);
+      doc.rect(margin, y, pageWidth - (margin * 2), 24, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(82, 98, 125);
+      let x = margin;
+      columns.forEach(column => { doc.text(column.label, x + 6, y + 16); x += column.width; });
+      y += 24;
+    };
+    drawHeader();
+    rows.forEach((values, index) => {
+      const wrapped = values.map((value, columnIndex) => doc.splitTextToSize(pdfValue(value), columns[columnIndex].width - 12));
+      const rowHeight = Math.max(30, ...wrapped.map(lines => lines.length * 11 + 12));
+      if (y + rowHeight > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+        drawHeader();
+      }
+      if (index % 2 === 0) {
+        doc.setFillColor(251, 253, 255);
+        doc.rect(margin, y, pageWidth - (margin * 2), rowHeight, 'F');
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(64, 80, 106);
+      let x = margin;
+      wrapped.forEach((lines, columnIndex) => { doc.text(lines, x + 6, y + 16, { maxWidth: columns[columnIndex].width - 12 }); x += columns[columnIndex].width; });
+      doc.setDrawColor(229, 235, 243);
+      doc.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
+      y += rowHeight;
+    });
+    y += 20;
+  };
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(23, 35, 61);
+  if (logo) doc.addImage(logo, 'PNG', pageWidth - margin - 70, margin - 4, 70, 56);
+  doc.text('MediMama Record History', pageWidth / 2, y + 18, { align: 'center' });
+  y += 38;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text(`Patient: ${pdfValue(patientName)}`, margin, y);
+  y += 16;
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Generated: ${today()}`, margin, y);
+  y += 22;
+
+  const growthRows = growthRecords.length ? growthRecords : records.filter(record => record.type === 'Growth history');
+  const orderedGrowth = [...growthRows].filter(item => item.date).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const orderedRecords = [...records].filter(record => record.type !== 'Growth history').sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  drawTable('Growth history', growthColumns, orderedGrowth.map(growth => [
+    growth.date || 'Not recorded',
+    growth.weight || 'Not recorded',
+    growth.length || 'Not recorded',
+    growth.muac || 'Not recorded',
+    [growth.notes, growth.source || growth.actor || 'Existing record'].filter(Boolean).join(' · '),
+  ]));
+  drawTable('Record history', recordColumns, orderedRecords.map(record => [
+    record.date || 'Not recorded',
+    recordType || 'Patient record',
+    record.type || 'Clinical record',
+    [record.details, record.notes].filter(Boolean).join(' · ') || 'No details recorded.',
+    record.actor || 'Not recorded',
+  ]));
   doc.save(`${pdfFileName(patientName)}-record-history.pdf`);
 }
 
@@ -266,17 +387,25 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
 }
 
 function MeasurementFields() { return <><Field label="Current weight (kg)" name="weight" type="number" min="0.1" max="60" step="0.01" required /><Field label="Height / length (cm)" name="length" type="number" min="1" max="180" step="0.1" required /><Field label="MUAC (cm)" name="muac" type="number" min="1" max="40" step="0.1" required /></>; }
-function History({ records = [], growthRecords = [], patientName = 'Patient' }) {
-  const ordered = chronological(records);
-  const growthForPdf = growthRecords.map(growth => ({
+function History({ records = [], growthRecords, patientName = 'Patient', recordType = 'Patient record' }) {
+  const resolvedRecordType = recordType === 'Patient record' ? (Array.isArray(growthRecords) ? 'Infant record' : 'Maternal record') : recordType;
+  const growth = growthRecords || [];
+  const normalizedRecords = records.map(record => record.vaccine ? { ...record, actor: record.actor || record.provider || 'Not recorded', details: record.notes || '', notes: '' } : record);
+  const ordered = chronological(normalizedRecords);
+  const growthForPdf = growth.map(growth => ({
     id: `growth-${growth.id || growth.date}`,
     date: growth.date,
-    type: 'Growth measurement',
-    details: [['Weight', growth.weight, 'kg'], ['Length', growth.length, 'cm'], ['MUAC', growth.muac, 'cm']].filter(([, value]) => value !== undefined && value !== null && value !== '').map(([label, value, unit]) => `${label}: ${value} ${unit}`).join(' · ') || 'No growth details recorded.',
+    weight: growth.weight,
+    length: growth.length,
+    muac: growth.muac,
+    notes: growth.notes,
+    source: growth.source || growth.actor,
+    type: 'Growth history',
+    details: [['Weight', growth.weight, 'kg'], ['Length', growth.length, 'cm'], ['MUAC', growth.muac, 'cm']].filter(([, value]) => value !== undefined && value !== null && value !== '').map(([label, value, unit]) => `${label}: ${value} ${unit}`).concat(growth.notes ? [`Notes: ${growth.notes}`] : []).join('\n') || 'No growth details recorded.',
     actor: growth.actor || growth.source || 'Existing record',
   }));
   const downloadableRecords = [...ordered, ...growthForPdf];
-  return <details><summary>Record history ({records.length})</summary>{downloadableRecords.length ? <><div className="care-history-toolbar"><button type="button" className="care-history-download" onClick={() => downloadHistoryPdf(patientName, downloadableRecords)}><i className="fa-solid fa-file-pdf" aria-hidden="true" /> Download PDF</button></div>{ordered.length ? <div className="care-history-table-wrap"><table className="care-history-table"><thead><tr><th>Date</th><th>Record</th><th>Details</th><th>Recorded by</th></tr></thead><tbody>{ordered.map((record, index) => <tr key={record.id || index}><td>{record.date || 'Not recorded'}</td><td>{record.type || 'Clinical record'}</td><td>{[record.details, record.notes].filter(Boolean).join(' · ') || 'No details recorded.'}</td><td>{record.actor || 'Not recorded'}</td></tr>)}</tbody></table></div> : <p className="care-muted">Growth history will be included in the downloaded PDF.</p>}</> : <Empty>No clinical history recorded.</Empty>}</details>;
+  return <details><summary>Record history ({records.length})</summary>{downloadableRecords.length ? <><div className="care-history-toolbar"><button type="button" className="care-history-download" onClick={() => downloadHistoryPdf(patientName, downloadableRecords, resolvedRecordType)}><i className="fa-solid fa-file-pdf" aria-hidden="true" /> Download PDF</button></div>{ordered.length ? <div className="care-history-table-wrap"><table className="care-history-table"><thead><tr><th>Date</th><th>Record</th><th>Details</th><th>Recorded by</th></tr></thead><tbody>{ordered.map((record, index) => <tr key={record.id || index}><td>{record.date || 'Not recorded'}</td><td>{record.type || 'Clinical record'}</td><td>{[record.details, record.notes].filter(Boolean).join(' · ') || 'No details recorded.'}</td><td>{record.actor || 'Not recorded'}</td></tr>)}</tbody></table></div> : <p className="care-muted">Growth history will be included in the downloaded PDF.</p>}</> : <Empty>No clinical history recorded.</Empty>}</details>;
 }
 function CarePagination({ page, totalPages, totalItems, pageSize, onChange }) {
   if (!totalItems) return null;
@@ -300,7 +429,7 @@ function ImmunizationRecordDialog({ infant, mother, canEdit, onClose, onRecordDo
   ];
   return <Dialog title={`${infant.name}'s immunization record`} close={onClose}>
     <p className="care-patient-meta">Birthdate: {infant.birthDate || 'Not recorded'} · {infantAgeStatus(infant.birthDate)} · Mother: {mother?.name || 'Unlinked'}</p>
-    <div className="care-table-wrap immunization-detail-table"><table><thead><tr><th>Vaccine / dose</th><th>Earliest date</th><th>Status</th><th>Action</th></tr></thead><tbody>{vaccineSchedule.map(rule => { const done = completedDose(infant, rule); const problem = vaccineError(infant, rule, today()); return <tr key={rule.id}><td>{rule.vaccine} · {rule.dose}</td><td>{vaccineDue(infant, rule)}</td><td>{done ? `Completed ${done.date}` : problem || 'Due — health worker review'}</td><td>{canEdit && !done && infant.status !== 'Pending approval' && <button type="button" className="care-record-dose-button" onClick={() => onRecordDose(rule)}><i className="fa-solid fa-syringe" aria-hidden="true" /> Record dose</button>}</td></tr>; })}</tbody></table></div>
+    <div className="care-table-wrap immunization-detail-table"><table><thead><tr><th>Vaccine / dose</th><th>Earliest date</th><th>Status</th><th>Action</th></tr></thead><tbody>{vaccineSchedule.map(rule => { const done = completedDose(infant, rule); const problem = vaccineError(infant, rule, today()); return <tr key={rule.id}><td>{rule.vaccine} · {rule.dose}</td><td>{vaccineDue(infant, rule)}</td><td>{done ? `Completed ${done.date}` : problem || 'Due — health worker review'}</td><td>{done ? <span className="care-table-status care-vaccine-done"><i className="fa-solid fa-circle-check" aria-hidden="true" /> Done</span> : canEdit && !done && infant.status !== 'Pending approval' && <button type="button" className="care-record-dose-button" onClick={() => onRecordDose(rule)}><i className="fa-solid fa-syringe" aria-hidden="true" /> Record dose</button>}</td></tr>; })}</tbody></table></div>
     <h4>Newborn screening & hearing test</h4>
     {['Newborn screening', 'Hearing test'].map(type => { const done = (infant.screenings || []).find(screening => screening.type === type && screening.status === 'Completed'); return <p key={type}><input type="checkbox" checked={Boolean(done)} readOnly aria-label={`${type} completed`} /> {type}: {done ? `${done.date} · ${done.result}` : 'Not recorded'}</p>; })}
     <details open><summary>Growth history ({infant.growth?.length || 0})</summary>{infant.growth?.length ? <div className="care-table-wrap immunization-detail-table"><table><thead><tr><th>Date</th><th>Weight (kg)</th><th>Length (cm)</th><th>MUAC (cm)</th><th>Notes / source</th></tr></thead><tbody>{chronological(infant.growth).map((growth, index) => <tr key={growth.id || index}><td>{growth.date}</td><td>{growth.weight}</td><td>{growth.length}</td><td>{growth.muac || 'Not recorded'}</td><td>{growth.notes || growth.source || growth.actor || 'Existing record'}</td></tr>)}</tbody></table></div> : <Empty>No growth history recorded.</Empty>}</details>

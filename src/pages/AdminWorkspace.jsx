@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { jsPDF } from 'jspdf';
 import { AdminShell } from '../components/AdminShell';
 import { useStore } from '../store';
 import CareWorkspace from '../components/CareWorkspace';
@@ -119,7 +120,7 @@ function PatientForm({ type, initial = {}, onSave, onCancel, cancelLabel = 'Canc
   </form>;
 }
 
-function ClinicalHistoryModal({ record, mother, onBack }) {
+function LegacyClinicalHistoryModal({ record, mother, onBack }) {
   const formatDate = value => value ? new Date(`${value}T00:00:00+08:00`).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: 'short', day: 'numeric' }) : 'Date not recorded';
   const entries = mother
     ? (record.records || []).map(item => ({ date: item.date, title: item.type || 'Maternal visit', details: item.details || item.notes || 'No additional details recorded.' }))
@@ -139,6 +140,131 @@ function ClinicalHistoryModal({ record, mother, onBack }) {
       <div className="clinical-history-list">
         {entries.length ? entries.map((entry, index) => <article className="clinical-history-entry" key={`${entry.date}-${entry.title}-${index}`}><div className="clinical-history-entry-head"><h3>{entry.title}</h3><time>{formatDate(entry.date)}</time></div><p>{entry.details}</p></article>) : <p className="admin-empty">No clinical records have been recorded yet.</p>}
       </div>
+      <div className="admin-form-actions"><button type="button" className="secondary" onClick={onBack}><Icon name="arrow-left" /> Back to profile</button></div>
+    </section>
+  </div>;
+}
+
+const clinicalPdfValue = value => String(value ?? '').replace(/[^\x20-\x7E\n]/g, ' ').split('\n').map(line => line.replace(/\s+/g, ' ').trim()).join('\n').trim();
+const clinicalPdfFileName = value => clinicalPdfValue(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'patient';
+const loadClinicalPdfLogo = async () => {
+  try {
+    const response = await fetch('/medimama/medimamalogo.png');
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+};
+
+async function downloadClinicalHistoryPdf(patientName, records) {
+  const logo = await loadClinicalPdfLogo();
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const margin = 36;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const columns = [
+    { label: 'Date', width: 66 },
+    { label: 'Record type', width: 88 },
+    { label: 'Record', width: 120 },
+    { label: 'Details', width: 169 },
+    { label: 'Recorded by', width: pageWidth - (margin * 2) - 66 - 88 - 120 - 169 },
+  ];
+  let y = margin;
+  const drawTableHeader = () => {
+    doc.setFillColor(245, 248, 253);
+    doc.rect(margin, y, pageWidth - (margin * 2), 24, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(82, 98, 125);
+    let x = margin;
+    columns.forEach(column => { doc.text(column.label, x + 6, y + 16); x += column.width; });
+    y += 24;
+  };
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(23, 35, 61);
+  if (logo) doc.addImage(logo, 'PNG', pageWidth - margin - 70, margin - 4, 70, 56);
+  doc.text('MediMama Clinical History', pageWidth / 2, y + 18, { align: 'center' });
+  y += 38;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text(`Patient: ${clinicalPdfValue(patientName)}`, margin, y);
+  y += 16;
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Generated: ${today()}`, margin, y);
+  y += 22;
+  drawTableHeader();
+
+  records.forEach((record, index) => {
+    const values = [
+      clinicalPdfValue(record.date || 'Not recorded'),
+      clinicalPdfValue(record.recordType || 'Patient record'),
+      clinicalPdfValue(record.title || 'Clinical record'),
+      clinicalPdfValue(record.details || 'No details recorded.'),
+      clinicalPdfValue(record.recordedBy || 'Not recorded'),
+    ];
+    const wrapped = values.map((value, columnIndex) => doc.splitTextToSize(value, columns[columnIndex].width - 12));
+    const rowHeight = Math.max(30, ...wrapped.map(lines => lines.length * 11 + 12));
+    if (y + rowHeight > pageHeight - margin) {
+      doc.addPage();
+      y = margin;
+      drawTableHeader();
+    }
+    if (index % 2 === 0) {
+      doc.setFillColor(251, 253, 255);
+      doc.rect(margin, y, pageWidth - (margin * 2), rowHeight, 'F');
+    }
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(64, 80, 106);
+    let x = margin;
+    wrapped.forEach((lines, columnIndex) => { doc.text(lines, x + 6, y + 16, { maxWidth: columns[columnIndex].width - 12 }); x += columns[columnIndex].width; });
+    doc.setDrawColor(229, 235, 243);
+    doc.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
+    y += rowHeight;
+  });
+  doc.save(`${clinicalPdfFileName(patientName)}-clinical-history.pdf`);
+}
+
+function ClinicalHistoryModal({ record, mother, onBack }) {
+  const formatDate = value => value ? new Date(`${value}T00:00:00+08:00`).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: 'short', day: 'numeric' }) : 'Date not recorded';
+  const recordedBy = item => item.recordedBy || item.recorded_by || item.actor || item.provider || item.administeredBy || item.source || 'Not recorded';
+  const entries = mother
+    ? (record.records || []).map(item => ({ date: item.date, recordType: 'Maternal record', title: item.type || 'Maternal visit', details: item.details || item.notes || 'No additional details recorded.', recordedBy: recordedBy(item) }))
+    : [
+        ...(record.growth || []).map(item => ({ date: item.date, recordType: 'Infant record', title: 'Growth history', details: [['Weight', item.weight, 'kg'], ['Length', item.length, 'cm'], ['MUAC', item.muac, 'cm']].filter(([, value]) => value !== undefined && value !== null && value !== '').map(([label, value, unit]) => `${label}: ${value} ${unit}`).concat(item.notes ? [`Notes: ${item.notes}`] : []).join('\n') || 'No measurement details recorded.', recordedBy: recordedBy(item) })),
+        ...(record.vaccines || []).map(item => ({ date: item.date, recordType: 'Infant record', title: `${item.vaccine || 'Vaccination'}${item.dose ? ` · ${item.dose}` : ''}`, details: item.notes || 'Completed immunization.', recordedBy: recordedBy(item) })),
+        ...(record.records || []).map(item => ({ date: item.date, recordType: 'Infant record', title: item.type || 'Infant visit', details: item.details || item.notes || 'No additional details recorded.', recordedBy: recordedBy(item) })),
+        ...(record.screenings || []).map(item => ({ date: item.date, recordType: 'Infant record', title: item.type || 'Screening', details: item.result || item.details || 'Completed screening.', recordedBy: recordedBy(item) })),
+      ].filter(item => item.date).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+  return <div className="admin-modal clinical-history-modal" role="presentation" onMouseDown={event => event.target === event.currentTarget && onBack()}>
+    <section role="dialog" aria-modal="true" aria-label={`${record.name} clinical history`}>
+      <button className="close" type="button" onClick={onBack} aria-label="Close"><Icon name="xmark" /></button>
+      <p className="eyebrow">Clinical history</p>
+      <h2>{record.name}</h2>
+      <p className="clinical-history-copy">{mother ? 'Maternal care records and visit history.' : 'Growth, immunization, and screening records.'}</p>
+      {entries.length ? <>
+        <div className="clinical-history-toolbar">
+          <span>{entries.length} record{entries.length === 1 ? '' : 's'}</span>
+          <button type="button" className="clinical-history-download" onClick={() => downloadClinicalHistoryPdf(record.name, entries)}><Icon name="file-pdf" /> Download PDF</button>
+        </div>
+        <div className="clinical-history-table-wrap">
+          <table className="clinical-history-table">
+            <thead><tr><th>Date</th><th>Record type</th><th>Record</th><th>Details</th><th>Recorded by</th></tr></thead>
+            <tbody>{entries.map((entry, index) => <tr key={`${entry.date}-${entry.title}-${index}`}><td>{formatDate(entry.date)}</td><td>{entry.recordType}</td><td>{entry.title}</td><td>{entry.details}</td><td>{entry.recordedBy}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </> : <p className="admin-empty">No clinical records have been recorded yet.</p>}
       <div className="admin-form-actions"><button type="button" className="secondary" onClick={onBack}><Icon name="arrow-left" /> Back to profile</button></div>
     </section>
   </div>;

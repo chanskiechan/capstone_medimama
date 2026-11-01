@@ -6,13 +6,13 @@ import { today } from './care.js';
 import { validateBackup, backupTables } from './lib/backup.js';
 const data = { mothers: [{id:'m',name:'Mother',accountId:'u'}, {id:'other',name:'Other family',accountId:'v'}], infants: [], caregivers: [], appointments: [{ patientId:'other',patient:'Other family',date:today(),time:'09:00',status:'Approved',service:'Private visit' }] };
 test('assistant never answers with another family appointment',()=>{
-  assert.match(assistantReply('next appointment',data,{id:'u',role:'mother'}).text,/No upcoming/);
+  assert.match(assistantReply('next appointment',data,{id:'u',role:'mother'}).text,/Walang nakatalang susunod/);
   assert.doesNotMatch(assistantReply('next appointment',data,{id:'u',role:'mother'}).text,/Private visit/);
 });
 test('assistant handles distinct educational topics and symptom questions',()=>{
   assert.match(assistantReply('family planning',data,{}).url,/contraception/);
   assert.match(assistantReply('breastfeeding',data,{}).url,/feeding/);
-  assert.match(assistantReply('my baby has a fever',data,{}).text,/cannot assess/);
+  assert.match(assistantReply('my baby has a fever',data,{}).text,/Hindi ko kayang suriin/);
 });
 test('timestamps are converted to Philippine date and time',()=>{
   assert.deepEqual(appointmentDateTime('2026-09-29T23:30:00Z'),{date:'2026-09-30',time:'07:30'});
@@ -37,13 +37,17 @@ test('archived infants are excluded from due reminders',()=>{
 });
 test('education works during a record outage, record answers explain unavailable data',()=>{
   assert.match(assistantReply('family planning',data,{}, {error:'offline'}).url,/contraception/);
-  assert.match(assistantReply('next appointment',data,{}, {error:'offline'}).text,/cannot check/);
-  assert.match(assistantReply('vaccines due',data,{}, {loading:true}).text,/still loading/);
+  assert.match(assistantReply('next appointment',data,{}, {error:'offline'}).text,/Hindi ko ma-check/);
+  assert.match(assistantReply('vaccines due',data,{}, {loading:true}).text,/Nilo-load pa/);
 });
 test('common Tagalog prompts route to supported resources or symptom guidance',()=>{
   assert.match(assistantReply('pagpapasuso',data,{}).url,/feeding/);
-  assert.match(assistantReply('may lagnat ang baby',data,{}).text,/cannot assess/);
-  assert.match(assistantReply('kailan ang susunod na bakuna',data,{}).text,/vaccine reminders/);
+  assert.match(assistantReply('may lagnat ang baby',data,{}).text,/Hindi ko kayang suriin/);
+  assert.match(assistantReply('kailan ang susunod na bakuna',data,{}).text,/paalala sa bakuna/);
+});
+test('assistant understands health center schedule questions',()=>{
+  assert.match(assistantReply('bukas ba ang health center ngayon',data,{}).text,/Batay sa schedule ng MediMama/);
+  assert.match(assistantReply('bukas ba ang health center ngayon',data,{}).text,/Miyerkules/);
 });
 test('backup preview rejects other projects and unexpected tables',()=>{
   const backup={format:'medimama-clinical',version:1,project:'https://test.supabase.co',tables:Object.fromEntries(backupTables.map(t=>[t,[]]))};

@@ -439,3 +439,19 @@
   }
 }
 .admin-form-full{grid-column:1/-1}.mother-picker{position:relative}.mother-picker>input[type=search]{width:100%}.mother-picker-results{position:absolute;z-index:20;top:calc(100% + 5px);left:0;right:0;max-height:220px;overflow:auto;padding:6px;border:1px solid #d7e1f0;border-radius:12px;background:#fff;box-shadow:0 14px 30px rgba(23,35,61,.16)}.mother-picker-results button{display:grid;width:100%;gap:2px;padding:10px 11px;border:0;border-radius:8px;background:transparent;color:#293854;text-align:left;cursor:pointer}.mother-picker-results button:hover,.mother-picker-results button[aria-selected=true]{background:#edf3ff}.mother-picker-results strong{font-size:13px}.mother-picker-results small,.mother-picker-selected{color:#64748b;font-size:11px}.mother-picker-results>p{margin:8px 10px;color:#64748b;font-size:12px}.mother-picker-selected{display:block;margin-top:5px}
+.clinical-history-modal>section{width:min(1120px,100%)}
+.clinical-history-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:18px 0 12px;color:#64748b;font-size:12px}
+.clinical-history-download{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:11px 16px;background:#4d7cf4;color:#fff;font:700 12px Poppins,Arial,sans-serif;cursor:pointer;box-shadow:0 8px 18px rgba(77,124,244,.2);transition:background .18s ease,transform .18s ease,box-shadow .18s ease}
+.clinical-history-download:hover{background:#3868e7;transform:translateY(-1px);box-shadow:0 10px 20px rgba(77,124,244,.26)}
+.clinical-history-download:focus-visible{outline:3px solid rgba(77,124,244,.25);outline-offset:2px}
+.clinical-history-table-wrap{overflow:auto;border:1px solid #dfe7f2;border-radius:14px;background:#fff}
+.clinical-history-table{width:100%;min-width:900px;border-collapse:collapse;color:#293854;font-size:12px}
+.clinical-history-table th{padding:13px 14px;background:#f5f8fd;color:#52627d;font-size:11px;font-weight:800;letter-spacing:.02em;text-align:left;white-space:nowrap}
+.clinical-history-table td{padding:15px 14px;border-top:1px solid #e6edf6;vertical-align:top;line-height:1.5}
+.clinical-history-table tbody tr:nth-child(even){background:#fbfdff}
+.clinical-history-table td:first-child{color:#52627d;white-space:nowrap}
+.clinical-history-table td:nth-child(2){color:#4d7cf4;font-weight:700;white-space:nowrap}
+.clinical-history-table td:nth-child(3){font-weight:700}
+.clinical-history-table td:nth-child(4){white-space:pre-line;min-width:220px}
+.clinical-history-table td:last-child{color:#52627d;white-space:nowrap}
+@media(max-width:700px){.clinical-history-toolbar{align-items:stretch;flex-direction:column}.clinical-history-download{width:100%}.clinical-history-table{min-width:820px}}

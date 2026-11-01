@@ -4,7 +4,8 @@ import { PageStyles } from '../components/PageStyles';
 import { useStore } from '../store';
 import { demoSession, withDemoFamily } from '../demo';
 import { supabase } from '../lib/supabase';
-import { notifyEmailEvent, requestRegistrationOtp, verifyRegistrationOtp } from '../lib/emailNotifications';
+import { requestRegistrationOtp, verifyRegistrationOtp } from '../lib/emailNotifications';
+import { sendLoginNotification } from '../lib/loginNotification';
 import './Login.css';
 
 const validEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -124,7 +125,7 @@ export function Login() {
     }
     const session = { id: profile.id, name: profile.full_name || email, email, role: profile.role };
     localStorage.setItem('medimama-current-session', JSON.stringify(session));
-    void notifyEmailEvent('/api/email/login');
+    void sendLoginNotification({ email, name: session.name, role: session.role });
     setBusy(false);
     await refreshPatientData();
     tell('Login successful.', 'success');
