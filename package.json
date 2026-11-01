@@ -27,6 +27,7 @@
     "vite": "latest"
   },
   "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
     "@capacitor/cli": "^8.6.0",
     "@electric-sql/pglite": "^0.5.8",
     "supabase": "^2.120.0"
