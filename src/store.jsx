@@ -47,7 +47,7 @@ export function StoreProvider({ children }) {
     refreshPatientData();
     const { data: listener } = supabase.auth.onAuthStateChange(event => {
       if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') { ++requestVersion.current; currentData.current = empty(); setData(empty()); }
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') setTimeout(refreshPatientData, 0);
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') setTimeout(refreshPatientData, 0);
     });
     window.addEventListener('focus', refreshPatientData);
     const timer = window.setInterval(refreshPatientData, 15000);
