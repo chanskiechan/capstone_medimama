@@ -28,6 +28,9 @@ const transporter = smtpConfigured ? nodemailer.createTransport({
   secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true' || smtpPort === 465,
   auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
 }) : null;
+const resendConfigured = Boolean(process.env.RESEND_API_KEY && (process.env.RESEND_FROM_EMAIL || process.env.MAIL_FROM));
+const emailConfigured = resendConfigured || smtpConfigured;
+const emailProvider = resendConfigured ? 'resend' : smtpConfigured ? 'smtp' : 'none';
 const port = Number(process.env.PORT || 3001);
 const frontendOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173,http://localhost:5174').split(',').map(origin => origin.trim()).filter(Boolean);
 const reminderPollMs = Math.max(30_000, Number(process.env.REMINDER_POLL_MS || 60_000));
@@ -77,10 +80,29 @@ async function emailsForUserIds(userIds) {
 }
 
 async function sendMail({ to, subject, title, intro, details = [] }) {
-  if (!transporter) throw new Error('SMTP is not configured. Copy server/.env.example to server/.env and add SMTP values.');
+  if (!emailConfigured) throw new Error('Email delivery is not configured. Add RESEND_API_KEY and RESEND_FROM_EMAIL, or configure SMTP.');
   const rows = details.map(([label, value]) => `<tr><td style="padding:6px 12px 6px 0;color:#63708a"><strong>${escapeHtml(label)}</strong></td><td style="padding:6px 0">${escapeHtml(value)}</td></tr>`).join('');
   const html = `<!doctype html><html><body style="margin:0;background:#f5f8fd;font-family:Arial,sans-serif;color:#203252;padding:32px 16px"><div style="max-width:580px;margin:auto;background:#fff;border:1px solid #dce7fa;border-radius:18px;padding:32px;box-shadow:0 10px 28px rgba(38,63,107,.08)"><div style="color:#e0588d;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase">MediMama notification</div><h1 style="margin:10px 0 12px;font-size:26px">${escapeHtml(title)}</h1><p style="font-size:16px;line-height:1.6">${escapeHtml(intro)}</p>${rows ? `<table style="margin:22px 0;font-size:14px;line-height:1.5">${rows}</table>` : ''}<p style="font-size:13px;line-height:1.6;color:#63708a">Open MediMama to view the full details.</p></div></body></html>`;
-  await transporter.sendMail({ from: process.env.MAIL_FROM, to, subject, text: `${title}\n\n${intro}\n${details.map(([label, value]) => `${label}: ${value}`).join('\n')}`, html });
+  const text = `${title}\n\n${intro}\n${details.map(([label, value]) => `${label}: ${value}`).join('\n')}`;
+  if (resendConfigured) {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL || process.env.MAIL_FROM,
+        to: [to],
+        subject,
+        text,
+        html,
+      }),
+    });
+    if (!response.ok) {
+      const details = await response.text();
+      throw new Error(`Resend request failed (${response.status}): ${details}`);
+    }
+    return;
+  }
+  await transporter.sendMail({ from: process.env.MAIL_FROM, to, subject, text, html });
 }
 
 const normalizeEmail = value => String(value || '').trim().toLowerCase();
@@ -289,7 +311,7 @@ async function notifyMotherApproval(context, body) {
 }
 
 async function processReminderEmails() {
-  if (reminderJobRunning || !transporter) return;
+  if (reminderJobRunning || !emailConfigured) return;
   reminderJobRunning = true;
   try {
     await supabase.rpc('generate_appointment_reminders');
@@ -318,7 +340,7 @@ const server = createServer(async (request, response) => {
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (request.method === 'OPTIONS') return response.end();
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
-  if (request.method === 'GET' && url.pathname === '/health') return json(response, 200, { ok: true, smtpConfigured });
+  if (request.method === 'GET' && url.pathname === '/health') return json(response, 200, { ok: true, emailConfigured, emailProvider });
   if (request.method !== 'POST' || (!url.pathname.startsWith('/api/email/') && url.pathname !== '/api/caregiver/register')) return json(response, 404, { error: 'Not found.' });
   try {
     const body = await readBody(request);
@@ -341,8 +363,9 @@ const server = createServer(async (request, response) => {
 
 server.listen(port, () => {
   console.log(`MediMama email server listening on http://localhost:${port}`);
-  if (!smtpConfigured) console.warn('SMTP is not configured. Copy server/.env.example to server/.env and fill in the SMTP values.');
-  if (transporter) void transporter.verify().then(() => console.log('SMTP connection verified.')).catch(error => console.warn(`SMTP verification failed: ${error.message}`));
+  if (!emailConfigured) console.warn('Email delivery is not configured. Add RESEND_API_KEY and RESEND_FROM_EMAIL, or configure SMTP.');
+  if (resendConfigured) console.log('Resend email provider configured.');
+  if (!resendConfigured && transporter) void transporter.verify().then(() => console.log('SMTP connection verified.')).catch(error => console.warn(`SMTP verification failed: ${error.message}`));
 });
 
 setTimeout(processReminderEmails, 3000);
