@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageStyles } from '../components/PageStyles';
 import { useStore } from '../store';
-import { demoSession, withDemoFamily } from '../demo';
 import { supabase } from '../lib/supabase';
 import { notifyEmailEvent, requestRegistrationOtp, verifyRegistrationOtp } from '../lib/emailNotifications';
 import './Login.css';
@@ -29,7 +28,7 @@ function Input({ icon, children, className = '' }) {
 }
 
 export function Login() {
-  const { save, refreshPatientData } = useStore();
+  const { refreshPatientData } = useStore();
   const navigate = useNavigate();
   const [signup, setSignup] = useState(false);
   const [feedback, setFeedback] = useState();
@@ -46,12 +45,6 @@ export function Login() {
     setFeedback({ text, type });
   };
   const go = session => navigate(session.role === 'admin' ? '/dashboard' : session.role === 'caregiver' ? '/caregiver' : '/user');
-  const enterDemo = roleName => {
-    if (!save(withDemoFamily)) return tell('Could not save demo data.');
-    const session = demoSession(roleName);
-    localStorage.setItem('medimama-current-session', JSON.stringify(session));
-    go(session);
-  };
   const sendRegistrationOtp = async () => {
     const email = registrationEmail.trim().toLowerCase();
     if (!validEmail(email)) return setEmailVerification({ status: 'error', email, message: 'Enter a valid email address first.' });
@@ -191,7 +184,6 @@ export function Login() {
               <div className="mm-remember"><label><input type="checkbox" /> Remember me</label><button type="button" onClick={() => navigate('/forgot-password')}>Forgot Password?</button></div>
               <button className="mm-primary" disabled={busy}><Icon name="right-to-bracket" /> {busy ? 'Logging in…' : 'Login'}</button>
               <p className="mm-switch">Don't have an account? <button type="button" onClick={() => { setSignup(true); setFeedback(); }}>Register here</button></p>
-              <section className="mm-demo"><p>Try the demo</p><span>No registration needed</span><div><button type="button" onClick={() => enterDemo('mother')}><Icon name="person-pregnant" /> Demo Mother</button><button type="button" onClick={() => enterDemo('caregiver')}><Icon name="hand-holding-heart" /> Demo Caregiver</button></div></section>
             </form>
           </div> : <div className="mm-card mm-signup">
             <h1>Create Account</h1>
