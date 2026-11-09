@@ -31,7 +31,7 @@ const tutorialSteps = {
       icon: 'fa-hand-holding-heart',
       label: 'Support',
       title: 'Humingi ng dagdag na tulong',
-      text: 'Gamitin ang Reports at Family Support para sa health education, concerns, at pakikipag-ugnayan sa health worker.',
+      text: 'Gamitin ang Care Request at Family Support para sa health education, concerns, at pakikipag-ugnayan sa health worker.',
     },
   ],
   caregiver: [
