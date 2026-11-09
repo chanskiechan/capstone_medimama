@@ -45,7 +45,7 @@ export default function App() {
     <Route path="/system" element={admin(<AdminTools />)} />
     <Route path="/profile" element={admin(<AdminProfile />)} />
     <Route path="/reports" element={admin(<AdminReports />)} />
-    <Route path="/health-concerns" element={admin(<Navigate to="/reports" replace />)} />
+    <Route path="/health-concerns" element={admin(<Navigate to="/support/concerns" replace />)} />
     <Route path="/archives" element={admin(<Navigate to="/system?tab=archives" replace />)} />
     <Route path="/support/:section" element={<ProtectedRoute roles={['mother','caregiver','admin']}><Support /></ProtectedRoute>} />
     <Route path="/caregiver" element={caregiver(<FamilyPortal page="caregiver" />)} />

@@ -13,10 +13,12 @@ import ConcernReports from './ConcernReports';
 
 export default function Support({ admin = false, view }) {
   const params = useParams(), section = view || params.section || 'education';
+  const isAdmin = admin || session().role === 'admin';
   const { storageError } = useStore();
   if (section === 'assistant') return <Navigate to="/support/education" replace />;
-  const content = <main className={admin ? 'main-content directory-page' : 'family-page support-page'}><h1>{({ education: 'Health education', concerns: 'Care Request', notifications: 'Notifications', archives: 'Patient archives', reports: 'Healthcare reports' })[section] || 'Family support'}</h1>{storageError && <p role="alert" className="support-message">{storageError}</p>}{section === 'education' ? <Education /> : section === 'concerns' ? <ConcernReports admin={admin || session().role === 'admin'} /> : section === 'notifications' ? <Notifications /> : section === 'reports' ? <HealthcareReports /> : <p>Choose a support page above.</p>}</main>;
-  return admin ? <AdminShell page="reports">{content}</AdminShell> : <><PageStyles page="user" /><FamilyHeader />{content}</>;
+  const heading = ({ education: 'Health education', concerns: isAdmin ? 'Care Requests' : 'Care Request', notifications: 'Notifications', archives: 'Patient archives', reports: 'Healthcare reports' })[section] || 'Family support';
+  const content = <main className={isAdmin ? 'main-content directory-page' : 'family-page support-page'}><h1>{heading}</h1>{storageError && <p role="alert" className="support-message">{storageError}</p>}{section === 'education' ? <Education /> : section === 'concerns' ? <ConcernReports admin={isAdmin} /> : section === 'notifications' ? <Notifications /> : section === 'reports' ? <HealthcareReports /> : <p>Choose a support page above.</p>}</main>;
+  return isAdmin ? <AdminShell page="reports">{content}</AdminShell> : <><PageStyles page="user" /><FamilyHeader />{content}</>;
 }
 
 function Education() {
