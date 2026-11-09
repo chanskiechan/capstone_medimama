@@ -68,10 +68,11 @@ const tutorialSteps = {
   ],
 };
 
-export default function FamilyTutorial({ role = 'mother' }) {
+export default function FamilyTutorial({ role = 'mother', userId }) {
   const userRole = role === 'caregiver' ? 'caregiver' : 'mother';
   const steps = useMemo(() => tutorialSteps[userRole], [userRole]);
-  const storageKey = `medimama-family-tutorial-v1-${userRole}`;
+  const tutorialIdentity = userId || 'guest';
+  const storageKey = `medimama-family-tutorial-v1-${userRole}-${tutorialIdentity}`;
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 

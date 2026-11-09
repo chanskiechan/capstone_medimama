@@ -150,7 +150,7 @@ export function FamilyHeader() {
         <div className="family-profile-menu"><p>My account</p><Link to={caregiver ? '/caregiver/profile' : '/user/profile'}><i className="fa-solid fa-user" aria-hidden="true" />View profile</Link><button type="button" onClick={logout}><i className="fa-solid fa-arrow-right-from-bracket" aria-hidden="true" />Log out</button>{logoutError && <p role="alert">{logoutError}</p>}</div>
       </details>
     </div>
-  </header><NotificationHistoryModal open={notificationHistoryOpen} onClose={() => setNotificationHistoryOpen(false)} onMarkRead={markNotificationsRead} busy={notificationBusy} error={notificationError} unread={unreadNotifications} announcements={announcements} reminders={reminders} notifications={notifications} /><FamilyTutorial role={caregiver ? 'caregiver' : 'mother'} />{!caregiver && <AssistantWidget />}</>;
+  </header><NotificationHistoryModal open={notificationHistoryOpen} onClose={() => setNotificationHistoryOpen(false)} onMarkRead={markNotificationsRead} busy={notificationBusy} error={notificationError} unread={unreadNotifications} announcements={announcements} reminders={reminders} notifications={notifications} /><FamilyTutorial role={caregiver ? 'caregiver' : 'mother'} userId={user?.id} />{!caregiver && <AssistantWidget />}</>;
 }
 
 export default function FamilyPortal({ page }) {
