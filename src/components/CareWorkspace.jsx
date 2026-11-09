@@ -427,7 +427,7 @@ function CarePagination({ page, totalPages, totalItems, pageSize, onChange }) {
   return <div className="care-record-pagination"><span>Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalItems)} of {totalItems}</span><div><button type="button" onClick={() => onChange(page - 1)} disabled={page === 1}>Previous</button><strong>Page {page} of {totalPages}</strong><button type="button" onClick={() => onChange(page + 1)} disabled={page === totalPages}>Next</button></div></div>;
 }
 function maternalVisitCount(mother, appointments = [], section = 'prenatal') {
-  const isPostnatal = section === 'postnatal';
+  const isPostnatal = String(section).toLowerCase() === 'postnatal';
   const recordType = isPostnatal ? 'Postnatal check-up' : 'Prenatal check-up';
   const appointmentType = isPostnatal ? 'Postnatal Checkup' : 'Prenatal Checkup';
   const appointmentVisits = appointments.filter(appointment => appointment.patientId === mother.id && appointment.service === appointmentType && !['Cancelled', 'cancelled'].includes(appointment.status)).length;
@@ -435,12 +435,13 @@ function maternalVisitCount(mother, appointments = [], section = 'prenatal') {
   return recordedVisits + appointmentVisits + (isPostnatal ? 0 : Number(mother.priorVisits || 0));
 }
 function MaternalRecordsTable({ mothers, appointments = [], section = 'prenatal', onView }) {
-  const visitLabel = section === 'postnatal' ? 'Postnatal visits' : 'Prenatal visits';
+  const isPostnatal = String(section).toLowerCase() === 'postnatal';
+  const visitLabel = isPostnatal ? 'Postnatal visits' : 'Prenatal visits';
   return <div className="care-table-wrap maternal-records-table"><table><thead><tr><th>Mother</th><th>Birthdate</th><th>Status</th><th>Delivery date</th><th>{visitLabel}</th><th>Action</th></tr></thead><tbody>{mothers.length ? mothers.map(mother => <tr key={mother.id}><td><strong>{mother.name}</strong><small>{mother.recordCode || mother.id}</small></td><td>{mother.birthDate || 'Not recorded'}</td><td><span className={`care-table-status ${mother.status === 'Postnatal' ? 'delivered-status' : ''}`}>{maternalStatusLabel(mother.status)}</span></td><td>{mother.deliveryDate || 'Not recorded'}</td><td>{maternalVisitCount(mother, appointments, section)}</td><td><button type="button" className="care-view-record-button" onClick={() => onView(mother)}><i className="fa-solid fa-eye" aria-hidden="true" /> View record</button></td></tr>) : <tr><td colSpan="6" className="care-empty-cell">No maternal records found.</td></tr>}</tbody></table></div>;
 }
 function MaternalRecordDialog({ mother, appointments = [], section = 'prenatal', canEdit, onClose, onUpdate, onRecordVisit }) {
   const visits = maternalVisitCount(mother, appointments, section);
-  const visitLabel = section === 'postnatal' ? 'Postnatal visits' : 'Prenatal visits';
+  const visitLabel = String(section).toLowerCase() === 'postnatal' ? 'Postnatal visits' : 'Prenatal visits';
   return <Dialog title={`${mother.name}'s maternal record`} close={onClose}><p className="care-patient-meta">Birthdate: {mother.birthDate || 'Not recorded'} · Status: {maternalStatusLabel(mother.status)} · Address: {mother.address || 'Not recorded'}</p><dl className="care-metrics"><div><dt>{mother.status === 'Postnatal' ? 'Actual delivery date' : 'Expected delivery date'}</dt><dd>{mother.deliveryDate || 'Not recorded'}</dd></div><div><dt>Pregnancy weeks</dt><dd>{mother.gestationWeeks !== null && mother.gestationWeeks !== undefined && mother.gestationWeeks !== '' ? mother.gestationWeeks : 'Not recorded'}</dd></div><div><dt>{visitLabel}</dt><dd>{visits}</dd></div><div><dt>Hospital</dt><dd>{mother.hospital || 'Not recorded'}</dd></div></dl><p>{mother.hospitalSummary || 'No hospital intake summary recorded.'}</p>{canEdit && <div className="care-actions"><button type="button" onClick={onUpdate}>Update intake / delivery</button><button type="button" onClick={onRecordVisit}>Record checkup</button></div>}<History records={mother.records} patientName={mother.name} /></Dialog>;
 }
 function ImmunizationRecordsTable({ infants, mothers, onView }) {
