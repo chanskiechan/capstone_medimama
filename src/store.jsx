@@ -32,7 +32,21 @@ export function StoreProvider({ children }) {
       if (problem) throw problem.error;
       if (version !== requestVersion.current || session().demo) return;
       const [mothers, infants, links, assignments, appointments, appointmentRequests, maternal, growth, vaccinations, infantRecords] = results.map(r => r.data || []);
-      const patients = hydratePatients(mothers, infants, maternal, growth, vaccinations, infantRecords);
+      // Clinical tables store the recorder's auth user id in `recorded_by`.
+      // Resolve it to a display name when the current role is allowed to read
+      // the corresponding profile. If the profile is not visible, keep a
+      // truthful generic label instead of incorrectly showing "Not recorded".
+      const actorIds = [...new Set([...maternal, ...growth, ...vaccinations, ...infantRecords].map(record => record.recorded_by).filter(Boolean))];
+      let actorNames = {};
+      if (actorIds.length) {
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', actorIds);
+        actorNames = Object.fromEntries((profiles || []).map(profile => [profile.id, profile.full_name || profile.email || 'User account']));
+      }
+      const attachActors = rows => rows.map(record => {
+        if (record.actor || record.provider || record.source || !record.recorded_by) return record;
+        return { ...record, actor: actorNames[record.recorded_by] || 'User account' };
+      });
+      const patients = hydratePatients(mothers, infants, attachActors(maternal), attachActors(growth), attachActors(vaccinations), attachActors(infantRecords));
       const next = normalize({ ...patients, appointmentRequests,
         mothers: patients.mothers.map(m => ({ ...m, accountId: links.find(l => l.mother_id === m.id)?.user_id })),
         caregivers: assignments.map(a => ({ ...a, accountId: a.caregiver_id, motherId: a.mother_id, status: a.status[0].toUpperCase() + a.status.slice(1) })),

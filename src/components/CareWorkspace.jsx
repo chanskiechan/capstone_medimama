@@ -79,7 +79,7 @@ async function downloadCombinedHistoryPdf(patientName, records, recordType) {
       pdfValue(recordType || 'Patient record'),
       pdfValue(record.type || 'Clinical record'),
       pdfValue([record.details, record.notes].filter(Boolean).join(' · ') || 'No details recorded.'),
-      pdfValue(record.actor || 'Not recorded'),
+      pdfValue(record.actor || record.provider || record.source || 'Not recorded'),
     ];
     const wrapped = values.map((value, columnIndex) => doc.splitTextToSize(value, columns[columnIndex].width - 12));
     const rowHeight = Math.max(30, ...wrapped.map(lines => lines.length * 11 + 12));
@@ -201,7 +201,7 @@ async function downloadHistoryPdf(patientName, records, recordType, growthRecord
     recordType || 'Patient record',
     record.type || 'Clinical record',
     [record.details, record.notes].filter(Boolean).join(' · ') || 'No details recorded.',
-    record.actor || 'Not recorded',
+    record.actor || record.provider || record.source || 'Not recorded',
   ]));
   doc.save(`${pdfFileName(patientName)}-record-history.pdf`);
 }
@@ -405,7 +405,7 @@ function MeasurementFields() { return <><Field label="Current weight (kg)" name=
 function History({ records = [], growthRecords, patientName = 'Patient', recordType = 'Patient record' }) {
   const resolvedRecordType = recordType === 'Patient record' ? (Array.isArray(growthRecords) ? 'Infant record' : 'Maternal record') : recordType;
   const growth = growthRecords || [];
-  const normalizedRecords = records.map(record => record.vaccine ? { ...record, actor: record.actor || record.provider || 'Not recorded', details: record.notes || '', notes: '' } : record);
+  const normalizedRecords = records.map(record => record.vaccine ? { ...record, actor: record.actor || record.provider || record.source || 'Not recorded', details: record.notes || '', notes: '' } : record);
   const ordered = chronological(normalizedRecords);
   const growthForPdf = growth.map(growth => ({
     id: `growth-${growth.id || growth.date}`,
@@ -420,7 +420,7 @@ function History({ records = [], growthRecords, patientName = 'Patient', recordT
     actor: growth.actor || growth.source || 'Existing record',
   }));
   const downloadableRecords = [...ordered, ...growthForPdf];
-  return <details><summary>Record history ({records.length})</summary>{downloadableRecords.length ? <><div className="care-history-toolbar"><button type="button" className="care-history-download" onClick={() => downloadHistoryPdf(patientName, downloadableRecords, resolvedRecordType)}><i className="fa-solid fa-file-pdf" aria-hidden="true" /> Download PDF</button></div>{ordered.length ? <div className="care-history-table-wrap"><table className="care-history-table"><thead><tr><th>Date</th><th>Record</th><th>Details</th><th>Recorded by</th></tr></thead><tbody>{ordered.map((record, index) => <tr key={record.id || index}><td>{record.date || 'Not recorded'}</td><td>{record.type || 'Clinical record'}</td><td>{[record.details, record.notes].filter(Boolean).join(' · ') || 'No details recorded.'}</td><td>{record.actor || 'Not recorded'}</td></tr>)}</tbody></table></div> : <p className="care-muted">Growth history will be included in the downloaded PDF.</p>}</> : <Empty>No clinical history recorded.</Empty>}</details>;
+  return <details><summary>Record history ({records.length})</summary>{downloadableRecords.length ? <><div className="care-history-toolbar"><button type="button" className="care-history-download" onClick={() => downloadHistoryPdf(patientName, downloadableRecords, resolvedRecordType)}><i className="fa-solid fa-file-pdf" aria-hidden="true" /> Download PDF</button></div>{ordered.length ? <div className="care-history-table-wrap"><table className="care-history-table"><thead><tr><th>Date</th><th>Record</th><th>Details</th><th>Recorded by</th></tr></thead><tbody>{ordered.map((record, index) => <tr key={record.id || index}><td>{record.date || 'Not recorded'}</td><td>{record.type || 'Clinical record'}</td><td>{[record.details, record.notes].filter(Boolean).join(' · ') || 'No details recorded.'}</td><td>{record.actor || record.provider || record.source || 'Not recorded'}</td></tr>)}</tbody></table></div> : <p className="care-muted">Growth history will be included in the downloaded PDF.</p>}</> : <Empty>No clinical history recorded.</Empty>}</details>;
 }
 function CarePagination({ page, totalPages, totalItems, pageSize, onChange }) {
   if (!totalItems) return null;
