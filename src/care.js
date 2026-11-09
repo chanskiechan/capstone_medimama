@@ -21,6 +21,7 @@ export function infantAgeStatus(birthDate, date = today()) {
   if (day(date) < day(addMonths(birthDate, 36))) return 'Toddler';
   return 'Child';
 }
+export const maternalStatusLabel = status => ['Postnatal', 'postnatal'].includes(status) ? 'Delivered' : status;
 export const uid = prefix => `${prefix}-${crypto.randomUUID()}`;
 export function session() { try { return JSON.parse(localStorage.getItem('medimama-current-session')) || {}; } catch { return {}; } }
 export function normalize(data) {

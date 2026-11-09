@@ -299,6 +299,11 @@
   white-space: nowrap;
 }
 
+.directory-page > .directory-panel .status.status-delivered {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
 .directory-page > .directory-panel .view-button {
   display: inline-flex;
   align-items: center;

@@ -69,7 +69,7 @@ export default function MotherCaregivers() {
 
   const openForm = () => {
     if (!canManageCaregiver) {
-      setNotice({ type: 'error', text: 'Caregiver access becomes available after the mother is marked Postnatal by the health center.' });
+      setNotice({ type: 'error', text: 'Caregiver access becomes available after the mother is marked Delivered by the health center.' });
       return;
     }
     resetCaregiverDraft();
@@ -207,7 +207,7 @@ export default function MotherCaregivers() {
           <article><b>2</b><div><h3>Admin reviews</h3><p>The health center confirms the request.</p></div></article>
           <article><b>3</b><div><h3>Caregiver gets access</h3><p>An approval email is sent after confirmation.</p></div></article>
         </section>
-      </> : <section className="mother-caregiver-locked" aria-live="polite"><div className="mother-caregiver-icon"><i className="fa-solid fa-lock" /></div><div><h2>Caregiver access is not available yet</h2><p>You can add a trusted caregiver after the health center records the delivery and changes your maternal status to Postnatal.</p></div></section>}
+      </> : <section className="mother-caregiver-locked" aria-live="polite"><div className="mother-caregiver-icon"><i className="fa-solid fa-lock" /></div><div><h2>Caregiver access is not available yet</h2><p>You can add a trusted caregiver after the health center records the delivery and changes your maternal status to Delivered.</p></div></section>}
       {open && <div className="mother-caregiver-modal" role="dialog" aria-modal="true" aria-labelledby="caregiver-form-title">
         <form ref={formRef} className="mother-caregiver-form" autoComplete="off" onSubmit={submit}>
           <button type="button" className="mother-caregiver-close" onClick={closeForm} aria-label="Close">×</button>
