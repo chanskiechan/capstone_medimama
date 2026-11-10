@@ -91,6 +91,38 @@
   box-shadow: 0 8px 22px rgba(28, 49, 83, .05);
 }
 
+.mother-approval-panel {
+  margin-bottom: 18px;
+}
+
+.mother-approval-panel table {
+  min-width: 980px;
+}
+
+.mother-approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 180px;
+}
+
+.mother-approval-actions .view-button,
+.mother-approval-actions .caregiver-decline {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+.mother-approval-actions .caregiver-approve {
+  border-color: #4d7cf4;
+  background: #4d7cf4;
+  color: #fff;
+}
+
+.mother-approval-actions .caregiver-approve:hover {
+  background: #315fcf;
+}
+
 .caregiver-table-head {
   padding: 22px 24px;
   border-bottom: 1px solid #e1e8f3;

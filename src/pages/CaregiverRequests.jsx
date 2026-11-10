@@ -80,11 +80,13 @@ function DetailsModal({ request, mothers, assignment, close, onSave, onArchive, 
 export default function CaregiverRequests() {
   const [requests, setRequests] = useState([]);
   const [mothers, setMothers] = useState([]);
+  const [pendingMothers, setPendingMothers] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [selected, setSelected] = useState(null);
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [motherApprovalBusyId, setMotherApprovalBusyId] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -93,6 +95,7 @@ export default function CaregiverRequests() {
     if (sessionError || !session?.access_token) {
       setRequests([]);
       setMothers([]);
+      setPendingMothers([]);
       setAssignments([]);
       setLoadError('Log in with the real Supabase administrator account to view live caregiver requests. Demo Admin cannot access the database queue.');
       setLoading(false);
@@ -100,13 +103,14 @@ export default function CaregiverRequests() {
     }
     const [requestsResult, mothersResult, assignmentsResult] = await Promise.all([
       supabase.from('caregiver_requests').select('*').order('created_at', { ascending: false }),
-      supabase.from('mothers').select('id, full_name'),
+      supabase.from('mothers').select('id, full_name, record_code, birth_date, contact_number, address, status, created_at').order('created_at', { ascending: false }),
       supabase.from('caregiver_assignments').select('id, caregiver_id, mother_id, relationship, status'),
     ]);
     const problem = requestsResult.error || mothersResult.error || assignmentsResult.error;
     setLoadError(problem?.message || '');
     setRequests((requestsResult.data || []).filter(request => !request.archived_at));
     setMothers(mothersResult.data || []);
+    setPendingMothers((mothersResult.data || []).filter(mother => mother.status === 'pending_approval'));
     setAssignments(assignmentsResult.data || []);
     setLoading(false);
   };
@@ -174,13 +178,48 @@ export default function CaregiverRequests() {
     await load();
   };
 
-  const pending = requests.filter(request => request.status === 'pending').length;
+  const approveMother = async mother => {
+    if (!mother || mother.status !== 'pending_approval' || motherApprovalBusyId) return;
+    setMotherApprovalBusyId(mother.id);
+    const { data: appointmentId, error } = await supabase.rpc('approve_mother_and_schedule', { target_mother_id: mother.id });
+    if (error) {
+      const missingApprovalFunction = error.code === 'PGRST202' || /approve_mother_and_schedule.*schema cache/i.test(error.message || '');
+      setNotice(missingApprovalFunction
+        ? 'Mother approval is not ready in Supabase. Run supabase/migrations/032_auto_schedule_mother_approval.sql in the SQL Editor, then refresh this page.'
+        : `Could not approve mother: ${error.message}`);
+      setMotherApprovalBusyId('');
+      return;
+    }
+    void notifyEmailEvent('/api/email/mother-approval', { motherId: mother.id, decision: 'approved' });
+    setNotice(`Mother account approved${appointmentId ? ' and initial appointment scheduled' : ''}. The mother can now log in.`);
+    setMotherApprovalBusyId('');
+    await load();
+  };
+
+  const declineMother = async mother => {
+    if (!mother || mother.status !== 'pending_approval' || motherApprovalBusyId) return;
+    if (!window.confirm(`Decline and archive ${mother.full_name}'s registration? The record will remain available in Archives.`)) return;
+    setMotherApprovalBusyId(mother.id);
+    const { error } = await supabase.from('mothers').update({ status: 'archived' }).eq('id', mother.id);
+    if (error) {
+      setNotice(`Could not archive mother registration: ${error.message}`);
+      setMotherApprovalBusyId('');
+      return;
+    }
+    void notifyEmailEvent('/api/email/mother-approval', { motherId: mother.id, decision: 'declined' });
+    setNotice('Mother registration declined and archived. A notification email is being sent.');
+    setMotherApprovalBusyId('');
+    await load();
+  };
+
+  const pending = requests.filter(request => request.status === 'pending').length + pendingMothers.length;
   return <AdminShell page="mothers">
     <main className="main-content directory-page caregiver-requests-page">
       <header className="page-header"><div><p className="eyebrow">Caregiver management</p><h1>Caregiver Requests</h1><p>Review requests and confirm mother consent before granting access.</p></div><div className="caregiver-page-actions"><Link className="view-button caregiver-archive-link" to="/system?tab=archives&category=caregivers"><i className="fa-solid fa-box-archive" /> Archives</Link><button className="view-button" type="button" onClick={load} disabled={loading}>{loading ? 'Refreshing...' : 'Refresh'}</button></div></header>
       {notice && <p className="admin-toast">{notice}</p>}
       {loadError && <p className="admin-toast caregiver-load-error" role="alert">Could not load caregiver requests: {loadError}</p>}
-      <section className="summary-grid caregiver-summary"><article><i className="fa-solid fa-clock" /><span><b>{pending}</b><small>Pending requests</small></span></article><article><i className="fa-solid fa-user-check" /><span><b>{requests.filter(request => request.status === 'approved').length}</b><small>Approved caregivers</small></span></article><article><i className="fa-solid fa-users" /><span><b>{mothers.length}</b><small>Available mother records</small></span></article></section>
+      <section className="summary-grid caregiver-summary"><article><i className="fa-solid fa-clock" /><span><b>{pending}</b><small>Pending approvals</small></span></article><article><i className="fa-solid fa-user-check" /><span><b>{requests.filter(request => request.status === 'approved').length}</b><small>Approved caregivers</small></span></article><article><i className="fa-solid fa-users" /><span><b>{mothers.filter(mother => mother.status !== 'archived').length}</b><small>Available mother records</small></span></article></section>
+      <section className="directory-panel caregiver-table-panel mother-approval-panel"><div className="caregiver-table-head"><div><h2>Mother account approvals</h2><p>New mother registrations appear here while they are waiting for admin confirmation.</p></div><span>{pendingMothers.length} pending</span></div><div className="table-wrap"><table><thead><tr><th>Mother</th><th>Birthdate</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead><tbody>{loading ? <tr><td className="admin-empty" colSpan="5">Loading mother registrations...</td></tr> : pendingMothers.length ? pendingMothers.map(mother => { const busy = motherApprovalBusyId === mother.id; return <tr key={mother.id}><td><div className="caregiver-person"><span>{mother.full_name.split(' ').map(part => part[0]).join('').slice(0, 2)}</span><div><strong>{mother.full_name}</strong><small>{mother.address || mother.record_code || 'No address recorded'}</small></div></div></td><td>{mother.birth_date || 'Not recorded'}</td><td>{mother.contact_number || 'Not recorded'}</td><td><span className="caregiver-status pending">Pending approval</span></td><td><div className="mother-approval-actions"><button className="view-button caregiver-approve" type="button" disabled={Boolean(motherApprovalBusyId)} onClick={() => approveMother(mother)}><i className="fa-solid fa-check" /> {busy ? 'Approving...' : 'Approve'}</button><button className="caregiver-decline" type="button" disabled={Boolean(motherApprovalBusyId)} onClick={() => declineMother(mother)}><i className="fa-solid fa-xmark" /> Decline</button></div></td></tr>; }) : <tr><td className="admin-empty" colSpan="5">No mother registrations are waiting for approval.</td></tr>}</tbody></table></div></section>
       <section className="directory-panel caregiver-table-panel"><div className="caregiver-table-head"><div><h2>Registration queue</h2><p>Pending requests need identity and mother-link review. Approved caregivers can be archived without deleting their history.</p></div><span>{requests.length} active records</span></div><div className="table-wrap"><table><thead><tr><th>Caregiver</th><th>Relationship</th><th>Requested patient</th><th>Status</th><th>Review action</th></tr></thead><tbody>{loading ? <tr><td className="admin-empty" colSpan="5">Loading caregiver requests...</td></tr> : requests.length ? requests.map(request => <tr key={request.id}><td><div className="caregiver-person"><span>{request.full_name.split(' ').map(part => part[0]).join('').slice(0, 2)}</span><div><strong>{request.full_name}</strong><small>{request.contact_number || 'No contact number'}</small></div></div></td><td>{request.relationship}</td><td>{request.requested_patient_name}</td><td><span className={`caregiver-status ${request.status}`}>{request.status}</span></td><td><div className="caregiver-row-actions">{request.status === 'pending' ? <div className="caregiver-actions"><button className="view-button" type="button" onClick={() => setSelected(request)}>Review details</button><div><button className="view-button caregiver-approve" type="button" onClick={() => decide(request, 'approved')}><i className="fa-solid fa-check" /> Approve</button><button className="caregiver-decline" type="button" onClick={() => decide(request, 'declined')}><i className="fa-solid fa-xmark" /> Decline</button></div></div> : <><button className="view-button" type="button" onClick={() => setSelected(request)}>View details</button><span className={`caregiver-reviewed${request.status === 'declined' ? ' declined-review' : ''}`}><i className={`fa-solid ${request.status === 'approved' ? 'fa-circle-check' : 'fa-circle-xmark'}`} /> Reviewed</span></>}</div></td></tr>) : <tr><td className="admin-empty" colSpan="5">No caregiver registrations yet.</td></tr>}</tbody></table></div></section>
       {selected && <DetailsModal request={selected} mothers={mothers} assignment={assignmentFor(selected)} close={() => setSelected(null)} onSave={saveDetails} onArchive={archiveRecord} onDecide={decide} />}
     </main>
