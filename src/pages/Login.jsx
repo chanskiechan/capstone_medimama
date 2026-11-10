@@ -155,7 +155,11 @@ export function Login() {
       },
     });
     setBusy(false);
-    if (error) return tell(error.message);
+    const duplicateEmail =
+      Boolean(error?.message && /already registered|already been registered|user already exists|email.*already|duplicate/i.test(error.message)) ||
+      Boolean(data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0);
+    if (error) return tell(duplicateEmail ? 'This email is already registered. Please log in or use another email address.' : error.message);
+    if (duplicateEmail) return tell('This email is already registered. Please log in or use another email address.');
     if (!data.user) return tell('Account could not be created. Please try again.');
     tell('Registration submitted. Please wait for an email from MediMama confirming whether the health center approved or declined your registration. You can log in only after approval.', 'success');
   };
