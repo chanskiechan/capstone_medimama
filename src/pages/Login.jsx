@@ -144,7 +144,15 @@ export function Login() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, address: get('address'), birthdate: get('birthdate'), contact_number: get('contact') } },
+      options: {
+        data: {
+          full_name: fullName,
+          requested_role: 'mother',
+          address: get('address'),
+          birthdate: get('birthdate'),
+          contact_number: get('contact'),
+        },
+      },
     });
     setBusy(false);
     if (error) return tell(error.message);
