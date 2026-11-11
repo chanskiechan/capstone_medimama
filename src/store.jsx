@@ -43,6 +43,7 @@ export function StoreProvider({ children }) {
         actorNames = Object.fromEntries((profiles || []).map(profile => [profile.id, profile.full_name || profile.email || 'User account']));
       }
       const attachActors = rows => rows.map(record => {
+        if (record.recorded_by_label) return { ...record, recordedBy: record.recorded_by_label, actor: record.recorded_by_label };
         if (record.actor || record.provider || record.source || !record.recorded_by) return record;
         return { ...record, actor: actorNames[record.recorded_by] || 'User account' };
       });

@@ -236,7 +236,7 @@ async function downloadClinicalHistoryPdf(patientName, records) {
 
 function ClinicalHistoryModal({ record, mother, onBack }) {
   const formatDate = value => value ? new Date(`${value}T00:00:00+08:00`).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: 'short', day: 'numeric' }) : 'Date not recorded';
-  const recordedBy = item => item.recordedBy || item.recorded_by || item.actor || item.provider || item.administeredBy || item.source || 'Not recorded';
+  const recordedBy = item => item.recordedBy || item.recorded_by_label || item.recorded_by || item.actor || item.provider || item.administeredBy || item.source || 'Not recorded';
   const entries = mother
     ? (record.records || []).map(item => ({ date: item.date, recordType: 'Maternal record', title: item.type || 'Maternal visit', details: item.details || item.notes || 'No additional details recorded.', recordedBy: recordedBy(item) }))
     : [
