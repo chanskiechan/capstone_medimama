@@ -260,14 +260,19 @@
 }
 
 .mother-review-actions {
-  justify-content: space-between;
+  justify-content: flex-start !important;
   margin-top: 18px;
+}
+
+.mother-review-actions > .secondary {
+  margin-right: auto;
 }
 
 .mother-review-decision-buttons {
   display: flex;
   align-items: center;
   gap: 9px;
+  margin-left: 0;
 }
 
 .admin-form-spacer {
