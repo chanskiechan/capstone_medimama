@@ -1,20 +1,3 @@
-.mother-approval-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.mother-approval-actions .primary-button,
-.mother-approval-actions .danger-button {
-  margin: 0;
-  white-space: nowrap;
-}
-
-.mother-approval-actions .danger-button {
-  padding: 10px 14px;
-}
-
 /* Mother and infant directory layout */
 .directory-page {
   color: #2d4058;
@@ -364,44 +347,6 @@
   white-space: nowrap;
 }
 
-.directory-page .mother-approval-actions {
-  justify-content: flex-start;
-  gap: 8px;
-}
-
-.directory-page .mother-approval-actions .primary-button,
-.directory-page .mother-approval-actions .danger-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  border-radius: 9px;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.directory-page .mother-approval-actions .primary-button {
-  padding: 10px 15px;
-  border: 0;
-  background: #4d7cf4;
-  color: #fff;
-  box-shadow: 0 6px 14px rgba(77, 124, 244, .16);
-}
-
-.directory-page .mother-approval-actions .primary-button:hover {
-  background: #315fcf;
-}
-
-.directory-page .mother-approval-actions .danger-button {
-  padding: 10px 13px;
-  background: #fff0f6;
-  color: #ca4a79;
-}
-
-.directory-page .mother-approval-actions .danger-button:hover {
-  background: #ffe3ee;
-}
-
 @media (max-width: 860px) {
   .directory-page > .page-header {
     align-items: flex-start;
@@ -434,14 +379,6 @@
     padding-left: 18px;
   }
 
-  .directory-page .mother-approval-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .directory-page .mother-approval-actions button {
-    width: 100%;
-  }
 }
 .admin-form-full{grid-column:1/-1}.mother-picker{position:relative}.mother-picker>input[type=search]{width:100%}.mother-picker-results{position:absolute;z-index:20;top:calc(100% + 5px);left:0;right:0;max-height:220px;overflow:auto;padding:6px;border:1px solid #d7e1f0;border-radius:12px;background:#fff;box-shadow:0 14px 30px rgba(23,35,61,.16)}.mother-picker-results button{display:grid;width:100%;gap:2px;padding:10px 11px;border:0;border-radius:8px;background:transparent;color:#293854;text-align:left;cursor:pointer}.mother-picker-results button:hover,.mother-picker-results button[aria-selected=true]{background:#edf3ff}.mother-picker-results strong{font-size:13px}.mother-picker-results small,.mother-picker-selected{color:#64748b;font-size:11px}.mother-picker-results>p{margin:8px 10px;color:#64748b;font-size:12px}.mother-picker-selected{display:block;margin-top:5px}
 .clinical-history-modal>section{width:min(1120px,100%)}
