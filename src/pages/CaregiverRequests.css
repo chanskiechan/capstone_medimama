@@ -260,7 +260,14 @@
 }
 
 .mother-review-actions {
+  justify-content: space-between;
   margin-top: 18px;
+}
+
+.mother-review-decision-buttons {
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
 
 .admin-form-spacer {
@@ -326,5 +333,14 @@
 
   .mother-review-details .full {
     grid-column: auto;
+  }
+
+  .mother-review-actions {
+    flex-direction: row;
+  }
+
+  .mother-review-decision-buttons {
+    flex: 1;
+    justify-content: flex-end;
   }
 }

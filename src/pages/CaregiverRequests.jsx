@@ -6,7 +6,7 @@ import { notifyEmailEvent } from '../lib/emailNotifications';
 import './CaregiverRequests.css';
 
 function ValidIdPreview({ url, name }) {
-  if (!url) return <span>{name || 'Not uploaded'}</span>;
+  if (!url) return <span>{name || 'No valid ID saved for this registration.'}</span>;
   const image = /\.(?:jpe?g|png|webp)$/i.test(name || '');
   return <div className="admin-id-preview">
     {image && <img src={url} alt={`Valid ID: ${name || 'uploaded document'}`} />}
@@ -43,7 +43,7 @@ function MotherDetailsModal({ mother, close, onApprove, onDecline, busy }) {
       <div className="admin-id-section"><h3>Valid ID</h3><ValidIdPreview url={validIdUrl} name={mother.valid_id_name} /></div>
       <div className="admin-form-actions mother-review-actions">
         <button type="button" className="secondary" disabled={busy} onClick={close}>Close</button>
-        {mother.status === 'pending_approval' && <><button type="button" className="caregiver-decline modal-action" disabled={busy} onClick={() => onDecline(mother)}>Decline</button><button type="button" className="primary-button" disabled={busy} onClick={() => onApprove(mother)}>{busy ? 'Reviewing...' : 'Approve'}</button></>}
+        {mother.status === 'pending_approval' && <div className="mother-review-decision-buttons"><button type="button" className="caregiver-decline modal-action" disabled={busy} onClick={() => onDecline(mother)}>Decline</button><button type="button" className="primary-button" disabled={busy} onClick={() => onApprove(mother)}>{busy ? 'Reviewing...' : 'Approve'}</button></div>}
       </div>
     </section>
   </div>;
