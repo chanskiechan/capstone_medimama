@@ -127,10 +127,28 @@ async function sendMail({ to, subject, title, intro, details = [] }) {
 
 const normalizeEmail = value => String(value || '').trim().toLowerCase();
 const registrationOtpHash = (email, otp) => createHash('sha256').update(`${email}:${otp}:${process.env.OTP_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY}`).digest('hex');
+async function registrationEmailExists(email) {
+  const perPage = 1000;
+  for (let page = 1; ; page += 1) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+    const users = data?.users || [];
+    if (users.some(user => normalizeEmail(user.email) === email)) return true;
+    if (users.length < perPage) return false;
+  }
+}
+
+async function checkRegistrationEmail(body) {
+  const email = normalizeEmail(body.email);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { status: 400, body: { error: 'Enter a valid email address.' } };
+  const alreadyRegistered = await registrationEmailExists(email);
+  return { status: 200, body: { email, available: !alreadyRegistered, alreadyRegistered } };
+}
 
 async function sendRegistrationOtp(body) {
   const email = normalizeEmail(body.email);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { status: 400, body: { error: 'Enter a valid email address.' } };
+  if (await registrationEmailExists(email)) return { status: 409, body: { error: 'This email is already registered. Please log in or use another email address.', alreadyRegistered: true } };
   const previous = registrationOtps.get(email);
   if (previous && Date.now() - previous.createdAt < registrationOtpResendMs) return { status: 429, body: { error: 'Please wait a minute before requesting another OTP.', retryAfter: Math.ceil((registrationOtpResendMs - (Date.now() - previous.createdAt)) / 1000) } };
   const otp = String(randomInt(100000, 1000000));
@@ -364,6 +382,7 @@ const server = createServer(async (request, response) => {
   if (request.method !== 'POST' || (!url.pathname.startsWith('/api/email/') && url.pathname !== '/api/caregiver/register')) return json(response, 404, { error: 'Not found.' });
   try {
     const body = await readBody(request);
+    if (url.pathname === '/api/email/registration-check') return json(response, ...(await checkRegistrationEmail(body).then(result => [result.status, result.body])));
     if (url.pathname === '/api/email/registration-otp') return json(response, ...(await sendRegistrationOtp(body).then(result => [result.status, result.body])));
     if (url.pathname === '/api/email/verify-registration-otp') return json(response, ...(await verifyRegistrationOtp(body).then(result => [result.status, result.body])));
     if (url.pathname === '/api/caregiver/register') return json(response, ...(await registerCaregiver(body).then(result => [result.status, result.body])));

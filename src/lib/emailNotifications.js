@@ -10,7 +10,7 @@ async function publicEmailRequest(path, body) {
       body: JSON.stringify(body),
     });
     const data = await response.json().catch(() => ({}));
-    return response.ok ? data : { error: data.error || 'Email service request failed.' };
+    return response.ok ? data : { ...data, error: data.error || 'Email service request failed.' };
   } catch (error) {
     return { error: 'Email service is unavailable. Start the email server and try again.' };
   }
@@ -18,6 +18,10 @@ async function publicEmailRequest(path, body) {
 
 export function requestRegistrationOtp(email) {
   return publicEmailRequest('/api/email/registration-otp', { email });
+}
+
+export function checkRegistrationEmail(email) {
+  return publicEmailRequest('/api/email/registration-check', { email });
 }
 
 export function verifyRegistrationOtp(email, otp) {

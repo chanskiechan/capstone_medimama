@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageStyles } from '../components/PageStyles';
 import { useStore } from '../store';
 import { supabase } from '../lib/supabase';
-import { notifyEmailEvent, requestRegistrationOtp, verifyRegistrationOtp } from '../lib/emailNotifications';
+import { checkRegistrationEmail, notifyEmailEvent, requestRegistrationOtp, verifyRegistrationOtp } from '../lib/emailNotifications';
 import './Login.css';
 
 const validEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -39,19 +39,36 @@ export function Login() {
   const [emailOtp, setEmailOtp] = useState('');
   const [emailVerification, setEmailVerification] = useState({ status: 'idle', email: '', message: '' });
   const [otpBusy, setOtpBusy] = useState(false);
+  const [emailCheckBusy, setEmailCheckBusy] = useState(false);
 
   const tell = (text, type = 'error') => {
     if (type === 'success' && text.startsWith('Registration submitted')) setSignup(false);
     setFeedback({ text, type });
   };
   const go = session => navigate(session.role === 'admin' ? '/dashboard' : session.role === 'caregiver' ? '/caregiver' : '/user');
+  const checkEmailAvailability = async email => {
+    setEmailCheckBusy(true);
+    const result = await checkRegistrationEmail(email);
+    setEmailCheckBusy(false);
+    if (registrationEmail.trim().toLowerCase() !== email) return;
+    if (result.error) return setEmailVerification({ status: 'error', email, message: result.error, blocked: false });
+    if (result.alreadyRegistered) return setEmailVerification({ status: 'error', email, message: 'This email is already registered. Please log in or use another email address.', blocked: true });
+    setEmailVerification({ status: 'available', email, message: 'Email is available. You can request verification.', blocked: false });
+  };
+  useEffect(() => {
+    if (!signup) return undefined;
+    const email = registrationEmail.trim().toLowerCase();
+    if (!validEmail(email)) return undefined;
+    const timer = window.setTimeout(() => { void checkEmailAvailability(email); }, 500);
+    return () => window.clearTimeout(timer);
+  }, [registrationEmail, signup]);
   const sendRegistrationOtp = async () => {
     const email = registrationEmail.trim().toLowerCase();
     if (!validEmail(email)) return setEmailVerification({ status: 'error', email, message: 'Enter a valid email address first.' });
     setOtpBusy(true);
     const result = await requestRegistrationOtp(email);
     setOtpBusy(false);
-    if (result.error) return setEmailVerification({ status: 'error', email, message: result.error });
+    if (result.error) return setEmailVerification({ status: 'error', email, message: result.error, blocked: Boolean(result.alreadyRegistered) });
     setEmailOtp('');
     setEmailVerification({ status: 'sent', email, message: 'OTP sent. Check your inbox or Spam folder.' });
   };
@@ -134,6 +151,7 @@ export function Login() {
     if (!get('firstName') || !get('lastName')) return tell('Please enter your first and last name.');
     if (!get('address') || !get('birthdate') || !/^9\d{9}$/.test(get('contact'))) return tell('Please complete your address, birthdate, and valid Philippine mobile number.');
     if (!validEmail(email)) return tell('Please enter a valid email address.');
+    if (emailVerification.blocked && emailVerification.email === email) return tell('This email is already registered. Please log in or use another email address.');
     if (emailVerification.status !== 'verified' || emailVerification.email !== email) return tell('Verify your email with the OTP before registering.');
     if (!(validId instanceof File) || !validId.name) return tell('Please upload a valid ID.');
     if (!strongPassword(password)) return tell('Password needs 8+ characters with uppercase, lowercase, number, and special character.');
@@ -208,7 +226,7 @@ export function Login() {
               <label>Birthdate</label><Input icon={<Icon name="calendar-days" />}><input name="birthdate" type="date" /></Input>
               <label>Contact Number</label><Input icon={<Icon name="phone" />} className="mm-phone"><strong>+63</strong><input name="contact" inputMode="numeric" maxLength="10" placeholder="9XXXXXXXXX" /></Input>
               <label>Email Address</label>
-              <div className="mm-email-row mm-registration-email-row"><Input icon={<Icon name="envelope" />}><input name="email" type="email" placeholder="Enter your email" value={registrationEmail} onChange={event => { setRegistrationEmail(event.target.value); setEmailVerification({ status: 'idle', email: '', message: '' }); }} required /></Input><button type="button" className="mm-otp-action" onClick={sendRegistrationOtp} disabled={otpBusy || emailVerification.status === 'verified'}>{emailVerification.status === 'verified' ? 'Verified' : otpBusy ? 'Sending…' : 'Send OTP'}</button></div>
+              <div className="mm-email-row mm-registration-email-row"><Input icon={<Icon name="envelope" />}><input name="email" type="email" placeholder="Enter your email" value={registrationEmail} onChange={event => { setRegistrationEmail(event.target.value); setEmailVerification({ status: 'idle', email: '', message: '', blocked: false }); }} required /></Input><button type="button" className="mm-otp-action" onClick={sendRegistrationOtp} disabled={otpBusy || emailCheckBusy || emailVerification.blocked || emailVerification.status === 'verified'}>{emailVerification.status === 'verified' ? 'Verified' : emailCheckBusy ? 'Checking…' : otpBusy ? 'Sending…' : 'Send OTP'}</button></div>
               {emailVerification.status !== 'idle' && <div className={`mm-email-verification ${emailVerification.status}`} role={emailVerification.status === 'error' ? 'alert' : 'status'}>{emailVerification.message}</div>}
               {emailVerification.status === 'sent' && <div className="mm-email-row mm-registration-otp-row"><Input icon={<Icon name="key" />}><input name="emailOtp" value={emailOtp} onChange={event => setEmailOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" maxLength="6" placeholder="6-digit OTP" /></Input><button type="button" className="mm-otp-action" onClick={verifyEmailOtp} disabled={otpBusy}>{otpBusy ? 'Checking…' : 'Verify'}</button></div>}
               <label>Valid ID</label><Input icon={<Icon name="id-card" />}><input className="mm-file" name="validId" type="file" accept="image/*,.pdf" /></Input>
