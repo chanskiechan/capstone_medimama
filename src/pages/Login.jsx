@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { PageStyles } from '../components/PageStyles';
 import { useStore } from '../store';
 import { supabase } from '../lib/supabase';
@@ -30,6 +31,7 @@ function Input({ icon, children, className = '' }) {
 export function Login() {
   const { refreshPatientData } = useStore();
   const navigate = useNavigate();
+  const isNative = Capacitor.isNativePlatform();
   const [signup, setSignup] = useState(false);
   const [feedback, setFeedback] = useState();
   const [visible, setVisible] = useState({ login: false, signup: false, confirm: false });
@@ -197,7 +199,7 @@ export function Login() {
   return <>
     <PageStyles page="login" />
     <main className="mm-login-page">
-      <img className="mm-bg" src="/medimama/background.png" alt="" />
+      {!isNative && <img className="mm-bg" src="/medimama/background.png" alt="" />}
       <div className="mm-container">
         <aside className="mm-left">
           <img className="mm-logo" src="/medimama/medimamalogo.png" alt="MediMama" />
