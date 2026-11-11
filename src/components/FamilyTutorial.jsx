@@ -68,10 +68,10 @@ const tutorialSteps = {
   ],
 };
 
-export default function FamilyTutorial({ role = 'mother', userId }) {
+export default function FamilyTutorial({ role = 'mother', userId, userEmail }) {
   const userRole = role === 'caregiver' ? 'caregiver' : 'mother';
   const steps = useMemo(() => tutorialSteps[userRole], [userRole]);
-  const tutorialIdentity = userId || 'guest';
+  const tutorialIdentity = userId || userEmail || 'guest';
   const storageKey = `medimama-family-tutorial-v1-${userRole}-${tutorialIdentity}`;
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -83,7 +83,14 @@ export default function FamilyTutorial({ role = 'mother', userId }) {
     } catch {
       completed = false;
     }
-    if (!completed) setOpen(true);
+    if (!completed) {
+      try {
+        window.localStorage.setItem(storageKey, 'done');
+      } catch {
+        // The tutorial can still be shown when storage is unavailable.
+      }
+      setOpen(true);
+    }
   }, [storageKey]);
 
   useEffect(() => {
