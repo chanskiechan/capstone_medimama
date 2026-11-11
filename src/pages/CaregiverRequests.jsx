@@ -236,6 +236,7 @@ export default function CaregiverRequests() {
       return;
     }
     void notifyEmailEvent('/api/email/mother-approval', { motherId: mother.id, decision: 'approved' });
+    setSelectedMother(null);
     setNotice(`Mother account approved${appointmentId ? ' and initial appointment scheduled' : ''}. The mother can now log in.`);
     setMotherApprovalBusyId('');
     await load();
@@ -252,6 +253,7 @@ export default function CaregiverRequests() {
       return;
     }
     void notifyEmailEvent('/api/email/mother-approval', { motherId: mother.id, decision: 'declined' });
+    setSelectedMother(null);
     setNotice('Mother registration declined and archived. A notification email is being sent.');
     setMotherApprovalBusyId('');
     await load();
