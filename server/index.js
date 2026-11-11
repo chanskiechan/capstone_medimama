@@ -242,6 +242,68 @@ async function registerCaregiver(body) {
   return { status: 200, body: { created: true, pendingApproval: true } };
 }
 
+async function registerMother(body) {
+  const email = normalizeEmail(body.email);
+  const password = String(body.password || '');
+  const validId = body.validId || {};
+  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+  const fileData = String(validId.data || '');
+  const base64 = fileData.includes(',') ? fileData.split(',').pop() : fileData;
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { status: 400, body: { error: 'Enter a valid email address.' } };
+  if (await registrationEmailExists(email)) return { status: 409, body: { error: 'This email is already registered. Please log in or use another email address.', alreadyRegistered: true } };
+  const otpRecord = registrationOtps.get(email);
+  if (!otpRecord?.verifiedAt || Date.now() - otpRecord.verifiedAt > registrationOtpLifetimeMs) return { status: 400, body: { error: 'Verify your email with the OTP before registering.' } };
+  if (!validPassword(password)) return { status: 400, body: { error: 'Password needs 8+ characters with uppercase, lowercase, number, and special character.' } };
+  if (!String(body.firstName || '').trim() || !String(body.lastName || '').trim()) return { status: 400, body: { error: 'First name and last name are required.' } };
+  if (!String(body.address || '').trim() || !String(body.birthdate || '').trim() || !/^9\d{9}$/.test(String(body.contact || ''))) return { status: 400, body: { error: 'Complete the address, birthdate, and valid Philippine mobile number.' } };
+  if (!allowedTypes.has(String(validId.type || '')) || !base64) return { status: 400, body: { error: 'Upload a JPEG, PNG, WebP, or PDF valid ID.' } };
+
+  let idBuffer;
+  try { idBuffer = Buffer.from(base64, 'base64'); } catch { return { status: 400, body: { error: 'The valid ID file could not be read.' } };
+  }
+  if (!idBuffer.length || idBuffer.length > 5 * 1024 * 1024) return { status: 400, body: { error: 'The valid ID must be 5 MB or smaller.' } };
+
+  const fullName = [body.firstName, body.middleName, body.lastName, body.suffix].map(value => String(value || '').trim()).filter(Boolean).join(' ');
+  const metadata = {
+    full_name: fullName,
+    requested_role: 'mother',
+    email,
+    address: String(body.address || '').trim(),
+    birthdate: String(body.birthdate || '').trim(),
+    contact_number: String(body.contact || '').trim(),
+  };
+  const { data: created, error: createError } = await supabase.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: metadata });
+  if (createError || !created.user) {
+    const duplicate = /already registered|already exists|duplicate/i.test(createError?.message || '');
+    return { status: duplicate ? 409 : 400, body: { error: duplicate ? 'This email is already registered. Please log in or use another email address.' : createError?.message || 'Mother account could not be created.' } };
+  }
+
+  const safeName = String(validId.name || 'valid-id').replace(/[^a-zA-Z0-9._-]/g, '-').slice(-80) || 'valid-id';
+  const path = `mother-ids/${created.user.id}/${Date.now()}-${safeName}`;
+  const { error: uploadError } = await supabase.storage.from('caregiver-ids').upload(path, idBuffer, { contentType: validId.type, upsert: false });
+  if (uploadError) {
+    await supabase.auth.admin.deleteUser(created.user.id);
+    throw uploadError;
+  }
+
+  const { data: motherLink, error: motherLinkError } = await supabase.from('mother_accounts').select('mother_id').eq('user_id', created.user.id).single();
+  if (motherLinkError || !motherLink) {
+    await supabase.storage.from('caregiver-ids').remove([path]);
+    await supabase.auth.admin.deleteUser(created.user.id);
+    throw motherLinkError || new Error('Mother account link was not created.');
+  }
+  const { error: motherUpdateError } = await supabase.from('mothers').update({ email, valid_id_path: path, valid_id_name: safeName }).eq('id', motherLink.mother_id);
+  if (motherUpdateError) {
+    await supabase.storage.from('caregiver-ids').remove([path]);
+    await supabase.auth.admin.deleteUser(created.user.id);
+    throw motherUpdateError;
+  }
+
+  registrationOtps.delete(email);
+  return { status: 200, body: { created: true, pendingApproval: true } };
+}
+
 async function appointmentRecipients(appointment) {
   let motherId = appointment.mother_id;
   if (!motherId && appointment.infant_id) {
@@ -379,13 +441,14 @@ const server = createServer(async (request, response) => {
   if (request.method === 'OPTIONS') return response.end();
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   if (request.method === 'GET' && url.pathname === '/health') return json(response, 200, { ok: true, emailConfigured, emailProvider });
-  if (request.method !== 'POST' || (!url.pathname.startsWith('/api/email/') && url.pathname !== '/api/caregiver/register')) return json(response, 404, { error: 'Not found.' });
+  if (request.method !== 'POST' || (!url.pathname.startsWith('/api/email/') && !['/api/caregiver/register', '/api/mother/register'].includes(url.pathname))) return json(response, 404, { error: 'Not found.' });
   try {
     const body = await readBody(request);
     if (url.pathname === '/api/email/registration-check') return json(response, ...(await checkRegistrationEmail(body).then(result => [result.status, result.body])));
     if (url.pathname === '/api/email/registration-otp') return json(response, ...(await sendRegistrationOtp(body).then(result => [result.status, result.body])));
     if (url.pathname === '/api/email/verify-registration-otp') return json(response, ...(await verifyRegistrationOtp(body).then(result => [result.status, result.body])));
     if (url.pathname === '/api/caregiver/register') return json(response, ...(await registerCaregiver(body).then(result => [result.status, result.body])));
+    if (url.pathname === '/api/mother/register') return json(response, ...(await registerMother(body).then(result => [result.status, result.body])));
     const context = await authContext(request);
     if (!context) return json(response, 401, { error: 'Authentication required.' });
     if (url.pathname === '/api/email/login') {

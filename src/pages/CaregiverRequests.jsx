@@ -5,6 +5,50 @@ import { supabase } from '../lib/supabase';
 import { notifyEmailEvent } from '../lib/emailNotifications';
 import './CaregiverRequests.css';
 
+function ValidIdPreview({ url, name }) {
+  if (!url) return <span>{name || 'Not uploaded'}</span>;
+  const image = /\.(?:jpe?g|png|webp)$/i.test(name || '');
+  return <div className="admin-id-preview">
+    {image && <img src={url} alt={`Valid ID: ${name || 'uploaded document'}`} />}
+    <a href={url} target="_blank" rel="noreferrer">Open {name || 'uploaded ID'}</a>
+  </div>;
+}
+
+function MotherDetailsModal({ mother, close, onApprove, onDecline, busy }) {
+  const [validIdUrl, setValidIdUrl] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    if (!mother.valid_id_path) { setValidIdUrl(''); return undefined; }
+    supabase.storage.from('caregiver-ids').createSignedUrl(mother.valid_id_path, 600).then(({ data }) => {
+      if (active) setValidIdUrl(data?.signedUrl || '');
+    });
+    return () => { active = false; };
+  }, [mother.valid_id_path]);
+
+  return <div className="admin-modal" role="dialog" aria-modal="true" aria-labelledby="mother-details-title">
+    <section className="mother-details-modal">
+      <button className="close" type="button" onClick={close} aria-label="Close">×</button>
+      <p className="caregiver-eyebrow">Mother registration review</p>
+      <h2 id="mother-details-title">Registration details</h2>
+      <div className="admin-profile"><span>{(mother.full_name || '?').split(' ').map(part => part[0]).join('').slice(0, 2)}</span><div><strong>{mother.full_name}</strong><small>{mother.status === 'pending_approval' ? 'Pending approval' : mother.status}</small></div></div>
+      <dl className="admin-details mother-review-details">
+        <div><dt>Record code</dt><dd>{mother.record_code || 'Not recorded'}</dd></div>
+        <div><dt>Email</dt><dd>{mother.email || 'Not recorded'}</dd></div>
+        <div><dt>Birthdate</dt><dd>{mother.birth_date || 'Not recorded'}</dd></div>
+        <div><dt>Contact number</dt><dd>{mother.contact_number || 'Not recorded'}</dd></div>
+        <div className="full"><dt>Address</dt><dd>{mother.address || 'Not recorded'}</dd></div>
+        <div><dt>Submitted</dt><dd>{mother.created_at ? new Date(mother.created_at).toLocaleString() : 'Not recorded'}</dd></div>
+      </dl>
+      <div className="admin-id-section"><h3>Valid ID</h3><ValidIdPreview url={validIdUrl} name={mother.valid_id_name} /></div>
+      <div className="admin-form-actions mother-review-actions">
+        <button type="button" className="secondary" disabled={busy} onClick={close}>Close</button>
+        {mother.status === 'pending_approval' && <><button type="button" className="caregiver-decline modal-action" disabled={busy} onClick={() => onDecline(mother)}>Decline</button><button type="button" className="primary-button" disabled={busy} onClick={() => onApprove(mother)}>{busy ? 'Reviewing...' : 'Approve'}</button></>}
+      </div>
+    </section>
+  </div>;
+}
+
 function DetailsModal({ request, mothers, assignment, close, onSave, onArchive, onDecide }) {
   const [busy, setBusy] = useState(false);
   const [validIdUrl, setValidIdUrl] = useState('');
@@ -55,7 +99,7 @@ function DetailsModal({ request, mothers, assignment, close, onSave, onArchive, 
         <div><dt>Email</dt><dd>{request.email || 'Not recorded'}</dd></div>
         <div><dt>Birthdate</dt><dd>{request.birth_date || 'Not recorded'}</dd></div>
         <div><dt>Address</dt><dd>{request.address || 'Not recorded'}</dd></div>
-        <div><dt>Valid ID</dt><dd>{validIdUrl ? <a href={validIdUrl} target="_blank" rel="noreferrer">View {request.valid_id_name || 'uploaded ID'}</a> : request.valid_id_name || 'Not uploaded'}</dd></div>
+        <div className="full"><dt>Valid ID</dt><dd><ValidIdPreview url={validIdUrl} name={request.valid_id_name} /></dd></div>
       </dl>
       <form className="admin-form" onSubmit={submit}>
         <label>Contact number<input name="contact_number" defaultValue={request.contact_number || ''} inputMode="numeric" pattern="9[0-9]{9}" maxLength="10" required /></label>
@@ -83,6 +127,7 @@ export default function CaregiverRequests() {
   const [pendingMothers, setPendingMothers] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [selectedMother, setSelectedMother] = useState(null);
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -103,7 +148,7 @@ export default function CaregiverRequests() {
     }
     const [requestsResult, mothersResult, assignmentsResult] = await Promise.all([
       supabase.from('caregiver_requests').select('*').order('created_at', { ascending: false }),
-      supabase.from('mothers').select('id, full_name, record_code, birth_date, contact_number, address, status, created_at').order('created_at', { ascending: false }),
+      supabase.from('mothers').select('*').order('created_at', { ascending: false }),
       supabase.from('caregiver_assignments').select('id, caregiver_id, mother_id, relationship, status'),
     ]);
     const problem = requestsResult.error || mothersResult.error || assignmentsResult.error;
@@ -219,9 +264,10 @@ export default function CaregiverRequests() {
       {notice && <p className="admin-toast">{notice}</p>}
       {loadError && <p className="admin-toast caregiver-load-error" role="alert">Could not load user requests: {loadError}</p>}
       <section className="summary-grid caregiver-summary"><article><i className="fa-solid fa-clock" /><span><b>{pending}</b><small>Pending approvals</small></span></article><article><i className="fa-solid fa-user-check" /><span><b>{requests.filter(request => request.status === 'approved').length}</b><small>Approved caregivers</small></span></article><article><i className="fa-solid fa-users" /><span><b>{mothers.filter(mother => mother.status !== 'archived').length}</b><small>Available mother records</small></span></article></section>
-      <section className="directory-panel caregiver-table-panel mother-approval-panel"><div className="caregiver-table-head"><div><h2>Mother account approvals</h2><p>New mother registrations appear here while they are waiting for admin confirmation.</p></div><span>{pendingMothers.length} pending</span></div><div className="table-wrap"><table><thead><tr><th>Mother</th><th>Birthdate</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead><tbody>{loading ? <tr><td className="admin-empty" colSpan="5">Loading mother registrations...</td></tr> : pendingMothers.length ? pendingMothers.map(mother => { const busy = motherApprovalBusyId === mother.id; return <tr key={mother.id}><td><div className="caregiver-person"><span>{mother.full_name.split(' ').map(part => part[0]).join('').slice(0, 2)}</span><div><strong>{mother.full_name}</strong><small>{mother.address || mother.record_code || 'No address recorded'}</small></div></div></td><td>{mother.birth_date || 'Not recorded'}</td><td>{mother.contact_number || 'Not recorded'}</td><td><span className="caregiver-status pending">Pending approval</span></td><td><div className="mother-approval-actions"><button className="view-button caregiver-approve" type="button" disabled={Boolean(motherApprovalBusyId)} onClick={() => approveMother(mother)}><i className="fa-solid fa-check" /> {busy ? 'Approving...' : 'Approve'}</button><button className="caregiver-decline" type="button" disabled={Boolean(motherApprovalBusyId)} onClick={() => declineMother(mother)}><i className="fa-solid fa-xmark" /> Decline</button></div></td></tr>; }) : <tr><td className="admin-empty" colSpan="5">No mother registrations are waiting for approval.</td></tr>}</tbody></table></div></section>
-      <section className="directory-panel caregiver-table-panel"><div className="caregiver-table-head"><div><h2>Registration queue</h2><p>Pending requests need identity and mother-link review. Approved caregivers can be archived without deleting their history.</p></div><span>{requests.length} active records</span></div><div className="table-wrap"><table><thead><tr><th>Caregiver</th><th>Relationship</th><th>Requested patient</th><th>Status</th><th>Review action</th></tr></thead><tbody>{loading ? <tr><td className="admin-empty" colSpan="5">Loading user requests...</td></tr> : requests.length ? requests.map(request => <tr key={request.id}><td><div className="caregiver-person"><span>{request.full_name.split(' ').map(part => part[0]).join('').slice(0, 2)}</span><div><strong>{request.full_name}</strong><small>{request.contact_number || 'No contact number'}</small></div></div></td><td>{request.relationship}</td><td>{request.requested_patient_name}</td><td><span className={`caregiver-status ${request.status}`}>{request.status}</span></td><td><div className="caregiver-row-actions">{request.status === 'pending' ? <div className="caregiver-actions"><button className="view-button" type="button" onClick={() => setSelected(request)}>Review details</button><div><button className="view-button caregiver-approve" type="button" onClick={() => decide(request, 'approved')}><i className="fa-solid fa-check" /> Approve</button><button className="caregiver-decline" type="button" onClick={() => decide(request, 'declined')}><i className="fa-solid fa-xmark" /> Decline</button></div></div> : <><button className="view-button" type="button" onClick={() => setSelected(request)}>View details</button><span className={`caregiver-reviewed${request.status === 'declined' ? ' declined-review' : ''}`}><i className={`fa-solid ${request.status === 'approved' ? 'fa-circle-check' : 'fa-circle-xmark'}`} /> Reviewed</span></>}</div></td></tr>) : <tr><td className="admin-empty" colSpan="5">No user registrations yet.</td></tr>}</tbody></table></div></section>
+      <section className="directory-panel caregiver-table-panel mother-approval-panel"><div className="caregiver-table-head"><div><h2>Mother account approvals</h2><p>Open each registration to review the submitted information and valid ID before deciding.</p></div><span>{pendingMothers.length} pending</span></div><div className="table-wrap"><table><thead><tr><th>Mother</th><th>Birthdate</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead><tbody>{loading ? <tr><td className="admin-empty" colSpan="5">Loading mother registrations...</td></tr> : pendingMothers.length ? pendingMothers.map(mother => <tr key={mother.id}><td><div className="caregiver-person"><span>{mother.full_name.split(' ').map(part => part[0]).join('').slice(0, 2)}</span><div><strong>{mother.full_name}</strong><small>{mother.address || mother.record_code || 'No address recorded'}</small></div></div></td><td>{mother.birth_date || 'Not recorded'}</td><td>{mother.contact_number || 'Not recorded'}</td><td><span className="caregiver-status pending">Pending approval</span></td><td><button className="view-button" type="button" onClick={() => setSelectedMother(mother)}><i className="fa-solid fa-eye" /> View details</button></td></tr>) : <tr><td className="admin-empty" colSpan="5">No mother registrations are waiting for approval.</td></tr>}</tbody></table></div></section>
+      <section className="directory-panel caregiver-table-panel"><div className="caregiver-table-head"><div><h2>Registration queue</h2><p>Open each caregiver request to review the submitted information and valid ID before deciding.</p></div><span>{requests.length} active records</span></div><div className="table-wrap"><table><thead><tr><th>Caregiver</th><th>Relationship</th><th>Requested patient</th><th>Status</th><th>Review action</th></tr></thead><tbody>{loading ? <tr><td className="admin-empty" colSpan="5">Loading user requests...</td></tr> : requests.length ? requests.map(request => <tr key={request.id}><td><div className="caregiver-person"><span>{request.full_name.split(' ').map(part => part[0]).join('').slice(0, 2)}</span><div><strong>{request.full_name}</strong><small>{request.contact_number || 'No contact number'}</small></div></div></td><td>{request.relationship}</td><td>{request.requested_patient_name}</td><td><span className={`caregiver-status ${request.status}`}>{request.status}</span></td><td><div className="caregiver-row-actions"><button className="view-button" type="button" onClick={() => setSelected(request)}><i className="fa-solid fa-eye" /> View details</button>{request.status !== 'pending' && <span className={`caregiver-reviewed${request.status === 'declined' ? ' declined-review' : ''}`}><i className={`fa-solid ${request.status === 'approved' ? 'fa-circle-check' : 'fa-circle-xmark'}`} /> Reviewed</span>}</div></td></tr>) : <tr><td className="admin-empty" colSpan="5">No user registrations yet.</td></tr>}</tbody></table></div></section>
       {selected && <DetailsModal request={selected} mothers={mothers} assignment={assignmentFor(selected)} close={() => setSelected(null)} onSave={saveDetails} onArchive={archiveRecord} onDecide={decide} />}
+      {selectedMother && <MotherDetailsModal mother={selectedMother} close={() => setSelectedMother(null)} onApprove={approveMother} onDecline={declineMother} busy={motherApprovalBusyId === selectedMother.id} />}
     </main>
   </AdminShell>;
 }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageStyles } from '../components/PageStyles';
 import { useStore } from '../store';
 import { supabase } from '../lib/supabase';
-import { checkRegistrationEmail, notifyEmailEvent, requestRegistrationOtp, verifyRegistrationOtp } from '../lib/emailNotifications';
+import { checkRegistrationEmail, notifyEmailEvent, registerMotherAccount, requestRegistrationOtp, verifyRegistrationOtp } from '../lib/emailNotifications';
 import './Login.css';
 
 const validEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -157,28 +157,32 @@ export function Login() {
     if (!strongPassword(password)) return tell('Password needs 8+ characters with uppercase, lowercase, number, and special character.');
     if (password !== get('confirmPassword')) return tell('Passwords do not match.');
     if (!form.get('terms')) return tell('Please agree to the Terms and Privacy Policy.');
-    const fullName = `${get('firstName')} ${get('middleName')} ${get('lastName')} ${get('suffix')}`.replace(/\s+/g, ' ').trim();
+    let idData;
+    try {
+      idData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(validId);
+      });
+    } catch {
+      return tell('The valid ID could not be read.');
+    }
     setBusy(true);
-    const { data, error } = await supabase.auth.signUp({
+    const result = await registerMotherAccount({
+      firstName: get('firstName'),
+      middleName: get('middleName'),
+      lastName: get('lastName'),
+      suffix: get('suffix'),
+      address: get('address'),
+      birthdate: get('birthdate'),
+      contact: get('contact'),
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-          requested_role: 'mother',
-          address: get('address'),
-          birthdate: get('birthdate'),
-          contact_number: get('contact'),
-        },
-      },
+      validId: { name: validId.name, type: validId.type, data: idData },
     });
     setBusy(false);
-    const duplicateEmail =
-      Boolean(error?.message && /already registered|already been registered|user already exists|email.*already|duplicate/i.test(error.message)) ||
-      Boolean(data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0);
-    if (error) return tell(duplicateEmail ? 'This email is already registered. Please log in or use another email address.' : error.message);
-    if (duplicateEmail) return tell('This email is already registered. Please log in or use another email address.');
-    if (!data.user) return tell('Account could not be created. Please try again.');
+    if (result.error) return tell(result.error);
     tell('Registration submitted. Please wait for an email from MediMama confirming whether the health center approved or declined your registration. You can log in only after approval.', 'success');
   };
 

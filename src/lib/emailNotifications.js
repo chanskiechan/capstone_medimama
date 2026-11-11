@@ -32,6 +32,10 @@ export function registerCaregiverAccount(payload) {
   return publicEmailRequest('/api/caregiver/register', payload);
 }
 
+export function registerMotherAccount(payload) {
+  return publicEmailRequest('/api/mother/register', payload);
+}
+
 export async function notifyEmailEvent(path, body = {}) {
   if (!supabase) return;
   const { data: { session } = {} } = await supabase.auth.getSession();
