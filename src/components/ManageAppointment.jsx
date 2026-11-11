@@ -15,7 +15,7 @@ export default function ManageAppointment({ appointment }) {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const confirmed = appointment.status === 'Confirmed' || Boolean(appointment.motherConfirmedAt || appointment.mother_confirmed_at);
-  const pending = !confirmed && ['Pending', 'Scheduled', 'Approved'].includes(appointment.status);
+  const pending = !confirmed && ['Pending', 'Scheduled', 'Approved', 'Rescheduled'].includes(appointment.status);
   const pendingRequest = (data.appointmentRequests || []).find(request => request.appointment_id === appointment.id && request.status === 'pending');
   const canRequestChange = !['Completed', 'Cancelled'].includes(appointment.status) && !pendingRequest;
   const availableDates = useMemo(() => availableAppointmentDates(data, appointment), [data, appointment]);

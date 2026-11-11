@@ -72,7 +72,7 @@ export default function AppointmentApprovals() {
       save(current => ({
         ...current,
         appointmentRequests: (current.appointmentRequests || []).map(item => item.id === request.id ? { ...item, status: decision, reviewed_at: new Date().toISOString() } : item),
-        appointments: decision === 'approved' ? current.appointments.map(item => item.id === request.appointment_id ? { ...item, date: schedule.date, time: schedule.time, status: 'Pending', motherConfirmedAt: null } : item) : current.appointments,
+        appointments: decision === 'approved' ? current.appointments.map(item => item.id === request.appointment_id ? { ...item, date: schedule.date, time: schedule.time, status: 'Rescheduled', motherConfirmedAt: null } : item) : current.appointments,
       }));
     }
     await refreshPatientData?.();
