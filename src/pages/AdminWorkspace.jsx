@@ -63,6 +63,7 @@ function InfantPatientForm({ data, initial, onSave, onCancel }) {
     <label>Height (cm)<input name="height" type="number" min="1" max="180" step="0.1" required defaultValue={initial.height ?? initial.length ?? latestGrowth?.length ?? ''} /></label>
     <label>MUAC (cm)<input name="muac" type="number" min="1" max="40" step="0.1" required defaultValue={initial.muac ?? latestGrowth?.muac ?? ''} /></label>
     <label>Record status<select name="status" defaultValue={initial.status || 'Active'}><option>Active</option><option>Needs follow-up</option></select><small>Choose “Needs follow-up” only when the midwife requests another check or more information.</small></label>
+    {!initial.id && <label>Recorded by<select name="recordedBy" defaultValue="Health Center" required><option>Irene S. Andres</option><option>Health Center</option></select></label>}
     <div className="admin-form-actions"><button type="button" className="secondary" onClick={() => onCancel(Boolean(initial.id))}><Icon name={initial.id ? 'arrow-left' : 'xmark'} /> {initial.id ? 'Back to profile' : 'Cancel'}</button><button className="primary-button"><Icon name="floppy-disk" /> Save record</button></div>
   </form>;
 }
