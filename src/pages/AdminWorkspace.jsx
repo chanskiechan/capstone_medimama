@@ -276,7 +276,7 @@ export function Directory({ type }) {
   const mother = type === 'mothers';
   const accountStatus = item => mother && item.approvalStatus === 'pending_approval' ? 'Pending approval' : item.status;
   const rows = (data[type] || []).filter(p => !p.archived && (!mother || p.approvalStatus !== 'pending_approval'));
-  const recordCreatedAt = item => { const parsed = Date.parse(item.created_at || item.createdAt || ''); if (Number.isFinite(parsed)) return parsed; const timestamp = String(item.id || '').match(/(\d{10,})$/)?.[1]; return timestamp ? Number(timestamp) : 0; };
+  const recordCreatedAt = item => { const raw = item.created_at || item.createdAt || item.registeredAt || ''; const parsed = Date.parse(String(raw).replace(' ', 'T')); if (Number.isFinite(parsed)) return parsed; const timestamp = String(item.id || '').match(/(\d{10,})$/)?.[1]; return timestamp ? Number(timestamp) : 0; };
   const shown = rows.filter((item) => (status === 'all' || accountStatus(item) === status) && JSON.stringify(item).toLowerCase().includes(query.toLowerCase())).sort((a, b) => recordCreatedAt(b) - recordCreatedAt(a));
   const pageSize = 7;
   const totalPages = Math.max(1, Math.ceil(shown.length / pageSize));

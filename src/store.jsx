@@ -22,7 +22,8 @@ export function StoreProvider({ children }) {
       const results = await Promise.all(tables.map(async table => {
         const rows = [];
         for (let offset = 0; ; offset += 500) {
-          const result = await supabase.from(table).select('*').order(table === 'mother_accounts' ? 'mother_id' : 'id').range(offset, offset + 499);
+          const orderColumn = table === 'mother_accounts' ? 'mother_id' : ['mothers', 'infants'].includes(table) ? 'created_at' : 'id';
+          const result = await supabase.from(table).select('*').order(orderColumn, { ascending: false, nullsFirst: false }).range(offset, offset + 499);
           if (result.error) return table === 'appointment_change_requests' ? { data: [] } : result;
           rows.push(...result.data);
           if (result.data.length < 500) return { data: rows };
