@@ -69,7 +69,15 @@ function ReportsDetails() {
     };
   });
   const allRows = [...mothers, ...infants, ...appointments];
-  const rows = allRows.filter(row => (filter === 'All' || row.type === filter) && `${row.type} ${row.name} ${row.details} ${row.date} ${row.status} ${row.search}`.toLowerCase().includes(query.toLowerCase()));
+  const recordCreatedAt = row => {
+    const prefix = row.id.split('-')[0];
+    const sourceId = row.id.slice(prefix.length + 1);
+    const collection = prefix === 'mother' ? data.mothers : prefix === 'infant' ? data.infants : data.appointments;
+    const source = collection.find(item => item.id === sourceId);
+    const parsed = Date.parse(source?.created_at || source?.createdAt || '');
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  const rows = allRows.filter(row => (filter === 'All' || row.type === filter) && `${row.type} ${row.name} ${row.details} ${row.date} ${row.status} ${row.search}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => recordCreatedAt(b) - recordCreatedAt(a) || String(b.id).localeCompare(String(a.id)));
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const visibleRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
