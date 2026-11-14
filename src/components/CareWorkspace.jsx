@@ -376,9 +376,40 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
 
   };
 
-  return <section className={`care-workspace${admin && section === 'overview' ? ' care-workspace-dashboard' : ''}`} data-section={section}>
+  const recordScreening = async (patient, type) => {
+    if (!canEdit || !isUuid(patient?.id)) return false;
+    if ((patient.screenings || []).some(screening => screening.type === type && screening.status === 'Completed')) return true;
+    const { error: screeningError } = await supabase.from('infant_records').insert({
+      infant_id: patient.id,
+      record_date: today(),
+      record_type: type,
+      details: 'Completed',
+      recorded_by: user.id,
+      recorded_by_label: 'Health Center',
+    });
+    if (screeningError) { setError(`Could not save ${type.toLowerCase()}: ${screeningError.message}`); return false; }
+    await refreshPatientData();
+    setNotice(`${type} marked as completed.`);
+    return true;
+  };
+
+  const handleScreeningClick = event => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !['Newborn screening completed', 'Hearing test completed'].includes(target.getAttribute('aria-label'))) return;
+    const type = target.getAttribute('aria-label').replace(' completed', '');
+    event.preventDefault();
+    if (!canEdit) return;
+    const modalPatient = selectedImmunizationInfant && target.closest('[role="dialog"]') ? selectedImmunizationInfant : null;
+    const infantSection = [...event.currentTarget.querySelectorAll('.care-section')].find(candidate => candidate.querySelector('h2')?.textContent === 'Infant records');
+    const cards = infantSection ? [...infantSection.querySelectorAll('.care-card')] : [];
+    const patient = modalPatient || visibleInfants[cards.indexOf(target.closest('.care-card'))];
+    if (!patient || (patient.screenings || []).some(screening => screening.type === type && screening.status === 'Completed')) return;
+    void recordScreening(patient, type).then(saved => { if (saved && modalPatient) setSelectedImmunizationInfant(null); });
+  };
+
+  return <section className={`care-workspace${admin && section === 'overview' ? ' care-workspace-dashboard' : ''}`} data-section={section} onClick={handleScreeningClick}>
     {selectedMaternalRecord && <MaternalRecordDialog mother={selectedMaternalRecord} appointments={data.appointments} section={section} canEdit={canEdit} onClose={() => setSelectedMaternalRecord(null)} onUpdate={() => { const mother = selectedMaternalRecord; setSelectedMaternalRecord(null); open({ kind: 'maternal', patient: mother }); }} />}
-    {selectedImmunizationInfant && <ImmunizationRecordDialog infant={selectedImmunizationInfant} mother={scope.mothers.find(mother => mother.id === selectedImmunizationInfant.motherId)} canEdit={canEdit} onClose={() => setSelectedImmunizationInfant(null)} onRecordDose={rule => { const infant = selectedImmunizationInfant; setSelectedImmunizationInfant(null); open({ kind: 'vaccine', patient: infant, rule }); }} />}
+    {selectedImmunizationInfant && <ImmunizationRecordDialog infant={selectedImmunizationInfant} mother={scope.mothers.find(mother => mother.id === selectedImmunizationInfant.motherId)} canEdit={canEdit} onClose={() => setSelectedImmunizationInfant(null)} onRecordScreening={async (type) => { if (await recordScreening(selectedImmunizationInfant, type)) setSelectedImmunizationInfant(null); }} onRecordDose={rule => { const infant = selectedImmunizationInfant; setSelectedImmunizationInfant(null); open({ kind: 'vaccine', patient: infant, rule }); }} />}
     {section !== 'records' && <div className="care-banner"><div><strong>{section === 'infants' ? 'Register an infant' : banner[0]}</strong><p>{section === 'infants' ? 'Add your baby’s details so the health center can review the record.' : banner[1]}</p></div><div className="care-actions">{canBookAppointments && <button onClick={() => open({ kind: 'appointment' })}>Book appointment</button>}{canRegisterInfant && section === 'immunization' && !readOnly && scope.mothers.length > 0 && <button onClick={() => open({ kind: 'infant' })}>Register infant</button>}{canEdit && section === 'postnatal' && <button onClick={() => open({ kind: 'links' })}>Account & caregiver links</button>}</div></div>}
     {storageError && <p className="care-error" role="alert">{storageError}</p>}{notice && !storageError && <p role="status" className="care-success">{notice}</p>}
     {loadingFamily && <p className="care-muted" role="status">Loading linked family records…</p>}
