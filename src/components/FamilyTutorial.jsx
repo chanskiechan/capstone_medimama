@@ -45,7 +45,7 @@ const tutorialSteps = {
       icon: 'fa-clipboard-list',
       label: 'Records',
       title: 'Tingnan ang shared records',
-      text: 'Buksan ang Records para makita ang maternal, infant, prenatal, postnatal, at immunization records ng linked family.',
+      text: 'Buksan ang Records para makita ang infant, immunization, at iba pang baby records ng linked family.',
     },
     {
       icon: 'fa-calendar-check',
