@@ -1,0 +1,9 @@
+/* Show a clear completion state in the action column of the vaccine checklist. */
+.care-workspace .care-table-wrap table tbody tr:has(> td:first-child input[type="checkbox"]:checked) > td:last-child::after {
+  content: "\2713 Completed";
+  display: inline-flex;
+  align-items: center;
+  color: #218457;
+  font-weight: 700;
+  white-space: nowrap;
+}

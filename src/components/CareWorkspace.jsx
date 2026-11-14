@@ -4,6 +4,7 @@ import { jsPDF } from 'jspdf';
 import { useStore } from '../store';
 import { addDays, appointmentError, completedDose, day, daysBetween, family, infantAgeStatus, maternalStatusLabel, nextPrenatal, pregnancy, serviceGroup, services, session, today, uid, vaccineDue, vaccineError, vaccineSchedule } from '../care';
 import './CareWorkspace.css';
+import './CareWorkspaceCompleted.css';
 import { supabase } from '../lib/supabase';
 import { notifyEmailEvent } from '../lib/emailNotifications';
 
