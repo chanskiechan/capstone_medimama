@@ -4,7 +4,7 @@ import { jsPDF } from 'jspdf';
 import { AdminShell } from '../components/AdminShell';
 import { useStore } from '../store';
 import CareWorkspace from '../components/CareWorkspace';
-import { isDeliveredMaternalStatus, maternalStatusLabel, today } from '../care';
+import { expectedDeliveryError, expectedDeliveryWindow, isDeliveredMaternalStatus, maternalStatusLabel, today } from '../care';
 import { supabase } from '../lib/supabase';
 import AppointmentApprovals from './AppointmentApprovals';
 import './AdminWorkspace.css';
@@ -70,6 +70,8 @@ function InfantPatientForm({ data, initial, onSave, onCancel }) {
 
 function MotherPatientForm({ initial = {}, onSave, onCancel, cancelLabel = 'Cancel' }) {
   const [maternalStatus, setMaternalStatus] = useState(initial.status || 'Pregnant');
+  const [gestationWeeks, setGestationWeeks] = useState(initial.gestationWeeks ?? '');
+  const deliveryWindow = expectedDeliveryWindow(gestationWeeks, today());
   const nameParts = String(initial.name || '').trim().split(/\s+/).filter(Boolean);
   const suffixTokens = ['Jr', 'Jr.', 'Sr', 'Sr.', 'II', 'III', 'IV', 'V'];
   const parsedSuffix = suffixTokens.includes(nameParts.at(-1)) ? nameParts.at(-1) : '';
@@ -87,8 +89,8 @@ function MotherPatientForm({ initial = {}, onSave, onCancel, cancelLabel = 'Canc
     <label>Address<input name="address" required defaultValue={initial.address || ''} /></label>
     <label>Birthdate<input name="birthDate" type="date" max={today()} required defaultValue={initial.birthDate || ''} /></label>
     <label>Status<select name="status" value={maternalStatus} onChange={event => setMaternalStatus(event.target.value)} required><option>Pregnant</option><option value="Postnatal">Delivered</option></select></label>
-    <label>{maternalStatus === 'Postnatal' ? 'Actual delivery date' : 'Expected delivery date'}<input name="deliveryDate" type="date" max={maternalStatus === 'Postnatal' ? today() : undefined} required defaultValue={initial.deliveryDate || ''} /></label>
-    <label>Pregnancy weeks<input name="gestationWeeks" type="number" min="0" max="45" defaultValue={initial.gestationWeeks ?? ''} /></label>
+    <label>{maternalStatus === 'Postnatal' ? 'Actual delivery date' : 'Expected delivery date'}<input name="deliveryDate" type="date" min={maternalStatus === 'Postnatal' ? undefined : deliveryWindow.min} max={maternalStatus === 'Postnatal' ? today() : deliveryWindow.max} required defaultValue={initial.deliveryDate || ''} />{maternalStatus === 'Pregnant' && <small>Allowed range: {deliveryWindow.min} to {deliveryWindow.max}.</small>}</label>
+    <label>Pregnancy weeks<input name="gestationWeeks" type="number" min="0" max="45" value={gestationWeeks} onChange={event => setGestationWeeks(event.target.value)} /></label>
     <div className="admin-form-actions"><button type="button" className="secondary admin-form-back" onClick={() => onCancel(Boolean(initial.id))}><Icon name={resolvedCancelLabel === 'Cancel' ? 'xmark' : 'arrow-left'} /> {resolvedCancelLabel}</button><button className="primary-button"><Icon name="floppy-disk" /> Save record</button></div>
   </form>;
 }
@@ -305,10 +307,14 @@ export function Directory({ type }) {
     const infantAddress = `${String(fields.blockLot || '').trim()}, Imus City, Cavite 4103`;
     if (formMother) {
       const motherName = [fields.firstName, fields.middleName, fields.lastName, fields.suffix].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+      if (fields.status === 'Pregnant') {
+        const deliveryError = expectedDeliveryError(fields.gestationWeeks, fields.deliveryDate, editingRecord?.gestationDate || today());
+        if (deliveryError) return setNotice(deliveryError);
+      }
       const payload = { full_name: motherName, birth_date: fields.birthDate || null, address: fields.address,
         maternal_status: fields.status.toLowerCase(), delivery_date: fields.deliveryDate || null,
         gestation_weeks: fields.gestationWeeks === '' ? null : Number(fields.gestationWeeks),
-        gestation_date: fields.gestationDate || (fields.gestationWeeks === '' ? null : today()),
+        gestation_date: fields.gestationDate || (fields.gestationWeeks === '' ? null : editingRecord?.gestationDate || today()),
         };
       const query = editingRecord ? supabase.from('mothers').update(payload).eq('id', editingRecord.id) : supabase.from('mothers').insert({ ...payload, record_code: `M-${crypto.randomUUID().slice(0,8).toUpperCase()}` });
       const { data: saved, error } = await query.select().single();

@@ -137,6 +137,22 @@ export function pregnancy(mother, date = today()) {
   return { label: 'Prenatal', weeks, months: weeks === null ? null : Math.floor(weeks / 4.345) };
 }
 
+export function expectedDeliveryWindow(gestationWeeks, referenceDate = today()) {
+  const hasRecordedWeeks = gestationWeeks !== null && gestationWeeks !== undefined && gestationWeeks !== '' && Number.isFinite(Number(gestationWeeks));
+  const weeks = hasRecordedWeeks ? Math.max(0, Number(gestationWeeks)) : null;
+  const reference = Number.isFinite(day(referenceDate)) ? referenceDate : today();
+  const earliestRemainingWeeks = weeks === null ? 0 : Math.max(0, 37 - weeks);
+  const latestRemainingWeeks = weeks === null ? 42 : Math.max(0, 42 - weeks);
+  return { min: addDays(reference, earliestRemainingWeeks * 7), max: addDays(reference, latestRemainingWeeks * 7) };
+}
+
+export function expectedDeliveryError(gestationWeeks, deliveryDate, referenceDate = today()) {
+  if (!Number.isFinite(day(deliveryDate))) return 'Enter a valid expected delivery date.';
+  const window = expectedDeliveryWindow(gestationWeeks, referenceDate);
+  if (deliveryDate < window.min || deliveryDate > window.max) return `Expected delivery date must be between ${window.min} and ${window.max}.`;
+  return '';
+}
+
 export function nextPrenatal(mother) {
   if (mother.status === 'Postnatal') return '';
   const last = [...(mother.records || [])].filter(r => r.type === 'Prenatal check-up').map(r => r.date).sort().at(-1) || mother.gestationDate;

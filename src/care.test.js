@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { appointmentError, completedDose, day, family, nextPrenatal, normalize, pregnancy, vaccineDue, vaccineError, vaccineSchedule } from './care.js';
+import { appointmentError, completedDose, day, expectedDeliveryError, expectedDeliveryWindow, family, nextPrenatal, normalize, pregnancy, vaccineDue, vaccineError, vaccineSchedule } from './care.js';
 
 const mother = { id: 'm1', name: 'Mother', accountId: 'u1', status: 'Pregnant' };
 const infant = { id: 'i1', name: 'Baby', motherId: 'm1', status: 'Active', birthDate: '2025-01-01', vaccines: [] };
@@ -94,6 +94,13 @@ test('gestational progress advances and delivery closes the prenatal stage', () 
   assert.equal(pregnancy({ ...mother, gestationDate: '', gestationWeeks: 6 }, '2025-01-15').weeks, 6);
   assert.equal(pregnancy({ ...mother, status: 'Postnatal' }).label, 'Postnatal');
   assert.equal(nextPrenatal({ ...mother, status: 'Postnatal' }), '');
+});
+test('expected delivery dates stay within a realistic pregnancy window', () => {
+  const window = expectedDeliveryWindow(5, '2026-11-15');
+  assert.equal(window.min, '2027-06-27');
+  assert.equal(window.max, '2027-08-01');
+  assert.equal(expectedDeliveryError(5, '2027-12-12', '2026-11-15').includes('between'), true);
+  assert.equal(expectedDeliveryError(5, '2027-07-15', '2026-11-15'), '');
 });
 test('legacy name migration only links unambiguous patients', () => {
   const data = normalize({ mothers: [mother], appointments: [{ patient: 'Mother' }] });
