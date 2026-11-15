@@ -91,6 +91,7 @@ test('mother and caregiver access uses verified IDs, not shared names', () => {
 });
 test('gestational progress advances and delivery closes the prenatal stage', () => {
   assert.equal(pregnancy({ ...mother, gestationDate: '2025-01-01', gestationWeeks: 12 }, '2025-01-15').weeks, 14);
+  assert.equal(pregnancy({ ...mother, gestationDate: '', gestationWeeks: 6 }, '2025-01-15').weeks, 6);
   assert.equal(pregnancy({ ...mother, status: 'Postnatal' }).label, 'Postnatal');
   assert.equal(nextPrenatal({ ...mother, status: 'Postnatal' }), '');
 });

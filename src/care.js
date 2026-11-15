@@ -130,7 +130,10 @@ export function vaccineError(baby, rule, date) {
 }
 export function pregnancy(mother, date = today()) {
   if (mother.status === 'Postnatal') return { label: 'Postnatal', weeks: null, months: null };
-  const weeks = mother.gestationDate ? Math.max(0, Number(mother.gestationWeeks || 0) + Math.floor(daysBetween(mother.gestationDate, date) / 7)) : null;
+  const hasRecordedWeeks = mother.gestationWeeks !== null && mother.gestationWeeks !== undefined && mother.gestationWeeks !== '' && Number.isFinite(Number(mother.gestationWeeks));
+  const weeks = mother.gestationDate
+    ? Math.max(0, Number(mother.gestationWeeks || 0) + Math.floor(daysBetween(mother.gestationDate, date) / 7))
+    : hasRecordedWeeks ? Math.max(0, Number(mother.gestationWeeks)) : null;
   return { label: 'Prenatal', weeks, months: weeks === null ? null : Math.floor(weeks / 4.345) };
 }
 

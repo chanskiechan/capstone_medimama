@@ -308,6 +308,7 @@ export function Directory({ type }) {
       const payload = { full_name: motherName, birth_date: fields.birthDate || null, address: fields.address,
         maternal_status: fields.status.toLowerCase(), delivery_date: fields.deliveryDate || null,
         gestation_weeks: fields.gestationWeeks === '' ? null : Number(fields.gestationWeeks),
+        gestation_date: fields.gestationDate || (fields.gestationWeeks === '' ? null : today()),
         };
       const query = editingRecord ? supabase.from('mothers').update(payload).eq('id', editingRecord.id) : supabase.from('mothers').insert({ ...payload, record_code: `M-${crypto.randomUUID().slice(0,8).toUpperCase()}` });
       const { data: saved, error } = await query.select().single();
