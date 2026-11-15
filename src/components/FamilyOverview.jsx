@@ -40,7 +40,7 @@ function FamilyOverviewContent({ caregiver = false, showReminders = true }) {
           {next ? <><h3>{next.date} at {next.time}</h3><p>{next.patient} · {next.service}</p><span className="care-badge">{appointmentStatus(next.status)}</span>{!caregiver && <ManageAppointment appointment={next} />}</> : <><p>No upcoming appointments.</p><p className="care-muted">Appointments are scheduled by the health center.</p></>}
         </article>
         <article className="care-card"><span className="overview-icon"><i className="fa-solid fa-heart-pulse" aria-hidden="true" /></span><h2>Maternal care</h2>{scope.mothers.map(mother => { const stage = pregnancy(mother); const deliveryLabel = mother.status === 'Postnatal' ? 'Delivered' : 'Expected delivery'; return <div key={mother.id}><h3>{mother.name}</h3><p>{maternalStatusLabel(stage.label)}{stage.weeks !== null ? ` · ${stage.weeks} weeks` : ''}{mother.deliveryDate ? ` · ${deliveryLabel} ${mother.deliveryDate}` : ''}</p></div>; })}<Link to={recordsLink}>View maternal records →</Link></article>
-        {!showInfantCard && scope.mothers.map(mother => { const stage = pregnancy(mother); return <article className="care-card pregnancy-overview-card" key={`pregnancy-${mother.id}`}><span className="overview-icon"><i className="fa-solid fa-person-pregnant" aria-hidden="true" /></span><h2>Pregnancy progress</h2><h3>{mother.name}</h3><span className={`care-badge ${stage.label === 'Postnatal' ? 'delivered-badge' : ''}`}>{maternalStatusLabel(stage.label)}</span><dl className="care-metrics"><div><dt>Pregnancy weeks</dt><dd>{stage.weeks !== null ? `${stage.weeks} weeks` : 'Not recorded'}</dd></div><div><dt>Expected delivery</dt><dd>{mother.deliveryDate || 'Not recorded'}</dd></div></dl></article>; })}
+        {!caregiver && scope.mothers.filter(mother => pregnancy(mother).label !== 'Postnatal').map(mother => <PregnancyProgressCard key={`pregnancy-${mother.id}`} mother={mother} />)}
         {showInfantCard && <article className="care-card infant-overview-card">
           <span className="overview-icon"><i className="fa-solid fa-baby" aria-hidden="true" /></span>
           <h2>{caregiver ? 'Linked infants' : 'My infants'}</h2>
@@ -76,15 +76,7 @@ function PregnancyProgressCard({ mother }) {
   return <article className="care-card pregnancy-overview-card pregnancy-progress-card"><span className="overview-icon"><i className="fa-solid fa-person-pregnant" aria-hidden="true" /></span><h2>Pregnancy progress</h2><h3>{mother.name}</h3><span className="care-badge">{maternalStatusLabel(stage.label)}</span><dl className="care-metrics"><div><dt>Current weeks</dt><dd>{stage.weeks !== null ? `${stage.weeks} weeks` : 'Not recorded'}</dd></div><div><dt>Approximate months</dt><dd>{stage.months !== null ? `${stage.months} months` : 'Not recorded'}</dd></div><div><dt>Expected delivery</dt><dd>{mother.deliveryDate || 'Not recorded'}</dd></div><div><dt>Remaining to 40 weeks</dt><dd>{stage.weeks !== null ? `${Math.max(0, 40 - stage.weeks)} weeks` : 'Not recorded'}</dd></div></dl><div className="pregnancy-progress-track" role="progressbar" aria-label={`${mother.name} pregnancy progress`} aria-valuemin="0" aria-valuemax="40" aria-valuenow={stage.weeks ?? 0}><span style={{ width: `${progress}%` }} /></div><p className="care-muted">{stage.weeks !== null ? 'Progress updates from the latest recorded pregnancy assessment.' : 'Ask the health center to record the pregnancy assessment date and weeks.'}</p></article>;
 }
 
-export default function FamilyOverview(props) {
-  const { data } = useStore();
-  const user = session();
-  const scope = family(data, user);
-  const pregnantMothers = props.caregiver || user.role === 'caregiver'
-    ? []
-    : scope.mothers.filter(mother => pregnancy(mother).label !== 'Postnatal');
-  return <><FamilyOverviewContent {...props} />{scope.infants.length > 0 && pregnantMothers.length > 0 && <section className="care-workspace family-overview family-pregnancy-followup" aria-label="Pregnancy progress">{pregnantMothers.map(mother => <PregnancyProgressCard key={mother.id} mother={mother} />)}</section>}</>;
-}
+export default FamilyOverviewContent;
 
 export function FamilyReminders({ caregiver = false }) {
   const { data } = useStore();
