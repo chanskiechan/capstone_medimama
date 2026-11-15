@@ -18,12 +18,12 @@ function Modal({ title, children, close, showClose = true }) {
   return <div className="admin-modal" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && canClose && close()}><section role="dialog" aria-modal="true" aria-label={title}>{canClose && <button className="close" type="button" onClick={() => close()} aria-label="Close">×</button>}<p className="eyebrow">MediMama Admin</p><h2>{title}</h2>{children}</section></div>;
 }
 
-function MotherPicker({ mothers, value, onChange }) {
+function MotherPicker({ mothers, value, onChange, postnatalOnly = false }) {
   const selected = mothers.find(mother => mother.id === value);
   const [query, setQuery] = useState(selected?.name || '');
   const [open, setOpen] = useState(false);
   const results = mothers
-    .filter(mother => !mother.archived && mother.status !== 'Archived')
+    .filter(mother => !mother.archived && mother.status !== 'Archived' && (!postnatalOnly || mother.status === 'Postnatal'))
     .filter(mother => `${mother.name} ${mother.recordCode || mother.id} ${mother.address || ''}`.toLowerCase().includes(query.toLowerCase()))
     .slice(0, 50);
   const choose = mother => { onChange(mother.id); setQuery(mother.name); setOpen(false); };
@@ -51,7 +51,7 @@ function InfantPatientForm({ data, initial, onSave, onCancel }) {
     setBlockLot(mother ? String(mother.address || '').replace(/,?\s*Imus City,?\s*Cavite\s*4103$/i, '').trim() : '');
   };
   return <form className="admin-form" onSubmit={event => { event.preventDefault(); onSave(Object.fromEntries(new FormData(event.currentTarget))); }}>
-    <label className="admin-form-full">Mother<MotherPicker mothers={data.mothers} value={motherId} onChange={handleMotherChange} /></label>
+    <label className="admin-form-full">Mother<MotherPicker mothers={data.mothers} value={motherId} onChange={handleMotherChange} postnatalOnly={!initial.id} /><small className="admin-form-full">Only mothers marked Delivered can be selected for infant registration.</small></label>
     <label>First name<input name="firstName" required defaultValue={firstName} /></label>
     <label>Middle initial (optional)<input name="middleInitial" maxLength="1" pattern="[A-Za-z]?" defaultValue={middleInitial} /></label>
     <label>Last name<input name="lastName" required defaultValue={lastName} /></label>
@@ -323,6 +323,8 @@ export function Directory({ type }) {
       close(); return setNotice('Mother record saved to Supabase.');
     }
     if (!formMother && !editingRecord) {
+      const linkedMother = data.mothers.find(item => item.id === fields.motherId);
+      if (linkedMother && linkedMother.status !== 'Postnatal') return setNotice('Infant registration is available only after the mother is marked Delivered.');
       const { error } = await supabase.rpc('register_care_infant', { values_json: {
         motherId: fields.motherId,
         name: infantName,
