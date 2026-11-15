@@ -90,7 +90,7 @@ function MotherPatientForm({ initial = {}, onSave, onCancel, cancelLabel = 'Canc
     <label>Birthdate<input name="birthDate" type="date" max={today()} required defaultValue={initial.birthDate || ''} /></label>
     <label>Status<select name="status" value={maternalStatus} onChange={event => setMaternalStatus(event.target.value)} required><option>Pregnant</option><option value="Postnatal">Delivered</option></select></label>
     <label>{maternalStatus === 'Postnatal' ? 'Actual delivery date' : 'Expected delivery date'}<input name="deliveryDate" type="date" min={maternalStatus === 'Postnatal' ? undefined : deliveryWindow.min} max={maternalStatus === 'Postnatal' ? today() : deliveryWindow.max} required defaultValue={initial.deliveryDate || ''} />{maternalStatus === 'Pregnant' && <small>Allowed range: {deliveryWindow.min} to {deliveryWindow.max}.</small>}</label>
-    <label>Pregnancy weeks<input name="gestationWeeks" type="number" min="0" max="45" value={gestationWeeks} onChange={event => setGestationWeeks(event.target.value)} /></label>
+    <label>Pregnancy weeks<input name="gestationWeeks" type="number" min="0" max="45" value={gestationWeeks} onChange={event => setGestationWeeks(event.target.value)} /><small>Enter the current gestational age in weeks.</small></label>
     <div className="admin-form-actions"><button type="button" className="secondary admin-form-back" onClick={() => onCancel(Boolean(initial.id))}><Icon name={resolvedCancelLabel === 'Cancel' ? 'xmark' : 'arrow-left'} /> {resolvedCancelLabel}</button><button className="primary-button"><Icon name="floppy-disk" /> Save record</button></div>
   </form>;
 }
