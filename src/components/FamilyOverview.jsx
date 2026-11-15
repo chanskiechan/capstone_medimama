@@ -29,11 +29,12 @@ function FamilyOverviewContent({ caregiver = false, showReminders = true }) {
   const reminders = remindersFor(scope.infants);
   const hasPostnatalMother = scope.mothers.some(mother => mother.status === 'Postnatal');
   const showInfantCard = caregiver || scope.infants.length > 0 || hasPostnatalMother;
+  const hasPregnancyCard = !caregiver && scope.mothers.some(mother => pregnancy(mother).label !== 'Postnatal');
 
   return <section className="care-workspace family-overview" aria-label="Family care overview">
     {storageError && <p role="alert" className="care-error">{storageError}</p>}
     {ids.length > 0 && <>
-      <div className="family-overview-grid">
+      <div className={`family-overview-grid${!hasPregnancyCard ? ' postnatal-overview-grid' : ''}`}>
         <article className="care-card">
           <span className="overview-icon"><i className="fa-solid fa-calendar-days" aria-hidden="true" /></span>
           <h2>Next appointment</h2>
