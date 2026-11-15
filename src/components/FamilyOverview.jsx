@@ -18,7 +18,7 @@ function ReminderCard({ reminders, infantsLink }) {
   return <article className="care-card"><h2>Reminders</h2>{reminders.length ? <ul className="overview-reminders">{reminders.map(reminder => <li key={reminder.id}>{reminder.text}</li>)}</ul> : <p>No pending infant reminders.</p>}<p className="care-muted">Wednesday clinic: infant services from 8 AM, maternal care from 10 AM. Both close at 5 PM.</p><Link to={infantsLink}>View immunization details →</Link></article>;
 }
 
-export default function FamilyOverview({ caregiver = false, showReminders = true }) {
+function FamilyOverviewContent({ caregiver = false, showReminders = true }) {
   const { data, storageError } = useStore();
   const scope = family(data, session());
   const ids = [...scope.mothers, ...scope.infants].map(patient => patient.id);
@@ -68,6 +68,22 @@ export default function FamilyOverview({ caregiver = false, showReminders = true
       {showReminders && <ReminderCard reminders={reminders} infantsLink={infantsLink} />}
     </>}
   </section>;
+}
+
+function PregnancyProgressCard({ mother }) {
+  const stage = pregnancy(mother);
+  const progress = stage.weeks === null ? 0 : Math.min(100, Math.max(0, (stage.weeks / 40) * 100));
+  return <article className="care-card pregnancy-overview-card pregnancy-progress-card"><span className="overview-icon"><i className="fa-solid fa-person-pregnant" aria-hidden="true" /></span><h2>Pregnancy progress</h2><h3>{mother.name}</h3><span className="care-badge">{maternalStatusLabel(stage.label)}</span><dl className="care-metrics"><div><dt>Current weeks</dt><dd>{stage.weeks !== null ? `${stage.weeks} weeks` : 'Not recorded'}</dd></div><div><dt>Approximate months</dt><dd>{stage.months !== null ? `${stage.months} months` : 'Not recorded'}</dd></div><div><dt>Expected delivery</dt><dd>{mother.deliveryDate || 'Not recorded'}</dd></div><div><dt>Remaining to 40 weeks</dt><dd>{stage.weeks !== null ? `${Math.max(0, 40 - stage.weeks)} weeks` : 'Not recorded'}</dd></div></dl><div className="pregnancy-progress-track" role="progressbar" aria-label={`${mother.name} pregnancy progress`} aria-valuemin="0" aria-valuemax="40" aria-valuenow={stage.weeks ?? 0}><span style={{ width: `${progress}%` }} /></div><p className="care-muted">{stage.weeks !== null ? 'Progress updates from the latest recorded pregnancy assessment.' : 'Ask the health center to record the pregnancy assessment date and weeks.'}</p></article>;
+}
+
+export default function FamilyOverview(props) {
+  const { data } = useStore();
+  const user = session();
+  const scope = family(data, user);
+  const pregnantMothers = props.caregiver || user.role === 'caregiver'
+    ? []
+    : scope.mothers.filter(mother => pregnancy(mother).label !== 'Postnatal');
+  return <><FamilyOverviewContent {...props} />{scope.infants.length > 0 && pregnantMothers.length > 0 && <section className="care-workspace family-overview family-pregnancy-followup" aria-label="Pregnancy progress">{pregnantMothers.map(mother => <PregnancyProgressCard key={mother.id} mother={mother} />)}</section>}</>;
 }
 
 export function FamilyReminders({ caregiver = false }) {
