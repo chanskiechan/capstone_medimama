@@ -271,7 +271,17 @@ async function downloadReportsPdf(periodLabel, analytics) {
     doc.text('MediMama Health Center', margin, pageHeight - 14);
     doc.text(`Page ${page} of ${pageCount}`, pageWidth - margin, pageHeight - 14, { align: 'right' });
   }
-  doc.save(`${reportPdfFileName('medimama-analytics')}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  const fileName = `${reportPdfFileName('medimama-analytics')}-${new Date().toISOString().slice(0, 10)}.pdf`;
+  const blob = doc.output('blob');
+  const objectUrl = URL.createObjectURL(blob);
+  const downloadLink = document.createElement('a');
+  downloadLink.href = objectUrl;
+  downloadLink.download = fileName;
+  downloadLink.style.display = 'none';
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
 
 async function loadExtraRows(table, columns) {
@@ -384,6 +394,7 @@ function ReportsAnalytics() {
   const extras = useReportExtras();
   const [range, setRange] = useState('all');
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
   const analytics = useMemo(() => {
     const mothers = (data.mothers || []).filter(isActive);
     const infants = (data.infants || []).filter(isActive);
@@ -457,7 +468,7 @@ function ReportsAnalytics() {
     { label: 'Announcements', value: extras.announcements.length, note: 'Published system updates' },
   ];
   return <>
-    <header className="page-header reports-page-header"><div><p className="eyebrow">MEDIMAMA ADMIN</p><h1>Analytics &amp; Statistics</h1><p>Monitor patient registration, appointments, clinical records, immunization, and family care activity.</p></div><div className="reports-header-actions"><label className="analytics-period"><span>Reporting period</span><select value={range} onChange={event => setRange(event.target.value)}><option value="all">All time</option><option value="30d">Last 30 days</option><option value="6m">Last 6 months</option><option value="year">This year</option></select></label><button type="button" className="reports-pdf-button" disabled={exporting} onClick={async () => { setExporting(true); try { await downloadReportsPdf(periodLabel, analytics); } finally { setExporting(false); } }}><i className="fa-solid fa-file-pdf" aria-hidden="true" /> {exporting ? 'Generating PDF...' : 'Download PDF'}</button></div></header>
+    <header className="page-header reports-page-header"><div><p className="eyebrow">MEDIMAMA ADMIN</p><h1>Analytics &amp; Statistics</h1><p>Monitor patient registration, appointments, clinical records, immunization, and family care activity.</p></div><div className="reports-header-actions"><label className="analytics-period"><span>Reporting period</span><select value={range} onChange={event => setRange(event.target.value)}><option value="all">All time</option><option value="30d">Last 30 days</option><option value="6m">Last 6 months</option><option value="year">This year</option></select></label><button type="button" className="reports-pdf-button" disabled={exporting} onClick={async () => { setExportError(''); setExporting(true); try { await downloadReportsPdf(periodLabel, analytics); } catch (error) { console.error('Analytics PDF export failed', error); setExportError('Hindi ma-download ang PDF. Subukan ulit pagkatapos i-refresh ang page.'); } finally { setExporting(false); } }}><i className="fa-solid fa-file-pdf" aria-hidden="true" /> {exporting ? 'Generating PDF...' : 'Download PDF'}</button>{exportError && <small className="reports-pdf-error" role="alert">{exportError}</small>}</div></header>
     <section className="analytics-period-note"><i className="fa-solid fa-circle-info" aria-hidden="true" /><span>Showing <strong>{periodLabel}</strong>. Patient totals remain all-time; activity counts follow the selected period.</span></section>
     <section className="analytics-metrics" aria-label="Analytics summary">
       <MetricCard icon="fa-person-pregnant" value={analytics.mothers.length} label="Registered mothers" note={`${analytics.motherStatusRows[0]?.value || 0} pregnant`} tone="pink" />
