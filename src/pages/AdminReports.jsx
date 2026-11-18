@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { jsPDF } from 'jspdf';
 import { AdminShell } from '../components/AdminShell';
 import { useStore } from '../store';
 import { infantAgeStatus, session } from '../care';
@@ -31,6 +32,171 @@ const statusLabel = value => {
   if (status === 'pending' || status === 'scheduled' || status === 'approved') return 'Pending';
   return value || 'Not recorded';
 };
+
+const reportPdfValue = value => String(value ?? '').replace(/[^\x20-\x7E\n]/g, ' ').split('\n').map(line => line.replace(/\s+/g, ' ').trim()).join('\n').trim();
+const reportPdfFileName = value => reportPdfValue(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'medimama';
+const loadReportPdfLogo = async () => {
+  try {
+    const response = await fetch('/medimama/medimamalogo.png');
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+};
+
+async function downloadReportsPdf(periodLabel, analytics) {
+  const logo = await loadReportPdfLogo();
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const margin = 36;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  let y = margin;
+
+  const drawContinuationHeader = () => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(23, 35, 61);
+    doc.text('MediMama Analytics & Reports', margin, 28);
+    if (logo) doc.addImage(logo, 'PNG', pageWidth - margin - 45, 10, 45, 36);
+    y = 62;
+  };
+  const newPage = () => {
+    doc.addPage();
+    drawContinuationHeader();
+  };
+  const sectionTitle = title => {
+    if (y + 28 > pageHeight - margin) newPage();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(38, 59, 91);
+    doc.text(title, margin, y);
+    y += 16;
+  };
+  const drawTable = (columns, rows) => {
+    const drawTableHeader = () => {
+      doc.setFillColor(245, 248, 253);
+      doc.rect(margin, y, pageWidth - (margin * 2), 24, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(82, 98, 125);
+      let x = margin;
+      columns.forEach(column => { doc.text(reportPdfValue(column.label), x + 6, y + 16); x += column.width; });
+      y += 24;
+    };
+    if (y + 24 > pageHeight - margin) newPage();
+    drawTableHeader();
+    rows.forEach((row, index) => {
+      const values = row.map(reportPdfValue);
+      const wrapped = values.map((value, columnIndex) => doc.splitTextToSize(value || '—', columns[columnIndex].width - 12));
+      const rowHeight = Math.max(30, ...wrapped.map(lines => lines.length * 11 + 12));
+      if (y + rowHeight > pageHeight - margin) {
+        newPage();
+        drawTableHeader();
+      }
+      if (index % 2 === 0) {
+        doc.setFillColor(251, 253, 255);
+        doc.rect(margin, y, pageWidth - (margin * 2), rowHeight, 'F');
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(64, 80, 106);
+      let x = margin;
+      wrapped.forEach((lines, columnIndex) => { doc.text(lines, x + 6, y + 16, { maxWidth: columns[columnIndex].width - 12 }); x += columns[columnIndex].width; });
+      doc.setDrawColor(229, 235, 243);
+      doc.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
+      y += rowHeight;
+    });
+    y += 16;
+  };
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(23, 35, 61);
+  if (logo) doc.addImage(logo, 'PNG', pageWidth - margin - 70, margin - 4, 70, 56);
+  doc.text('MediMama Analytics & Reports', pageWidth / 2, y + 18, { align: 'center' });
+  y += 38;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text(`Reporting period: ${reportPdfValue(periodLabel)}`, margin, y);
+  y += 16;
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Generated: ${today()}`, margin, y);
+  y += 24;
+
+  sectionTitle('Summary');
+  drawTable(
+    [{ label: 'Metric', width: 180 }, { label: 'Total', width: 70 }, { label: 'Notes', width: pageWidth - (margin * 2) - 250 }],
+    [
+      ['Registered mothers', analytics.mothers.length, `${analytics.motherStatusRows[0]?.value || 0} pregnant`],
+      ['Registered infants', analytics.infants.length, `${analytics.infants.filter(item => item.status === 'Pending approval').length} awaiting approval`],
+      ['Appointments', analytics.rangedAppointments.length, `${analytics.rangedAppointments.filter(item => statusLabel(item.status) === 'Completed').length} completed`],
+      ['Recorded vaccine doses', analytics.rangedVaccineRecords.length, `${analytics.infants.filter(item => (item.vaccines || []).length > 0).length} infants reached`],
+      ['Clinical records', analytics.clinicalCount, `${analytics.rangedGrowthRecords.length} growth measurements`],
+      ['Caregiver links', analytics.caregivers.length, 'Active assignments'],
+      ['Care requests', analytics.rangedConcerns.length, 'Family concerns in period'],
+      ['Reschedule requests', analytics.appointmentRequests.length, 'All request statuses'],
+    ],
+  );
+
+  sectionTitle('Status and activity breakdowns');
+  const breakdownRows = [
+    ...analytics.motherStatusRows.map(row => ['Mother status', row.label, row.value, `${analytics.mothers.length ? Math.round((row.value / analytics.mothers.length) * 100) : 0}%`]),
+    ...analytics.infantSexRows.map(row => ['Infant sex', row.label, row.value, `${analytics.infants.length ? Math.round((row.value / analytics.infants.length) * 100) : 0}%`]),
+    ...analytics.appointmentTypeRows.map(row => ['Appointment type', row.label, row.value, `${analytics.rangedAppointments.length ? Math.round((row.value / analytics.rangedAppointments.length) * 100) : 0}%`]),
+    ...analytics.appointmentStatusRows.map(row => ['Appointment status', row.label, row.value, `${analytics.rangedAppointments.length ? Math.round((row.value / analytics.rangedAppointments.length) * 100) : 0}%`]),
+    ...analytics.vaccineRows.map(row => ['Immunization coverage', row.label, row.value, '—']),
+  ];
+  drawTable(
+    [{ label: 'Report', width: 125 }, { label: 'Category', width: 190 }, { label: 'Count', width: 65 }, { label: 'Share', width: pageWidth - (margin * 2) - 380 }],
+    breakdownRows,
+  );
+
+  sectionTitle('System data inventory');
+  drawTable(
+    [{ label: 'Data set', width: 160 }, { label: 'Total', width: 65 }, { label: 'Description', width: pageWidth - (margin * 2) - 225 }],
+    [
+      ['Mothers', analytics.mothers.length, `${analytics.archivedMothers} archived`],
+      ['Infants', analytics.infants.length, `${analytics.archivedInfants} archived`],
+      ['Appointments', analytics.rangedAppointments.length, `${analytics.rangedAppointments.filter(item => !isCancelled(item)).length} active`],
+      ['Maternal records', analytics.rangedMaternalRecords.length, 'Prenatal and postnatal records'],
+      ['Growth records', analytics.rangedGrowthRecords.length, 'Infant measurements'],
+      ['Vaccine records', analytics.rangedVaccineRecords.length, 'Recorded administered doses'],
+      ['Infant records', analytics.rangedInfantRecords.length, 'Clinical infant records'],
+      ['Screening records', analytics.rangedScreenings.length, 'Newborn and hearing tests'],
+      ['Caregiver links', analytics.caregivers.length, 'Active assignments'],
+      ['Reschedule requests', analytics.appointmentRequests.length, 'Appointment change requests'],
+      ['Care requests', analytics.rangedConcerns.length, 'Family health concerns'],
+      ['Announcements', analytics.announcements.length, 'Published system updates'],
+    ],
+  );
+
+  sectionTitle('All records');
+  drawTable(
+    [{ label: 'Type', width: 70 }, { label: 'Name / Patient', width: 125 }, { label: 'Details', width: 184 }, { label: 'Birthdate / Date', width: 82 }, { label: 'Status', width: pageWidth - (margin * 2) - 461 }],
+    analytics.reportRows.map(row => [row.type, row.name, row.details, row.date, row.status]),
+  );
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let page = 1; page <= pageCount; page += 1) {
+    doc.setPage(page);
+    doc.setDrawColor(229, 235, 243);
+    doc.line(margin, pageHeight - 28, pageWidth - margin, pageHeight - 28);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('MediMama Health Center', margin, pageHeight - 14);
+    doc.text(`Page ${page} of ${pageCount}`, pageWidth - margin, pageHeight - 14, { align: 'right' });
+  }
+  doc.save(`${reportPdfFileName('medimama-analytics')}-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
 
 async function loadExtraRows(table, columns) {
   const rows = [];
@@ -141,6 +307,7 @@ function ReportsAnalytics() {
   const { data } = useStore();
   const extras = useReportExtras();
   const [range, setRange] = useState('all');
+  const [exporting, setExporting] = useState(false);
   const analytics = useMemo(() => {
     const mothers = (data.mothers || []).filter(isActive);
     const infants = (data.infants || []).filter(isActive);
@@ -184,8 +351,16 @@ function ReportsAnalytics() {
     const infantSexRows = [{ label: 'Male', value: infants.filter(item => String(item.sex || '').toLowerCase() === 'male').length, color: 'male' }, { label: 'Female', value: infants.filter(item => String(item.sex || '').toLowerCase() === 'female').length, color: 'female' }, { label: 'Not recorded', value: infants.filter(item => !['male', 'female'].includes(String(item.sex || '').toLowerCase())).length, color: 'other' }];
     const vaccineRows = [{ label: 'Recorded doses', value: rangedVaccineRecords.length, color: 'completed' }, { label: 'Infants with a dose', value: infants.filter(item => (item.vaccines || []).length > 0).length, color: 'pending' }];
     const clinicalCount = rangedMaternalRecords.length + rangedGrowthRecords.length + rangedInfantRecords.length + rangedScreenings.length;
+    const reportRows = [
+      ...mothers.map(item => ({ type: 'Mother', name: item.name || 'Unnamed mother', details: item.status || 'Not recorded', date: item.birthDate || 'Not recorded', status: item.status || 'Active' })),
+      ...infants.map(item => ({ type: 'Infant', name: item.name || 'Unnamed infant', details: `${item.sex || 'Sex not recorded'} - ${infantAgeStatus(item.birthDate)} - Mother: ${mothers.find(mother => mother.id === item.motherId)?.name || 'Not linked'}`, date: item.birthDate || 'Not recorded', status: item.status || 'Active' })),
+      ...appointments.filter(item => !isCancelled(item)).map(item => {
+        const patient = [...mothers, ...infants].find(record => record.id === item.patientId);
+        return { type: 'Appointment', name: item.patient || patient?.name || 'Linked patient', details: `${item.service || 'Appointment'}${item.date ? ` - ${item.date}${item.time ? ` at ${item.time}` : ''}` : ''}`, date: item.date || 'Not recorded', status: statusLabel(item.status) };
+      }),
+    ];
     return {
-      mothers, infants, appointments, caregivers, appointmentRequests, rangedAppointments, rangedMaternalRecords, rangedGrowthRecords, rangedVaccineRecords, rangedInfantRecords, rangedScreenings, rangedConcerns, rangedActivity, appointmentStatusRows, appointmentTypeRows, motherStatusRows, infantSexRows, vaccineRows, clinicalCount,
+      mothers, infants, appointments, caregivers, appointmentRequests, announcements: extras.announcements, rangedAppointments, rangedMaternalRecords, rangedGrowthRecords, rangedVaccineRecords, rangedInfantRecords, rangedScreenings, rangedConcerns, rangedActivity, appointmentStatusRows, appointmentTypeRows, motherStatusRows, infantSexRows, vaccineRows, clinicalCount, reportRows,
       archivedMothers: (data.mothers || []).filter(item => !isActive(item)).length,
       archivedInfants: (data.infants || []).filter(item => !isActive(item)).length,
     };
@@ -206,7 +381,7 @@ function ReportsAnalytics() {
     { label: 'Announcements', value: extras.announcements.length, note: 'Published system updates' },
   ];
   return <>
-    <header className="page-header reports-page-header"><div><p className="eyebrow">MEDIMAMA ADMIN</p><h1>Analytics &amp; Statistics</h1><p>Monitor patient registration, appointments, clinical records, immunization, and family care activity.</p></div><label className="analytics-period"><span>Reporting period</span><select value={range} onChange={event => setRange(event.target.value)}><option value="all">All time</option><option value="30d">Last 30 days</option><option value="6m">Last 6 months</option><option value="year">This year</option></select></label></header>
+    <header className="page-header reports-page-header"><div><p className="eyebrow">MEDIMAMA ADMIN</p><h1>Analytics &amp; Statistics</h1><p>Monitor patient registration, appointments, clinical records, immunization, and family care activity.</p></div><div className="reports-header-actions"><label className="analytics-period"><span>Reporting period</span><select value={range} onChange={event => setRange(event.target.value)}><option value="all">All time</option><option value="30d">Last 30 days</option><option value="6m">Last 6 months</option><option value="year">This year</option></select></label><button type="button" className="reports-pdf-button" disabled={exporting} onClick={async () => { setExporting(true); try { await downloadReportsPdf(periodLabel, analytics); } finally { setExporting(false); } }}><i className="fa-solid fa-file-pdf" aria-hidden="true" /> {exporting ? 'Generating PDF...' : 'Download PDF'}</button></div></header>
     <section className="analytics-period-note"><i className="fa-solid fa-circle-info" aria-hidden="true" /><span>Showing <strong>{periodLabel}</strong>. Patient totals remain all-time; activity counts follow the selected period.</span></section>
     <section className="analytics-metrics" aria-label="Analytics summary">
       <MetricCard icon="fa-person-pregnant" value={analytics.mothers.length} label="Registered mothers" note={`${analytics.motherStatusRows[0]?.value || 0} pregnant`} tone="pink" />
