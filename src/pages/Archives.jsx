@@ -74,7 +74,7 @@ export default function Archives() {
     <p>{category === 'appointments' ? 'Cancelled appointments stay here for history and audit purposes. Active appointments remain under Healthcare Services.' : category === 'caregivers' ? 'Archiving removes family access while keeping the caregiver record. Restored caregivers return to pending approval.' : 'Archive inactive records without deleting their clinical history.'}</p>
     <div className="support-actions"><label>Search<input value={query} onChange={event => setQuery(event.target.value)} placeholder={category === 'appointments' ? 'Patient, service, or date' : 'Name or record number'} /></label><label>Show<select value={show} onChange={event => setShow(event.target.value)}><option>Archived</option><option>Active</option></select></label></div>
     {(error || storageError) && <p role="alert" className="support-message">{error || storageError}</p>}
-    {notice && <p role="status">{notice}</p>}
+    {notice && <p role="status" className="admin-toast"><span className="admin-action-check" aria-hidden="true">✓</span>{notice}</p>}
     {(loading || loadingRecords) && <p role="status">Loading records…</p>}
     {rows.map(item => <article className={`support-panel archive-record-card${category === 'appointments' ? ' appointment-archive-card' : ''}`} key={item.id}>
       <h3>{item.name}</h3>

@@ -34,6 +34,11 @@ export default function AppointmentApprovals() {
   const [recordBusy, setRecordBusy] = useState(false);
   useEffect(() => { refreshPatientData?.(); }, [refreshPatientData]);
   useEffect(() => {
+    if (!notice) return undefined;
+    const timeout = window.setTimeout(() => setNotice(''), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+  useEffect(() => {
     if (!cancelTarget) return undefined;
     const closeOnEscape = event => { if (event.key === 'Escape') setCancelTarget(null); };
     window.addEventListener('keydown', closeOnEscape);
@@ -166,7 +171,7 @@ export default function AppointmentApprovals() {
   return <section className="appointment-approvals">
     <div className="appointment-page-action"><Link className="appointment-secondary-button appointment-archive-link" to="/system?tab=archives&category=appointments"><i className="fa-solid fa-box-archive" /> Appointment archive</Link><button className="appointment-primary-button" onClick={() => { setBookingError(''); setBooking(true); }}><i className="fa-solid fa-calendar-plus" /> Book appointment</button></div>
     <div className="appointment-approval-summary"><article><b>{data.appointments.filter(a => ['Pending', 'Scheduled', 'Approved'].includes(a.status)).length}</b><span>Pending confirmation</span></article><article><b>{data.appointments.filter(a => a.status === 'Confirmed').length}</b><span>Mother-confirmed</span></article><article><b>{data.appointments.filter(a => a.status === 'Completed').length}</b><span>Done appointments</span></article></div>
-    {notice && <p className="appointment-notice" role="status">{notice}</p>}
+    {notice && <p className="appointment-notice admin-toast" role="status"><span className="admin-action-check" aria-hidden="true">✓</span>{notice}</p>}
     {requestError && <p className="appointment-form-error appointment-request-error" role="alert">{requestError}</p>}
     <section className="appointment-change-requests"><div className="appointment-change-heading"><div><p className="appointment-eyebrow">Mother requests</p><h2>Reschedule requests</h2><p>Review the requested Wednesday before changing the official appointment.</p></div><span>{changeRequests.length} pending</span></div>{changeRequests.length ? <div className="appointment-change-list">{changeRequests.map(request => { const schedule = requestSchedule(request.requested_scheduled_at); return <article key={request.id}><div><strong>{request.appointment?.patient || 'Linked patient'}</strong><small>{request.appointment?.service || 'Appointment change request'}</small></div><div className="appointment-change-actions"><button className="appointment-primary-button" type="button" onClick={() => { setRequestError(''); setChangeRequestTarget(request); }}>View details</button></div></article>; })}</div> : <p className="appointment-change-empty">No pending reschedule requests. A request will appear here after a mother submits one.</p>}</section>
     <div className="appointment-approval-tools"><h2>Appointments</h2><label>Status<select value={filter} onChange={event => { setFilter(event.target.value); setPage(1); }}><option value="all">All statuses</option><option value="pending">Pending</option><option value="rescheduled">Rescheduled</option><option value="confirmed">Confirmed</option><option value="done">Done</option></select></label></div>

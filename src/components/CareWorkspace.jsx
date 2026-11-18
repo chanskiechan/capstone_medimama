@@ -236,6 +236,11 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
   const [infantPage, setInfantPage] = useState(1);
   const [selectedMaternalRecord, setSelectedMaternalRecord] = useState(null);
   const [selectedImmunizationInfant, setSelectedImmunizationInfant] = useState(null);
+  useEffect(() => {
+    if (!notice) return undefined;
+    const timeout = window.setTimeout(() => setNotice(''), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
   const open = value => { setError(''); setDialog(value); };
   const finish = message => { setDialog(null); setError(''); setNotice(message); };
   const updatePatient = async (collection, id, update) => {
@@ -422,7 +427,7 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
     {selectedMaternalRecord && <MaternalRecordDialog mother={selectedMaternalRecord} appointments={data.appointments} section={section} canEdit={canEdit} onClose={() => setSelectedMaternalRecord(null)} onUpdate={() => { const mother = selectedMaternalRecord; setSelectedMaternalRecord(null); open({ kind: 'maternal', patient: mother }); }} />}
     {selectedImmunizationInfant && <ImmunizationRecordDialog infant={selectedImmunizationInfant} mother={scope.mothers.find(mother => mother.id === selectedImmunizationInfant.motherId)} canEdit={canEdit} onClose={() => setSelectedImmunizationInfant(null)} onRecordScreening={async (type) => { if (await recordScreening(selectedImmunizationInfant, type)) setSelectedImmunizationInfant(null); }} onRecordDose={rule => { const infant = selectedImmunizationInfant; setSelectedImmunizationInfant(null); open({ kind: 'vaccine', patient: infant, rule }); }} />}
     {section !== 'records' && <div className="care-banner"><div><strong>{section === 'infants' ? 'Register an infant' : banner[0]}</strong><p>{section === 'infants' ? 'Add your baby’s details so the health center can review the record.' : banner[1]}</p></div><div className="care-actions">{canBookAppointments && <button onClick={() => open({ kind: 'appointment' })}>Book appointment</button>}{canRegisterInfant && section === 'immunization' && !readOnly && scope.mothers.length > 0 && <button onClick={() => open({ kind: 'infant' })}>Register infant</button>}{canEdit && section === 'postnatal' && <button onClick={() => open({ kind: 'links' })}>Account & caregiver links</button>}</div></div>}
-    {storageError && <p className="care-error" role="alert">{storageError}</p>}{notice && !storageError && <p role="status" className="care-success">{notice}</p>}
+    {storageError && <p className="care-error" role="alert">{storageError}</p>}{notice && !storageError && <p role="status" className="care-success admin-toast"><span className="admin-action-check" aria-hidden="true">✓</span>{notice}</p>}
     {loadingFamily && <p className="care-muted" role="status">Loading linked family records…</p>}
     {!loadingFamily && !visiblePatients.length && <Empty>{recordOnlyInfants ? 'No linked infant records yet. Ask the health center to link an approved infant record.' : 'No linked patient records yet. Ask the health center to link your account to your mother record. Caregiver access appears after approval.'}</Empty>}
     {!loadingFamily && user.role === 'mother' && section === 'infants' && <p className="care-muted">Infant registration is handled by the health center. Your linked infant records will appear here.</p>}
