@@ -511,8 +511,13 @@ async function notifyAppointment(context, body) {
   // another SMS immediately when the request is submitted.
   const notifyFamily = !(context.profile.role === 'mother' && eventType === 'reschedule_requested');
   const emails = contacts.filter(recipient => recipient.email);
-  const actionLabels = { booked: 'booked', rescheduled: 'rescheduled', confirmed: 'confirmed', completed: 'marked completed', cancelled: 'cancelled', updated: 'updated' };
+  const actionLabels = { booked: 'booked', rescheduled: 'rescheduled', reschedule_declined: 'declined', confirmed: 'confirmed', completed: 'marked completed', cancelled: 'cancelled', updated: 'updated' };
   const actionLabel = actionLabels[eventType] || 'updated';
+  const familyTitle = eventType === 'reschedule_declined' ? 'Reschedule request declined' : `Appointment ${actionLabel}`;
+  const familyIntro = eventType === 'reschedule_declined'
+    ? 'Your reschedule request was declined by the health center. Your original appointment schedule remains unchanged.'
+    : `Your MediMama care appointment was ${actionLabel}.`;
+  const familyDetails = [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]];
   let familyEmailed = 0;
   if (notifyFamily) {
     for (const recipient of emails) {
@@ -520,9 +525,9 @@ async function notifyAppointment(context, body) {
         await sendMail({
           to: recipient.email,
           subject: `MediMama appointment update: ${appointment.service}`,
-          title: `Appointment ${actionLabel}`,
-          intro: `Your MediMama care appointment was ${actionLabel}.`,
-          details: [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]],
+          title: familyTitle,
+          intro: familyIntro,
+          details: familyDetails,
         });
         familyEmailed += 1;
       } catch (error) {
@@ -531,9 +536,9 @@ async function notifyAppointment(context, body) {
     }
   }
   const familySmsSent = notifyFamily ? await sendSmsNotifications(contacts, {
-    title: `Appointment ${actionLabel}`,
-    intro: `Your appointment has been ${actionLabel}.`,
-    details: [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]],
+    title: familyTitle,
+    intro: familyIntro,
+    details: familyDetails,
   }) : 0;
   if (context.profile.role === 'mother') {
     const action = eventType.replaceAll('_', ' ');
