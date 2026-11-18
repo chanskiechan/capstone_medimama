@@ -47,8 +47,10 @@ export default function ManageAppointment({ appointment }) {
     }
     updateLocalAppointment({ status: 'Confirmed', motherConfirmedAt: new Date().toISOString() });
     setBusy(false); setNotice('Schedule Confirmed');
-    await refreshPatientData?.();
+    // Start the notification immediately after the database action succeeds.
+    // A refresh can fail independently and must not prevent the email/SMS event.
     void notifyEmailEvent('/api/email/appointment', { appointmentId: appointment.id, eventType: 'confirmed' });
+    await refreshPatientData?.();
   };
 
   const startReschedule = () => {
@@ -85,9 +87,11 @@ export default function ManageAppointment({ appointment }) {
         }],
       }));
     }
+    // Notify the admin before refreshing the page so a refresh error cannot
+    // swallow the reschedule email/SMS request.
+    void notifyEmailEvent('/api/email/appointment', { appointmentId: appointment.id, eventType: 'reschedule_requested' });
     setRescheduling(false); setBusy(false); setNotice('Reschedule request sent. The health center must confirm the new Wednesday.');
     await refreshPatientData?.();
-    void notifyEmailEvent('/api/email/appointment', { appointmentId: appointment.id, eventType: 'reschedule_requested' });
   };
 
   const changeDate = value => {

@@ -286,10 +286,12 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
       next.id = databaseAppointment.id;
     }
     if (!save(current => ({ ...current, appointments: old ? current.appointments.map(a => a.id === old.id ? next : a) : [...current.appointments, next] }))) return;
+    // Send the event immediately after saving. The data refresh is best-effort
+    // and should never prevent the email/SMS notification from being queued.
+    void notifyEmailEvent('/api/email/appointment', { appointmentId: next.id, eventType: old ? 'rescheduled' : 'booked' });
     // Pull the saved appointment back from Supabase straight away so the
     // appointment list and the admin dashboard use the same record.
     await refreshPatientData?.();
-    void notifyEmailEvent('/api/email/appointment', { appointmentId: next.id, eventType: old ? 'rescheduled' : 'booked' });
     finish(old ? 'Appointment rescheduled. The reason and previous schedule are visible to the health center.' : 'Appointment booked.');
   };
 

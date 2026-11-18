@@ -34,6 +34,7 @@ const emailConfigured = brevoConfigured || resendConfigured || smtpConfigured;
 const emailProvider = brevoConfigured ? 'brevo' : resendConfigured ? 'resend' : smtpConfigured ? 'smtp' : 'none';
 const textbeeApiUrl = String(process.env.TEXTBEE_API_URL || 'https://api.textbee.dev/api/v1').replace(/\/+$/, '');
 const textbeeConfigured = Boolean(process.env.TEXTBEE_API_KEY);
+const adminSmsPhone = normalizeSmsNumber(process.env.ADMIN_SMS_PHONE);
 const port = Number(process.env.PORT || 3001);
 const configuredFrontendOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173,http://localhost:5174').split(',').map(origin => origin.trim()).filter(Boolean);
 const frontendOrigins = [...new Set([...configuredFrontendOrigins, 'http://localhost', 'https://localhost', 'capacitor://localhost', 'ionic://localhost'])];
@@ -122,7 +123,13 @@ async function emailsForUserIds(userIds) {
 async function adminRecipients() {
   const { data: profiles, error } = await supabase.from('profiles').select('id').eq('role', 'admin');
   if (error) throw error;
-  return contactsForUserIds((profiles || []).map(profile => profile.id));
+  const recipients = await contactsForUserIds((profiles || []).map(profile => profile.id));
+  // Optional fallback for deployments where the administrator's profile has
+  // no phone number yet. Prefer saving the number in the admin profile.
+  if (adminSmsPhone && !recipients.some(recipient => recipient.phone === adminSmsPhone)) {
+    recipients.push({ userId: 'admin-sms-fallback', email: '', phone: adminSmsPhone });
+  }
+  return recipients;
 }
 
 async function sendSms({ to, message }) {
@@ -157,7 +164,11 @@ async function sendSmsNotifications(recipients, { title, intro, details = [] }) 
   const sentNumbers = new Set();
   let sent = 0;
   for (const recipient of recipients) {
-    if (!recipient.phone || sentNumbers.has(recipient.phone)) continue;
+    if (!recipient.phone) {
+      console.warn(`TextBee SMS skipped for ${recipient.userId || 'recipient'}: no phone number configured.`);
+      continue;
+    }
+    if (sentNumbers.has(recipient.phone)) continue;
     sentNumbers.add(recipient.phone);
     try {
       if (await sendSms({ to: recipient.phone, message: buildSmsMessage({ title, intro, details }) })) sent += 1;

@@ -37,17 +37,26 @@ export function registerMotherAccount(payload) {
 }
 
 export async function notifyEmailEvent(path, body = {}) {
-  if (!supabase) return;
+  if (!supabase) return { error: 'Supabase is not configured.' };
   const { data: { session } = {} } = await supabase.auth.getSession();
-  if (!session?.access_token) return;
+  if (!session?.access_token) return { error: 'Authentication session is missing.' };
   try {
     const response = await fetch(`${emailApiUrl}${path}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!response.ok) console.warn(`Email event ${path} failed:`, await response.text());
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      console.warn(`Notification event ${path} failed:`, data.error || response.statusText);
+      return { ...data, error: data.error || response.statusText };
+    }
+    if (path === '/api/email/appointment' && body.eventType === 'reschedule_requested' && data.adminSmsSent === 0) {
+      console.warn('Reschedule request reached the email server, but no admin SMS was sent. Check the admin contact number and TextBee configuration.');
+    }
+    return data;
   } catch (error) {
     console.warn(`Email service unavailable for ${path}:`, error.message);
+    return { error: error.message };
   }
 }

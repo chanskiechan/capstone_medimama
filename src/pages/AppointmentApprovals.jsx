@@ -75,8 +75,10 @@ export default function AppointmentApprovals() {
         appointments: decision === 'approved' ? current.appointments.map(item => item.id === request.appointment_id ? { ...item, date: schedule.date, time: schedule.time, status: 'Confirmed', motherConfirmedAt: new Date().toISOString() } : item) : current.appointments,
       }));
     }
-    await refreshPatientData?.();
+    // Notify the mother/caregiver immediately after the approval is committed.
+    // Refreshing the admin list is separate and must not block email/SMS delivery.
     if (decision === 'approved') void notifyEmailEvent('/api/email/appointment', { appointmentId: request.appointment_id, eventType: 'rescheduled' });
+    await refreshPatientData?.();
     setChangeRequestTarget(null); setRequestBusy(''); setNotice(decision === 'approved' ? 'Reschedule approved. The appointment is automatically confirmed.' : 'Reschedule request declined. The original appointment remains unchanged.');
   };
 
