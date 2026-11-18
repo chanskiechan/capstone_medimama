@@ -23,6 +23,7 @@ export default function AppointmentApprovals() {
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [notice, setNotice] = useState('');
+  const [noticeTone, setNoticeTone] = useState('success');
   const [booking, setBooking] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [requestError, setRequestError] = useState('');
@@ -32,6 +33,7 @@ export default function AppointmentApprovals() {
   const [recordTarget, setRecordTarget] = useState(null);
   const [recordError, setRecordError] = useState('');
   const [recordBusy, setRecordBusy] = useState(false);
+  const showNotice = (message, tone = 'success') => { setNoticeTone(tone); setNotice(message); };
   useEffect(() => { refreshPatientData?.(); }, [refreshPatientData]);
   useEffect(() => {
     if (!notice) return undefined;
@@ -68,7 +70,7 @@ export default function AppointmentApprovals() {
     .map(request => ({ ...request, appointment: data.appointments.find(item => item.id === request.appointment_id) })), [data.appointmentRequests, data.appointments]);
 
   const decideChangeRequest = async (request, decision) => {
-    setRequestBusy(request.id); setRequestError(''); setNotice('');
+    setRequestBusy(request.id); setRequestError(''); setNotice(''); setNoticeTone('success');
     if (isUuid(request.id)) {
       const { error } = await supabase.rpc('review_appointment_reschedule', { request_id: request.id, decision });
       if (error) { setRequestBusy(''); return setRequestError(`Could not ${decision} the change request: ${error.message}`); }
@@ -90,7 +92,7 @@ export default function AppointmentApprovals() {
     const smsMissing = decision === 'declined' && notification && !notificationFailed && notification.smsSent === 0;
     await refreshPatientData?.();
     setChangeRequestTarget(null); setRequestBusy('');
-    setNotice(decision === 'approved' ? 'Reschedule approved. The appointment is automatically confirmed.' : 'Reschedule request declined. The original appointment remains unchanged.');
+    showNotice(decision === 'approved' ? 'Reschedule approved. The appointment is automatically confirmed.' : 'Reschedule request declined. The original appointment remains unchanged.', decision === 'declined' ? 'error' : 'success');
     if (notificationFailed) {
       setRequestError(`The reschedule was ${decision}, but the notification could not be sent: ${notificationFailed}`);
     } else if (smsMissing) {
@@ -109,7 +111,7 @@ export default function AppointmentApprovals() {
     const recordDate = values.date || item.date;
     if (!recordDate || recordDate > today() || !Number.isFinite(Date.parse(`${recordDate}T00:00:00Z`))) return setRecordError('The record date must be today or an earlier valid date.');
     if (!isUuid(patient.id)) return setRecordError('This appointment is not connected to a saved patient record yet.');
-    setRecordBusy(true); setRecordError(''); setNotice('');
+    setRecordBusy(true); setRecordError(''); setNotice(''); setNoticeTone('success');
     const isInfantAppointment = Boolean(infant);
     const table = isInfantAppointment ? 'infant_records' : 'maternal_records';
     const recordType = isInfantAppointment
@@ -135,7 +137,7 @@ export default function AppointmentApprovals() {
     }));
     await refreshPatientData?.();
     void notifyEmailEvent('/api/email/appointment', { appointmentId: item.id, eventType: 'completed' });
-    setRecordBusy(false); setRecordTarget(null); setRecordError(''); setNotice('Clinical record saved. Appointment marked Done.');
+    setRecordBusy(false); setRecordTarget(null); setRecordError(''); showNotice('Clinical record saved. Appointment marked Done.');
   };
 
   const cancelAppointment = async item => {
@@ -147,7 +149,7 @@ export default function AppointmentApprovals() {
     const item = cancelTarget;
     if (!item) return;
     const busyKey = `cancel:${item.id}`;
-    setRequestBusy(busyKey); setRequestError(''); setNotice('');
+    setRequestBusy(busyKey); setRequestError(''); setNotice(''); setNoticeTone('success');
     if (isUuid(item.id)) {
       const { error } = await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', item.id);
       if (error) { setRequestBusy(''); return setRequestError(`Could not cancel the appointment: ${error.message}`); }
@@ -155,7 +157,7 @@ export default function AppointmentApprovals() {
     save(current => ({ ...current, appointments: current.appointments.map(appointment => appointment.id === item.id ? { ...appointment, status: 'Cancelled' } : appointment) }));
     await refreshPatientData?.();
     void notifyEmailEvent('/api/email/appointment', { appointmentId: item.id, eventType: 'cancelled' });
-    setRequestBusy(''); setCancelTarget(null); setNotice('Appointment cancelled. You can now review the reschedule request.');
+    setRequestBusy(''); setCancelTarget(null); showNotice('Appointment cancelled. You can now review the reschedule request.');
   };
 
   const bookAppointment = async event => {
@@ -172,14 +174,14 @@ export default function AppointmentApprovals() {
       item.id = saved.id;
     }
     save(current => ({ ...current, appointments: [...current.appointments, item] }));
-    setBooking(false); setBookingError(''); setNotice('Appointment booked. Waiting for mother confirmation.');
+    setBooking(false); setBookingError(''); showNotice('Appointment booked. Waiting for mother confirmation.');
   };
 
   const changeRequestSchedule = changeRequestTarget ? requestSchedule(changeRequestTarget.requested_scheduled_at) : null;
   return <section className="appointment-approvals">
     <div className="appointment-page-action"><Link className="appointment-secondary-button appointment-archive-link" to="/system?tab=archives&category=appointments"><i className="fa-solid fa-box-archive" /> Appointment archive</Link><button className="appointment-primary-button" onClick={() => { setBookingError(''); setBooking(true); }}><i className="fa-solid fa-calendar-plus" /> Book appointment</button></div>
     <div className="appointment-approval-summary"><article><b>{data.appointments.filter(a => ['Pending', 'Scheduled', 'Approved'].includes(a.status)).length}</b><span>Pending confirmation</span></article><article><b>{data.appointments.filter(a => a.status === 'Confirmed').length}</b><span>Mother-confirmed</span></article><article><b>{data.appointments.filter(a => a.status === 'Completed').length}</b><span>Done appointments</span></article></div>
-    {notice && <p className="appointment-notice admin-toast" role="status"><span className="admin-action-check" aria-hidden="true">✓</span>{notice}</p>}
+    {notice && <p className={`appointment-notice admin-toast ${noticeTone === 'error' ? 'admin-toast-error' : ''}`} role="status"><span className="admin-action-check" aria-hidden="true">{noticeTone === 'error' ? '×' : '✓'}</span>{notice}</p>}
     {requestError && <p className="appointment-form-error appointment-request-error" role="alert">{requestError}</p>}
     <section className="appointment-change-requests"><div className="appointment-change-heading"><div><p className="appointment-eyebrow">Mother requests</p><h2>Reschedule requests</h2><p>Review the requested Wednesday before changing the official appointment.</p></div><span>{changeRequests.length} pending</span></div>{changeRequests.length ? <div className="appointment-change-list">{changeRequests.map(request => { const schedule = requestSchedule(request.requested_scheduled_at); return <article key={request.id}><div><strong>{request.appointment?.patient || 'Linked patient'}</strong><small>{request.appointment?.service || 'Appointment change request'}</small></div><div className="appointment-change-actions"><button className="appointment-primary-button" type="button" onClick={() => { setRequestError(''); setChangeRequestTarget(request); }}>View details</button></div></article>; })}</div> : <p className="appointment-change-empty">No pending reschedule requests. A request will appear here after a mother submits one.</p>}</section>
     <div className="appointment-approval-tools"><h2>Appointments</h2><label>Status<select value={filter} onChange={event => { setFilter(event.target.value); setPage(1); }}><option value="all">All statuses</option><option value="pending">Pending</option><option value="rescheduled">Rescheduled</option><option value="confirmed">Confirmed</option><option value="done">Done</option></select></label></div>
