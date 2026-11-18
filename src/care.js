@@ -56,13 +56,20 @@ const appointmentsForDate = (data, date, group, excludeId) => (data.appointments
 export function availableAppointmentDates(data, appointment, limit = 8, from = today()) {
   const dates = [];
   const group = serviceGroup(appointment.service);
-  const cursor = new Date(`${from}T00:00:00Z`);
+  // A reschedule must move the appointment forward. Starting from today alone
+  // could show an older Wednesday when the appointment was already moved to a
+  // later date (for example, Nov 25 while the current appointment is Dec 2).
+  const start = [from, appointment.date]
+    .filter(value => Number.isFinite(day(value)))
+    .sort()
+    .at(-1) || from;
+  const cursor = new Date(`${start}T00:00:00Z`);
   for (let offset = 1; offset <= 60 && dates.length < limit; offset += 1) {
     const candidate = new Date(cursor);
     candidate.setUTCDate(cursor.getUTCDate() + offset);
     if (candidate.getUTCDay() !== 3) continue;
     const date = candidate.toISOString().slice(0, 10);
-    if (date === appointment.date || appointmentsForDate(data, date, group, appointment.id).length >= appointmentCapacity) continue;
+    if (date <= appointment.date || appointmentsForDate(data, date, group, appointment.id).length >= appointmentCapacity) continue;
     dates.push(date);
   }
   return dates;
@@ -85,6 +92,10 @@ export function appointmentError(data, item, now = today(), options = {}) {
   const activeAppointment = data.appointments.find(a => a.id !== item.id && a.patientId === item.patientId && a.date >= now && activeStatuses.has(String(a.status || '').toLowerCase()));
   if (activeAppointment && !options.allowReschedule && !options.allowMultipleAppointments) return 'Wait until the current appointment date has passed before booking another.';
   if (!Number.isFinite(day(item.date)) || item.date < now) return 'Choose today or a future date.';
+  if (options.allowReschedule) {
+    const current = data.appointments.find(appointment => appointment.id === item.id);
+    if (current?.date && item.date <= current.date) return 'Choose a Wednesday after the current appointment date.';
+  }
   if (new Date(day(item.date)).getUTCDay() !== 3) return 'Clinic appointments are available on Wednesdays only.';
   const start = serviceGroup(item.service) === 'infant' ? '08:00' : '10:00';
   if (!/^\d{2}:\d{2}$/.test(item.time) || item.time < start || item.time > '16:30' || !['00', '30'].includes(item.time.slice(3))) return `Choose a 30-minute slot between ${start} and 16:30; the clinic closes at 17:00.`;

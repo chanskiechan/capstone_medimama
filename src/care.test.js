@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { appointmentError, completedDose, day, expectedDeliveryError, expectedDeliveryWindow, family, nextPrenatal, normalize, pregnancy, vaccineDue, vaccineError, vaccineSchedule } from './care.js';
+import { appointmentError, availableAppointmentDates, completedDose, day, expectedDeliveryError, expectedDeliveryWindow, family, nextPrenatal, normalize, pregnancy, vaccineDue, vaccineError, vaccineSchedule } from './care.js';
 
 const mother = { id: 'm1', name: 'Mother', accountId: 'u1', status: 'Pregnant' };
 const infant = { id: 'i1', name: 'Baby', motherId: 'm1', status: 'Active', birthDate: '2025-01-01', vaccines: [] };
@@ -43,6 +43,13 @@ test('rescheduling is allowed before the current appointment date passes', () =>
   ];
   assert.match(appointmentError(data, { ...appointment, id: 'current', date: '2099-01-28' }, '2099-01-01'), /current appointment date/);
   assert.equal(appointmentError(data, { ...appointment, id: 'current', date: '2099-01-28' }, '2099-01-01', { allowReschedule: true }), '');
+});
+test('rescheduling only offers dates after the current appointment', () => {
+  const data = base();
+  const current = { ...appointment, id: 'current', date: '2099-01-14', status: 'Confirmed' };
+  data.appointments = [current];
+  assert.deepEqual(availableAppointmentDates(data, current, 2, '2099-01-01'), ['2099-01-21', '2099-01-28']);
+  assert.match(appointmentError(data, { ...current, date: '2099-01-07' }, '2099-01-01', { allowReschedule: true }), /after the current appointment date/);
 });
 test('blocks duplicate patient services and full time slots', () => {
   const data = base(); data.appointments = [{ ...appointment, id: 'other' }];
