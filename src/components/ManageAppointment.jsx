@@ -46,7 +46,7 @@ export default function ManageAppointment({ appointment }) {
       if (problem) { setBusy(false); return setError(problem.message); }
     }
     updateLocalAppointment({ status: 'Confirmed', motherConfirmedAt: new Date().toISOString() });
-    setBusy(false); setNotice('Appointment confirmed.');
+    setBusy(false); setNotice('Schedule Confirmed');
     await refreshPatientData?.();
     void notifyEmailEvent('/api/email/appointment', { appointmentId: appointment.id, eventType: 'confirmed' });
   };
