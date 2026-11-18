@@ -517,7 +517,7 @@ async function notifyAppointment(context, body) {
   const familyIntro = eventType === 'reschedule_declined'
     ? 'Your reschedule request was declined by the health center. Your original appointment schedule remains unchanged.'
     : `Your MediMama care appointment was ${actionLabel}.`;
-  const familyDetails = [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]];
+  const familyDetails = [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', eventType === 'reschedule_declined' ? 'Reschedule declined; original appointment unchanged' : appointment.status]];
   let familyEmailed = 0;
   if (notifyFamily) {
     for (const recipient of emails) {

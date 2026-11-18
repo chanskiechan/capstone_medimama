@@ -81,13 +81,21 @@ export default function AppointmentApprovals() {
       }));
     }
     // Notify the mother/caregiver immediately after the review is committed.
-    // Refreshing the admin list is separate and must not block email/SMS delivery.
-    void notifyEmailEvent('/api/email/appointment', {
+    // Await the result so a missing SMS is visible instead of being silently swallowed.
+    const notification = await notifyEmailEvent('/api/email/appointment', {
       appointmentId: request.appointment_id,
       eventType: decision === 'approved' ? 'rescheduled' : 'reschedule_declined',
     });
+    const notificationFailed = notification?.error;
+    const smsMissing = decision === 'declined' && notification && !notificationFailed && notification.smsSent === 0;
     await refreshPatientData?.();
-    setChangeRequestTarget(null); setRequestBusy(''); setNotice(decision === 'approved' ? 'Reschedule approved. The appointment is automatically confirmed.' : 'Reschedule request declined. The original appointment remains unchanged.');
+    setChangeRequestTarget(null); setRequestBusy('');
+    setNotice(decision === 'approved' ? 'Reschedule approved. The appointment is automatically confirmed.' : 'Reschedule request declined. The original appointment remains unchanged.');
+    if (notificationFailed) {
+      setRequestError(`The reschedule was ${decision}, but the notification could not be sent: ${notificationFailed}`);
+    } else if (smsMissing) {
+      setRequestError('The reschedule was declined, but no SMS was sent. Check the mother/caregiver phone number and TextBee configuration.');
+    }
   };
 
   const saveAppointmentRecord = async event => {

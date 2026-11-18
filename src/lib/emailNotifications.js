@@ -51,8 +51,13 @@ export async function notifyEmailEvent(path, body = {}) {
       console.warn(`Notification event ${path} failed:`, data.error || response.statusText);
       return { ...data, error: data.error || response.statusText };
     }
-    if (path === '/api/email/appointment' && body.eventType === 'reschedule_requested' && data.adminSmsSent === 0) {
-      console.warn('Reschedule request reached the email server, but no admin SMS was sent. Check the admin contact number and TextBee configuration.');
+    if (path === '/api/email/appointment') {
+      if (body.eventType === 'reschedule_requested' && data.adminSmsSent === 0) {
+        console.warn('Reschedule request reached the email server, but no admin SMS was sent. Check the admin contact number and TextBee configuration.');
+      }
+      if (body.eventType === 'reschedule_declined' && data.smsSent === 0) {
+        console.warn('Reschedule decline reached the email server, but no family SMS was sent. Check the mother/caregiver phone number and TextBee configuration.');
+      }
     }
     return data;
   } catch (error) {
