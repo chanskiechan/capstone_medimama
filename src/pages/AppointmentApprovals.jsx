@@ -76,7 +76,7 @@ export default function AppointmentApprovals() {
       }));
     }
     await refreshPatientData?.();
-    if (decision === 'approved') void notifyEmailEvent('/api/email/appointment', { appointmentId: request.appointment_id });
+    if (decision === 'approved') void notifyEmailEvent('/api/email/appointment', { appointmentId: request.appointment_id, eventType: 'rescheduled' });
     setChangeRequestTarget(null); setRequestBusy(''); setNotice(decision === 'approved' ? 'Reschedule approved. The appointment is automatically confirmed.' : 'Reschedule request declined. The original appointment remains unchanged.');
   };
 
