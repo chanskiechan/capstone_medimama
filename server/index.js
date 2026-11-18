@@ -32,6 +32,8 @@ const brevoConfigured = Boolean(process.env.BREVO_API_KEY && process.env.BREVO_F
 const resendConfigured = Boolean(process.env.RESEND_API_KEY && (process.env.RESEND_FROM_EMAIL || process.env.MAIL_FROM));
 const emailConfigured = brevoConfigured || resendConfigured || smtpConfigured;
 const emailProvider = brevoConfigured ? 'brevo' : resendConfigured ? 'resend' : smtpConfigured ? 'smtp' : 'none';
+const textbeeApiUrl = String(process.env.TEXTBEE_API_URL || 'https://api.textbee.dev/api/v1').replace(/\/+$/, '');
+const textbeeConfigured = Boolean(process.env.TEXTBEE_API_KEY);
 const port = Number(process.env.PORT || 3001);
 const configuredFrontendOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173,http://localhost:5174').split(',').map(origin => origin.trim()).filter(Boolean);
 const frontendOrigins = [...new Set([...configuredFrontendOrigins, 'http://localhost', 'https://localhost', 'capacitor://localhost', 'ionic://localhost'])];
@@ -65,31 +67,99 @@ async function authContext(request) {
   return { user: auth.user, profile };
 }
 
-async function userEmail(userId) {
+async function userContact(userId) {
   const { data, error } = await supabase.auth.admin.getUserById(userId);
   if (error) throw error;
-  return data.user?.email || '';
+  const user = data.user || {};
+  return {
+    email: user.email || '',
+    phone: normalizeSmsNumber(user.phone || user.user_metadata?.contact_number),
+  };
 }
 
-async function emailsForUserIds(userIds) {
+async function userEmail(userId) {
+  return (await userContact(userId)).email;
+}
+
+function normalizeSmsNumber(value) {
+  const raw = String(value || '').trim().replace(/[\s()-]/g, '');
+  if (/^09\d{9}$/.test(raw)) return `+63${raw.slice(1)}`;
+  if (/^9\d{9}$/.test(raw)) return `+63${raw}`;
+  if (/^63\d{10}$/.test(raw)) return `+${raw}`;
+  if (/^\+63\d{10}$/.test(raw)) return raw;
+  return '';
+}
+
+async function contactsForUserIds(userIds) {
   const uniqueIds = [...new Set(userIds.filter(Boolean))];
+  if (!uniqueIds.length) return [];
+  const [{ data: profiles, error: profileError }, { data: motherLinks, error: motherLinkError }] = await Promise.all([
+    supabase.from('profiles').select('id,phone').in('id', uniqueIds),
+    supabase.from('mother_accounts').select('user_id,mother_id').in('user_id', uniqueIds),
+  ]);
+  if (profileError) throw profileError;
+  if (motherLinkError) throw motherLinkError;
+  const motherIds = [...new Set((motherLinks || []).map(link => link.mother_id).filter(Boolean))];
+  const { data: mothers, error: motherError } = motherIds.length
+    ? await supabase.from('mothers').select('id,contact_number').in('id', motherIds)
+    : { data: [], error: null };
+  if (motherError) throw motherError;
   const recipients = [];
   for (const userId of uniqueIds) {
-    const email = await userEmail(userId);
-    if (email) recipients.push({ userId, email });
+    const authContact = await userContact(userId);
+    const profile = (profiles || []).find(item => item.id === userId);
+    const motherLink = (motherLinks || []).find(item => item.user_id === userId);
+    const mother = motherLink ? (mothers || []).find(item => item.id === motherLink.mother_id) : null;
+    recipients.push({ userId, email: authContact.email, phone: normalizeSmsNumber(profile?.phone || mother?.contact_number) || authContact.phone });
   }
   return recipients;
 }
 
-async function adminEmailRecipients() {
+async function emailsForUserIds(userIds) {
+  return (await contactsForUserIds(userIds)).filter(recipient => recipient.email);
+}
+
+async function adminRecipients() {
   const { data: profiles, error } = await supabase.from('profiles').select('id').eq('role', 'admin');
   if (error) throw error;
-  return emailsForUserIds((profiles || []).map(profile => profile.id));
+  return contactsForUserIds((profiles || []).map(profile => profile.id));
+}
+
+async function sendSms({ to, message }) {
+  if (!textbeeConfigured) return false;
+  const recipient = normalizeSmsNumber(to);
+  if (!recipient) return false;
+  const response = await fetch(`${textbeeApiUrl}/gateway/send-sms`, {
+    method: 'POST',
+    headers: { 'x-api-key': process.env.TEXTBEE_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipients: [recipient], message: String(message || '').replace(/\s+/g, ' ').trim().slice(0, 300) }),
+  });
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`TextBee request failed (${response.status}): ${details}`);
+  }
+  return true;
+}
+
+async function sendSmsNotifications(recipients, { title, intro }) {
+  if (!textbeeConfigured) return 0;
+  const sentNumbers = new Set();
+  let sent = 0;
+  for (const recipient of recipients) {
+    if (!recipient.phone || sentNumbers.has(recipient.phone)) continue;
+    sentNumbers.add(recipient.phone);
+    try {
+      if (await sendSms({ to: recipient.phone, message: `MediMama: ${title}. ${intro} Open the app for full details.` })) sent += 1;
+    } catch (error) {
+      console.warn(`TextBee SMS failed for ${recipient.phone}:`, error.message);
+    }
+  }
+  return sent;
 }
 
 async function notifyAdmins({ subject, title, intro, details = [], sourceKey, linkPath = '/support/notifications' }) {
-  const recipients = await adminEmailRecipients();
-  if (!recipients.length) return { notified: 0, emailed: 0 };
+  const recipients = await adminRecipients();
+  if (!recipients.length) return { notified: 0, emailed: 0, smsSent: 0 };
 
   // Keep an in-app notification as a fallback so an admin is still alerted
   // when the external email provider is temporarily unavailable.
@@ -103,6 +173,7 @@ async function notifyAdmins({ subject, title, intro, details = [], sourceKey, li
 
   let emailed = 0;
   for (const recipient of recipients) {
+    if (!recipient.email) continue;
     try {
       await sendMail({ to: recipient.email, subject, title, intro, details });
       emailed += 1;
@@ -110,7 +181,8 @@ async function notifyAdmins({ subject, title, intro, details = [], sourceKey, li
       console.warn(`Admin email failed for ${recipient.email}:`, error.message);
     }
   }
-  return { notified: recipients.length, emailed };
+  const smsSent = await sendSmsNotifications(recipients, { title, intro });
+  return { notified: recipients.length, emailed, smsSent };
 }
 
 const motherTransactionLabels = {
@@ -410,7 +482,8 @@ async function notifyAppointment(context, body) {
   if (error || !appointment) return { status: 404, body: { error: 'Appointment not found.' } };
   const recipients = await appointmentRecipients(appointment);
   if (context.profile.role !== 'admin' && !recipients.userIds.includes(context.user.id)) return { status: 403, body: { error: 'You cannot notify this appointment.' } };
-  const emails = await emailsForUserIds(recipients.userIds);
+  const contacts = await contactsForUserIds(recipients.userIds);
+  const emails = contacts.filter(recipient => recipient.email);
   const eventType = String(body.eventType || 'updated');
   const actionLabels = { booked: 'booked', rescheduled: 'rescheduled', confirmed: 'confirmed', completed: 'marked completed', cancelled: 'cancelled', updated: 'updated' };
   const actionLabel = actionLabels[eventType] || 'updated';
@@ -429,6 +502,10 @@ async function notifyAppointment(context, body) {
       console.warn(`Family appointment email failed for ${recipient.email}:`, error.message);
     }
   }
+  const familySmsSent = await sendSmsNotifications(contacts, {
+    title: `Appointment ${actionLabel}`,
+    intro: `Your MediMama care appointment was ${actionLabel}.`,
+  });
   if (context.profile.role === 'mother') {
     const action = eventType.replaceAll('_', ' ');
     const details = [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]];
@@ -450,9 +527,9 @@ async function notifyAppointment(context, body) {
       sourceKey: requestId ? `mother-appointment-request:${requestId}` : `mother-appointment:${appointment.id}:${eventType}:${Date.now()}`,
       linkPath: '/healthcare?tab=appointments',
     });
-    return { status: 200, body: { sent: familyEmailed, adminNotified: adminResult.notified, adminEmailed: adminResult.emailed } };
+    return { status: 200, body: { sent: familyEmailed, smsSent: familySmsSent, adminNotified: adminResult.notified, adminEmailed: adminResult.emailed, adminSmsSent: adminResult.smsSent } };
   }
-  return { status: 200, body: { sent: familyEmailed } };
+  return { status: 200, body: { sent: familyEmailed, smsSent: familySmsSent } };
 }
 
 async function notifyAnnouncement(context, body) {
@@ -463,11 +540,16 @@ async function notifyAnnouncement(context, body) {
   if (error || !announcement) return { status: 404, body: { error: 'Announcement not found.' } };
   const { data: profiles, error: profileError } = await supabase.from('profiles').select('id,role').in('role', ['mother', 'caregiver']);
   if (profileError) throw profileError;
-  const emails = await emailsForUserIds((profiles || []).map(profile => profile.id));
+  const contacts = await contactsForUserIds((profiles || []).map(profile => profile.id));
+  const emails = contacts.filter(recipient => recipient.email);
   for (const recipient of emails) {
     await sendMail({ to: recipient.email, subject: `MediMama announcement: ${announcement.title}`, title: announcement.title, intro: announcement.description, details: [['Audience', announcement.audience], ['Priority', announcement.priority]] });
   }
-  return { status: 200, body: { sent: emails.length } };
+  const smsSent = await sendSmsNotifications(contacts, {
+    title: announcement.title,
+    intro: 'There is a new health center announcement. Open the app for full details.',
+  });
+  return { status: 200, body: { sent: emails.length, smsSent } };
 }
 
 async function notifyCaregiverApproved(context, body) {
@@ -481,8 +563,9 @@ async function notifyCaregiverApproved(context, body) {
   if (assignmentError) throw assignmentError;
   const { data: motherLinks, error: motherError } = await supabase.from('mother_accounts').select('user_id').eq('mother_id', assignment?.mother_id || '00000000-0000-0000-0000-000000000000');
   if (motherError) throw motherError;
-  const recipients = await emailsForUserIds([request.caregiver_id, ...(motherLinks || []).map(link => link.user_id)]);
-  for (const recipient of recipients) {
+  const contacts = await contactsForUserIds([request.caregiver_id, ...(motherLinks || []).map(link => link.user_id)]);
+  const emails = contacts.filter(recipient => recipient.email);
+  for (const recipient of emails) {
     const caregiverRecipient = recipient.userId === request.caregiver_id;
     await sendMail({
       to: recipient.email,
@@ -492,7 +575,11 @@ async function notifyCaregiverApproved(context, body) {
       details: [['Caregiver', request.full_name], ['Relationship', assignment?.relationship || 'Caregiver'], ['Linked mother', request.requested_patient_name]],
     });
   }
-  return { status: 200, body: { sent: recipients.length } };
+  const smsSent = await sendSmsNotifications(contacts, {
+    title: 'Caregiver access update',
+    intro: 'A caregiver account was approved in MediMama. Open the app for full details.',
+  });
+  return { status: 200, body: { sent: emails.length, smsSent } };
 }
 
 async function notifyMotherApproval(context, body) {
@@ -510,8 +597,9 @@ async function notifyMotherApproval(context, body) {
 
   const { data: links, error: linksError } = await supabase.from('mother_accounts').select('user_id').eq('mother_id', motherId);
   if (linksError) throw linksError;
-  const recipients = await emailsForUserIds((links || []).map(link => link.user_id));
-  for (const recipient of recipients) {
+  const contacts = await contactsForUserIds((links || []).map(link => link.user_id));
+  const emails = contacts.filter(recipient => recipient.email);
+  for (const recipient of emails) {
     const approved = decision === 'approved';
     await sendMail({
       to: recipient.email,
@@ -522,7 +610,12 @@ async function notifyMotherApproval(context, body) {
         : 'The health center could not approve your MediMama registration at this time. Please contact the health center for assistance or clarification.',
     });
   }
-  return { status: 200, body: { sent: recipients.length } };
+  const approved = decision === 'approved';
+  const smsSent = await sendSmsNotifications(contacts, {
+    title: approved ? 'MediMama account approved' : 'MediMama registration update',
+    intro: approved ? 'Your MediMama account was approved. Open the app to continue.' : 'Your MediMama registration needs further review. Open the app for details.',
+  });
+  return { status: 200, body: { sent: emails.length, smsSent } };
 }
 
 async function processReminderEmails() {
@@ -555,7 +648,7 @@ const server = createServer(async (request, response) => {
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (request.method === 'OPTIONS') return response.end();
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
-  if (request.method === 'GET' && url.pathname === '/health') return json(response, 200, { ok: true, emailConfigured, emailProvider });
+  if (request.method === 'GET' && url.pathname === '/health') return json(response, 200, { ok: true, emailConfigured, emailProvider, smsConfigured: textbeeConfigured, smsProvider: textbeeConfigured ? 'textbee' : 'none' });
   if (request.method !== 'POST' || (!url.pathname.startsWith('/api/email/') && !['/api/caregiver/register', '/api/mother/register'].includes(url.pathname))) return json(response, 404, { error: 'Not found.' });
   try {
     const body = await readBody(request);
@@ -581,6 +674,8 @@ const server = createServer(async (request, response) => {
 server.listen(port, () => {
   console.log(`MediMama email server listening on http://localhost:${port}`);
   if (!emailConfigured) console.warn('Email delivery is not configured. Add RESEND_API_KEY and RESEND_FROM_EMAIL, or configure SMTP.');
+  if (textbeeConfigured) console.log('TextBee SMS provider configured.');
+  if (!textbeeConfigured) console.warn('TextBee SMS delivery is disabled. Add TEXTBEE_API_KEY to enable SMS notifications.');
   if (brevoConfigured) console.log('Brevo email provider configured.');
   if (!brevoConfigured && resendConfigured) console.log('Resend email provider configured.');
   if (!brevoConfigured && !resendConfigured && transporter) void transporter.verify().then(() => console.log('SMTP connection verified.')).catch(error => console.warn(`SMTP verification failed: ${error.message}`));
