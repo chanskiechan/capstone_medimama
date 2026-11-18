@@ -143,7 +143,7 @@ async function downloadReportsPdf(periodLabel, analytics) {
       doc.setFillColor(...chartColor(row.color));
       doc.setDrawColor(255, 255, 255);
       doc.setLineWidth(1);
-      doc.lines(relativeLines, centerX, centerY, 1, 'FD', true);
+      doc.lines(relativeLines, centerX, centerY, [1, 1], 'FD', true);
       angle = nextAngle;
     });
   };
