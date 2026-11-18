@@ -222,7 +222,16 @@ async function downloadReportsPdf(periodLabel, analytics) {
   );
 
   sectionTitle('Status and activity breakdowns');
-  drawVisualSummaries();
+  try {
+    drawVisualSummaries();
+  } catch (error) {
+    console.error('Analytics chart rendering failed during PDF export', error);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Chart visuals could not be rendered; the report data tables are included below.', margin, y + 10);
+    y += 30;
+  }
   const breakdownRows = [
     ...analytics.motherStatusRows.map(row => ['Mother status', row.label, row.value, `${analytics.mothers.length ? Math.round((row.value / analytics.mothers.length) * 100) : 0}%`]),
     ...analytics.infantSexRows.map(row => ['Infant sex', row.label, row.value, `${analytics.infants.length ? Math.round((row.value / analytics.infants.length) * 100) : 0}%`]),
