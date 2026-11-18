@@ -23,7 +23,7 @@ export function AdminShell({ page, children }) {
       <div className="menu-item"><NavLink className={navClass} to="/caregiver-requests"><i className="fas fa-user-check" /><span className="menu-text">User Request</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/support/concerns"><i className="fas fa-hand-holding-heart" /><span className="menu-text">Care Requests</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/healthcare"><i className="fas fa-hospital" /><span className="menu-text">Healthcare Services</span></NavLink></div>
-      <div className="menu-item"><NavLink className={navClass} to="/reports"><i className="fas fa-chart-bar" /><span className="menu-text">Data Overview</span></NavLink></div>
+      <div className="menu-item"><NavLink className={navClass} to="/reports"><i className="fas fa-chart-bar" /><span className="menu-text">Analytics &amp; Reports</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/announcements"><i className="fas fa-bullhorn" /><span className="menu-text">Announcements</span></NavLink></div>
       <div className="menu-item"><NavLink className={navClass} to="/system"><i className="fas fa-cog" /><span className="menu-text">System Settings</span></NavLink></div>
     </nav>

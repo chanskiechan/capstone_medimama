@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AdminShell } from '../components/AdminShell';
 import { supabase } from '../lib/supabase';
 import { notifyEmailEvent } from '../lib/emailNotifications';
+import { announcementDateLabel, announcementScheduleLabel, announcementTimeLabel, announcementTimeOptions, upcomingAnnouncementDates } from '../lib/announcements';
 import './AnnouncementsManager.css';
 
 const Icon = ({ name }) => <i className={`fa-solid fa-${name}`} />;
@@ -36,7 +37,9 @@ export default function AnnouncementsManager() {
       description: values.description.trim(),
       audience: values.audience,
       priority: values.priority,
-      pinned: values.pinned === 'on'
+      pinned: values.pinned === 'on',
+      event_date: values.eventDate,
+      event_time: values.eventTime
     };
     let announcementId = editing?.id;
     let error;
@@ -103,6 +106,7 @@ export default function AnnouncementsManager() {
                   <span><Icon name="users" /> {item.audience}</span>
                   <span>{announcementDate(item.created_at)}</span>
                 </div>
+                {item.event_date && <p className="announcement-schedule"><Icon name="calendar-days" /> <strong>When:</strong> {announcementScheduleLabel(item.event_date, item.event_time)}</p>}
                 <p className="card-description">{item.description}</p>
               </div>
               <div className="card-actions">
@@ -124,6 +128,10 @@ export default function AnnouncementsManager() {
               <label className="full">Message<textarea name="description" maxLength="2000" required defaultValue={editing.description || ''} /></label>
               <label>Audience<select name="audience" defaultValue={editing.audience || 'Mothers & caregivers'}><option>Mothers & caregivers</option><option>Everyone</option></select></label>
               <label>Priority<select name="priority" defaultValue={editing.priority || 'Normal'}><option>Low</option><option>Normal</option><option>High</option></select></label>
+              <div className="announcement-schedule-fields full">
+                <label>When<select name="eventDate" required defaultValue={editing.event_date || ''}><option value="" disabled>Select an upcoming Wednesday</option>{upcomingAnnouncementDates().map(date => <option key={date} value={date}>{announcementDateLabel(date)}</option>)}</select></label>
+                <label>Time<select name="eventTime" required defaultValue={editing.event_time?.slice(0, 5) || ''}><option value="" disabled>Select clinic time</option>{announcementTimeOptions().map(time => <option key={time} value={time}>{announcementTimeLabel(time)}</option>)}</select></label>
+              </div>
               <label className="announcement-pin-field full"><input type="checkbox" name="pinned" defaultChecked={Boolean(editing.pinned)} /><span>Pin this announcement at the top of the mother dashboard</span></label>
               <div className="admin-form-actions"><button type="button" className="secondary" onClick={() => setEditing(null)}>Cancel</button><button className="primary-button">{editing.id ? 'Save changes' : 'Publish announcement'}</button></div>
             </form>

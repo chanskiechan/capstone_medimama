@@ -72,12 +72,12 @@ export default function AppointmentApprovals() {
       save(current => ({
         ...current,
         appointmentRequests: (current.appointmentRequests || []).map(item => item.id === request.id ? { ...item, status: decision, reviewed_at: new Date().toISOString() } : item),
-        appointments: decision === 'approved' ? current.appointments.map(item => item.id === request.appointment_id ? { ...item, date: schedule.date, time: schedule.time, status: 'Rescheduled', motherConfirmedAt: null } : item) : current.appointments,
+        appointments: decision === 'approved' ? current.appointments.map(item => item.id === request.appointment_id ? { ...item, date: schedule.date, time: schedule.time, status: 'Confirmed', motherConfirmedAt: new Date().toISOString() } : item) : current.appointments,
       }));
     }
     await refreshPatientData?.();
     if (decision === 'approved') void notifyEmailEvent('/api/email/appointment', { appointmentId: request.appointment_id });
-    setChangeRequestTarget(null); setRequestBusy(''); setNotice(decision === 'approved' ? 'Reschedule approved. The mother must confirm the new appointment.' : 'Reschedule request declined. The original appointment remains unchanged.');
+    setChangeRequestTarget(null); setRequestBusy(''); setNotice(decision === 'approved' ? 'Reschedule approved. The appointment is automatically confirmed.' : 'Reschedule request declined. The original appointment remains unchanged.');
   };
 
   const saveAppointmentRecord = async event => {

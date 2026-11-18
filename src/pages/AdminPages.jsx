@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import CareWorkspace from '../components/CareWorkspace';
 import { appointmentCapacity, today, serviceGroup } from '../care';
 import { supabase } from '../lib/supabase';
+import { announcementScheduleLabel } from '../lib/announcements';
 import './AdminDashboardAnnouncements.css';
 
 const Icon = ({ name }) => <i className={`fa-solid fa-${name}`} />;
@@ -15,14 +16,14 @@ function DashboardAnnouncements() {
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
-    supabase.from('announcements').select('id,title,description,priority,created_at').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).then(({ data, error: loadError }) => {
+    supabase.from('announcements').select('id,title,description,priority,created_at,event_date,event_time').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).then(({ data, error: loadError }) => {
       if (!active) return;
       if (loadError) setError('Announcements are unavailable right now.');
       else setItems(data || []);
     });
     return () => { active = false; };
   }, []);
-  return <section className="dashboard-announcements"><div className="dashboard-announcements-heading"><div><p className="eyebrow">Health center updates</p><h2>Announcements</h2></div><i className="fa-solid fa-bullhorn" /></div>{error ? <p className="admin-empty">{error}</p> : items.length ? <div className="dashboard-announcement-list">{items.map(item => <article key={item.id}><span><i className="fa-solid fa-bullhorn" /></span><div><h3>{item.title}</h3><p>{item.description}</p><small>{new Date(item.created_at).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })}</small></div><em className={item.priority.toLowerCase()}>{item.priority}</em></article>)}</div> : <p className="admin-empty">No announcements published yet.</p>}</section>;
+  return <section className="dashboard-announcements"><div className="dashboard-announcements-heading"><div><p className="eyebrow">Health center updates</p><h2>Announcements</h2></div><i className="fa-solid fa-bullhorn" /></div>{error ? <p className="admin-empty">{error}</p> : items.length ? <div className="dashboard-announcement-list">{items.map(item => <article key={item.id}><span><i className="fa-solid fa-bullhorn" /></span><div><h3>{item.title}</h3>{item.event_date && <strong className="dashboard-announcement-schedule"><i className="fa-regular fa-calendar" /> When: {announcementScheduleLabel(item.event_date, item.event_time)}</strong>}<p>{item.description}</p><small>{new Date(item.created_at).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })}</small></div><em className={item.priority.toLowerCase()}>{item.priority}</em></article>)}</div> : <p className="admin-empty">No announcements published yet.</p>}</section>;
 }
 
 export function AdminDashboard() {

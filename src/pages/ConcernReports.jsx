@@ -61,7 +61,7 @@ export default function ConcernReports({ admin = false }) {
     if (user.demo) { setLoading(false); return; }
     try {
       const rows = await allRows('health_concerns');
-      if (active.current && version === request.current) { setItems(rows); setError(''); }
+      if (active.current && version === request.current) { setItems(rows.map(row => row.status === 'Open' ? { ...row, status: 'Under review' } : row)); setError(''); }
     } catch (e) { if (active.current && version === request.current) setError(`${admin ? 'Could not load care requests.' : 'Could not load care requests.'} ${e.message}`); }
     finally { if (active.current && version === request.current) setLoading(false); }
   }, [user.id,user.demo]);
@@ -108,7 +108,7 @@ function ReportForm({patients,disabled,user,onCreated,onCancel}) {
     try{
       await checkImageFiles(files);
       const patient=patients.find(p=>p.id===values.patient);
-      const {data:report,error:problem}=await supabase.from('health_concerns').insert({[patient.motherId?'infant_id':'mother_id']:patient.id,author_id:user.id,category,subject:values.subject.trim(),description:values.description.trim(),symptoms:values.symptoms.trim(),started_at:values.started_at?`${values.started_at}T00:00:00+08:00`:null,vaccine_name:category==='Post-vaccination'?values.vaccine_name.trim():'',vaccination_date:category==='Post-vaccination'?(values.vaccination_date||null):null,actions_taken:values.actions_taken.trim()}).select('id').single();
+      const {data:report,error:problem}=await supabase.from('health_concerns').insert({[patient.motherId?'infant_id':'mother_id']:patient.id,author_id:user.id,category,status:'Under review',subject:values.subject.trim(),description:values.description.trim(),symptoms:values.symptoms.trim(),started_at:values.started_at?`${values.started_at}T00:00:00+08:00`:null,vaccine_name:category==='Post-vaccination'?values.vaccine_name.trim():'',vaccination_date:category==='Post-vaccination'?(values.vaccination_date||null):null,actions_taken:values.actions_taken.trim()}).select('id').single();
       if(problem)throw problem;
       const failures=await uploadPhotos(report.id,files,user.id);
       await onCreated(report.id,failures.length?`Care request submitted. Some photos could not be attached: ${failures.join('; ')}. Add them again from the care request details; do not resubmit the request.`:'Care request submitted. Your health center can now review it. Replies will appear in this care request and your notifications.');

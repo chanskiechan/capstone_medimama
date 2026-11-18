@@ -8,6 +8,7 @@ import { family, session, today } from '../care';
 import { supabase } from '../lib/supabase';
 import { healthResources } from '../healthResources';
 import { assistantReply, dueReminders, reportRows, csvCell } from '../lib/support';
+import { announcementScheduleLabel } from '../lib/announcements';
 import './Support.css';
 import ConcernReports from './ConcernReports';
 
@@ -41,7 +42,7 @@ export function Assistant() {
 function Notifications() {
   const { data } = useStore(), user = session();
   const [items, setItems] = useState([]), [announcements, setAnnouncements] = useState([]), [error, setError] = useState(''), [busy, setBusy] = useState(false);
-  const load = async () => { if (user.demo) return; try { const [{ data: rows, error: notificationError }, { data: announcementRows, error: announcementError }] = await Promise.all([supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(100), supabase.from('announcements').select('id,title,description,priority,created_at,pinned').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(100)]); if (notificationError) throw notificationError; if (announcementError) throw announcementError; setItems(rows || []); setAnnouncements(announcementRows || []); setError(''); } catch (e) { setError(e.message); } };
+  const load = async () => { if (user.demo) return; try { const [{ data: rows, error: notificationError }, { data: announcementRows, error: announcementError }] = await Promise.all([supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(100), supabase.from('announcements').select('id,title,description,priority,created_at,pinned,event_date,event_time').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(100)]); if (notificationError) throw notificationError; if (announcementError) throw announcementError; setItems(rows || []); setAnnouncements(announcementRows || []); setError(''); } catch (e) { setError(e.message); } };
   useEffect(() => { load(); const timer = setInterval(load, 30000); return () => clearInterval(timer); }, []);
   const markAllRead = async () => {
     const unread = items.some(item => !item.read_at);
@@ -58,7 +59,7 @@ function Notifications() {
   const reminders = dueReminders(data, user);
   const updates = [
     ...items.map(item => ({ ...item, type: 'Personal', kind: 'personal', title: '', link_path: item.link_path || '/support/notifications' })),
-    ...announcements.map(item => ({ ...item, type: 'Announcement', kind: 'announcement', message: item.description, link_path: '/support/education' })),
+    ...announcements.map(item => ({ ...item, type: 'Announcement', kind: 'announcement', message: item.event_date ? `When: ${announcementScheduleLabel(item.event_date, item.event_time)} · ${item.description}` : item.description, link_path: '/support/education' })),
     ...reminders.map(item => ({ ...item, id: `reminder-${item.id}`, type: 'Reminder', kind: 'reminder', title: 'Immunization reminder', message: item.message, created_at: `${item.date}T00:00:00+08:00`, link_path: '/user/records' }))
   ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   const unreadCount = items.filter(item => !item.read_at).length;

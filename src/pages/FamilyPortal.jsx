@@ -8,6 +8,7 @@ import { session } from '../care';
 import { supabase } from '../lib/supabase';
 import { useStore } from '../store';
 import { dueReminders } from '../lib/support';
+import { announcementScheduleLabel } from '../lib/announcements';
 import { Assistant } from './Support';
 import './FamilyHeader.css';
 import FamilyTutorial from '../components/FamilyTutorial';
@@ -17,13 +18,17 @@ function AssistantWidget() {
   return <aside className={`assistant-widget${open ? ' open' : ''}`} aria-label="MediMama Assistant">{open && <section className="assistant-window"><header><strong>MediMama Assistant</strong><button type="button" onClick={() => setOpen(false)} aria-label="Close assistant">×</button></header><Assistant /></section>}<button type="button" className="assistant-launcher" onClick={() => setOpen(!open)}><i className="fa-solid fa-robot" /><span>Chat with us</span></button></aside>;
 }
 
+const announcementMessage = item => item.event_date
+  ? `When: ${announcementScheduleLabel(item.event_date, item.event_time)} · ${item.description}`
+  : item.description;
+
 function NotificationHistoryModal({ open, onClose, onMarkRead, busy, error, unread, announcements, reminders, notifications }) {
   const [filter, setFilter] = useState('all');
   useEffect(() => { if (open) setFilter('all'); }, [open]);
   if (!open) return null;
   const formatDate = value => new Date(value).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
   const entries = [
-    ...announcements.map(item => ({ key: `announcement-${item.id}`, kind: 'announcement', label: 'Announcement', title: item.title, message: item.description, icon: 'fa-bullhorn', className: 'announcement', href: '/support/education', createdAt: item.created_at, dateText: formatDate(item.created_at) })),
+    ...announcements.map(item => ({ key: `announcement-${item.id}`, kind: 'announcement', label: 'Announcement', title: item.title, message: announcementMessage(item), icon: 'fa-bullhorn', className: 'announcement', href: '/support/education', createdAt: item.created_at, dateText: formatDate(item.created_at) })),
     ...reminders.map(item => ({ key: `reminder-${item.id}`, kind: 'reminder', label: 'Reminder', title: 'Immunization reminder', message: item.message, icon: 'fa-syringe', className: 'reminder', href: '/user/records', createdAt: `${item.date}T00:00:00+08:00`, dateText: `Due ${item.date}` })),
     ...notifications.map(item => { const appointment = item.message?.toLowerCase().includes('appointment'); return { key: `notification-${item.id}`, kind: 'inbox', label: 'Inbox update', title: appointment ? 'Appointment update' : 'Health update', message: item.message, icon: appointment ? 'fa-calendar-check' : 'fa-heart-pulse', className: appointment ? 'appointment' : 'health', href: item.link_path || '/support/notifications', createdAt: item.created_at, dateText: formatDate(item.created_at), unread: !item.read_at }; }),
   ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -70,7 +75,7 @@ export function FamilyHeader() {
     const loadNotifications = async () => {
       const [{ data: rows }, { data: announcementRows }] = await Promise.all([
         supabase.from('notifications').select('id,message,created_at,read_at,link_path').order('created_at', { ascending: false }).limit(100),
-        supabase.from('announcements').select('id,title,description,priority,created_at').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(100),
+        supabase.from('announcements').select('id,title,description,priority,created_at,event_date,event_time').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(100),
       ]);
       if (active) { setNotifications(rows || []); setAnnouncements(announcementRows || []); }
     };
@@ -139,7 +144,7 @@ export function FamilyHeader() {
           <div className="family-notification-menu-head"><div><strong>Inbox</strong><small>Latest MediMama updates</small></div><div className="family-notification-menu-head-actions"><button type="button" className="family-notification-mark-all" onClick={markNotificationsRead} disabled={!unreadNotifications || notificationBusy} title="Mark personal inbox updates as read">{notificationBusy ? 'Updating...' : unreadNotifications ? 'Mark all as read' : 'All caught up'}</button><button type="button" className="family-notification-view-all" onClick={openNotificationHistory}>View all</button></div></div>
           {notificationError && <p className="family-notification-error" role="alert">{notificationError}</p>}
           {!notifications.length && !announcements.length && !reminders.length ? <p className="family-notification-empty">No messages or reminders yet.</p> : <div className="family-notification-list">
-            {announcements.length > 0 && <section className="family-notification-group"><h3><i className="fa-solid fa-bullhorn" aria-hidden="true" /> Announcements</h3>{announcements.map(item => <Link key={`announcement-${item.id}`} className={`family-notification-item announcement ${item.priority?.toLowerCase() || ''}`} to="/support/education" onClick={() => setNotificationOpen(false)}><i className="fa-solid fa-bullhorn" aria-hidden="true" /><span><strong className="family-notification-title">{item.title}</strong><span className="family-notification-message">{item.description}</span><small>{new Date(item.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</small></span></Link>)}</section>}
+            {announcements.length > 0 && <section className="family-notification-group"><h3><i className="fa-solid fa-bullhorn" aria-hidden="true" /> Announcements</h3>{announcements.map(item => <Link key={`announcement-${item.id}`} className={`family-notification-item announcement ${item.priority?.toLowerCase() || ''}`} to="/support/education" onClick={() => setNotificationOpen(false)}><i className="fa-solid fa-bullhorn" aria-hidden="true" /><span><strong className="family-notification-title">{item.title}</strong><span className="family-notification-message">{announcementMessage(item)}</span><small>{new Date(item.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</small></span></Link>)}</section>}
             {reminders.length > 0 && <section className="family-notification-group"><h3><i className="fa-solid fa-syringe" aria-hidden="true" /> Reminders</h3>{reminders.map(item => <Link key={`reminder-${item.id}`} className="family-notification-item reminder" to="/user/records" onClick={() => setNotificationOpen(false)}><i className="fa-solid fa-syringe" aria-hidden="true" /><span><strong className="family-notification-title">Immunization reminder</strong><span className="family-notification-message">{item.message}</span><small>Due {item.date}</small></span></Link>)}</section>}
             {notifications.length > 0 && <section className="family-notification-group"><h3><i className="fa-solid fa-inbox" aria-hidden="true" /> Inbox updates</h3>{notifications.map(item => { const appointment = item.message?.toLowerCase().includes('appointment'); return <Link key={item.id} className={`family-notification-item ${appointment ? 'appointment' : 'health'}${item.read_at ? '' : ' unread'}`} to={item.link_path || '/support/notifications'} onClick={() => setNotificationOpen(false)}><i className={`fa-solid ${appointment ? 'fa-calendar-check' : 'fa-heart-pulse'}`} aria-hidden="true" /><span><span className="family-notification-message">{item.message}</span><small>{new Date(item.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</small></span>{!item.read_at && <b>New</b>}</Link>; })}</section>}
           </div>}

@@ -1,5 +1,5 @@
 export const reportCategories = ['Maternal health', 'Infant health', 'Post-vaccination'];
-export const reportStatuses = ['Open', 'Under review', 'Resolved'];
+export const reportStatuses = ['Under review', 'Resolved'];
 export const imageLimit = 3;
 export const imageSizeLimit = 5 * 1024 * 1024;
 export function validateReport(values, patients, now = Date.now()) {

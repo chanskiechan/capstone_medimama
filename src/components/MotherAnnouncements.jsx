@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { announcementScheduleLabel } from '../lib/announcements';
 import './MotherAnnouncements.css';
 
 export default function MotherAnnouncements() {
@@ -7,8 +8,8 @@ export default function MotherAnnouncements() {
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
-    supabase.from('announcements').select('id,title,description,priority,created_at').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3).then(({ data, error: loadError }) => { if (!active) return; if (loadError) setError('Announcements are unavailable right now.'); else setItems(data || []); });
+    supabase.from('announcements').select('id,title,description,priority,created_at,event_date,event_time').eq('archived', false).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3).then(({ data, error: loadError }) => { if (!active) return; if (loadError) setError('Announcements are unavailable right now.'); else setItems(data || []); });
     return () => { active = false; };
   }, []);
-  return <section className="mother-announcements" aria-label="Health center announcements"><div className="mother-announcements-heading"><div><p>Health center</p><h2>Announcements</h2></div><i className="fa-solid fa-bullhorn" aria-hidden="true" /></div>{error ? <p className="mother-announcements-empty">{error}</p> : items.length ? <div className="mother-announcement-list">{items.map(item => <article key={item.id} className={`mother-announcement ${item.priority.toLowerCase()}`}><span><i className="fa-solid fa-bullhorn" /></span><div><h3>{item.title}</h3><p>{item.description}</p><small>{new Date(item.created_at).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })}</small></div></article>)}</div> : <p className="mother-announcements-empty">No announcements from the health center yet.</p>}</section>;
+  return <section className="mother-announcements" aria-label="Health center announcements"><div className="mother-announcements-heading"><div><p>Health center</p><h2>Announcements</h2></div><i className="fa-solid fa-bullhorn" aria-hidden="true" /></div>{error ? <p className="mother-announcements-empty">{error}</p> : items.length ? <div className="mother-announcement-list">{items.map(item => <article key={item.id} className={`mother-announcement ${item.priority.toLowerCase()}`}><span><i className="fa-solid fa-bullhorn" /></span><div><h3>{item.title}</h3>{item.event_date && <strong className="mother-announcement-schedule"><i className="fa-regular fa-calendar" aria-hidden="true" /> When: {announcementScheduleLabel(item.event_date, item.event_time)}</strong>}<p>{item.description}</p><small>Published {new Date(item.created_at).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })}</small></div></article>)}</div> : <p className="mother-announcements-empty">No announcements from the health center yet.</p>}</section>;
 }

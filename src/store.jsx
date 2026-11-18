@@ -65,9 +65,13 @@ export function StoreProvider({ children }) {
       if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') { ++requestVersion.current; currentData.current = empty(); setData(empty()); }
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') setTimeout(refreshPatientData, 0);
     });
+    const realtime = supabase.channel('medimama-appointment-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => refreshPatientData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointment_change_requests' }, () => refreshPatientData())
+      .subscribe();
     window.addEventListener('focus', refreshPatientData);
     const timer = window.setInterval(refreshPatientData, 15000);
-    return () => { listener.subscription.unsubscribe(); window.removeEventListener('focus', refreshPatientData); clearInterval(timer); };
+    return () => { listener.subscription.unsubscribe(); supabase.removeChannel(realtime); window.removeEventListener('focus', refreshPatientData); clearInterval(timer); };
   }, [refreshPatientData]);
   const save = updater => {
     try {
