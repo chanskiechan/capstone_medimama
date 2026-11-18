@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import { AdminShell } from '../components/AdminShell';
 import { useStore } from '../store';
-import { infantAgeStatus, session } from '../care';
+import { infantAgeStatus, session, today } from '../care';
 import { supabase } from '../lib/supabase';
 import './AdminReports.css';
 
