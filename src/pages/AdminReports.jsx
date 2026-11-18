@@ -138,12 +138,12 @@ async function downloadReportsPdf(periodLabel, analytics) {
         const pointAngle = angle + ((nextAngle - angle) * index / steps);
         points.push([centerX + Math.cos(pointAngle) * radius, centerY + Math.sin(pointAngle) * radius]);
       }
-      points.push([centerX, centerY]);
-      const relativeLines = points.slice(1).map((point, index) => [point[0] - points[index][0], point[1] - points[index][1]]);
       doc.setFillColor(...chartColor(row.color));
       doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(1);
-      doc.lines(relativeLines, centerX, centerY, [1, 1], 'FD', true);
+      doc.setLineWidth(0.8);
+      for (let index = 1; index < points.length - 1; index += 1) {
+        doc.triangle(centerX, centerY, points[index][0], points[index][1], points[index + 1][0], points[index + 1][1], 'FD');
+      }
       angle = nextAngle;
     });
   };
