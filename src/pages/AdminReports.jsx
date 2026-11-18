@@ -65,35 +65,42 @@ function MetricCard({ icon, value, label, note, tone = 'blue' }) {
   </article>;
 }
 
-function MotherStatusLineGraph({ rows, total }) {
+function MotherStatusPieChart({ rows, total }) {
   const denominator = total || rows.reduce((sum, row) => sum + row.value, 0);
-  const width = 360;
-  const height = 190;
-  const left = 30;
-  const right = 16;
-  const top = 16;
-  const bottom = 52;
-  const plotWidth = width - left - right;
-  const plotHeight = height - top - bottom;
-  const points = rows.map((row, index) => ({
-    ...row,
-    percentage: denominator ? Math.round((row.value / denominator) * 100) : 0,
-    x: left + (rows.length === 1 ? plotWidth / 2 : (index / (rows.length - 1)) * plotWidth),
-    y: top + (1 - (denominator ? row.value / denominator : 0)) * plotHeight,
-  }));
-  return <div className="analytics-line-graph" role="img" aria-label="Mother status line graph"><svg viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-    {[0, 0.25, 0.5, 0.75, 1].map(ratio => { const y = top + (1 - ratio) * plotHeight; return <g key={ratio}><line className="analytics-line-grid" x1={left} x2={width - right} y1={y} y2={y} /><text className="analytics-line-axis-label" x="0" y={y + 3}>{Math.round(denominator * ratio)}</text></g>; })}
-    {points.length > 1 && <polyline className="analytics-line-path" points={points.map(point => `${point.x},${point.y}`).join(' ')} />}
-    {points.map(point => <g key={point.label}><circle className={`analytics-line-point ${point.color || ''}`} cx={point.x} cy={point.y} r="5" /><text className="analytics-line-value" x={point.x} y={point.y - 12} textAnchor="middle">{point.value}</text><text className="analytics-line-label" x={point.x} y={height - 28} textAnchor="middle"><tspan x={point.x} dy="0">{point.label}</tspan><tspan className="analytics-line-percentage" x={point.x} dy="13">{point.percentage}%</tspan></text></g>)}
-  </svg></div>;
+  const radius = 72;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+  const segments = rows.map(row => {
+    const percentage = denominator ? row.value / denominator : 0;
+    const segment = { ...row, percentage: Math.round(percentage * 100), length: percentage * circumference, offset };
+    offset += segment.length;
+    return segment;
+  });
+  return <div className="analytics-pie-chart">
+    <div className="analytics-donut" role="img" aria-label="Mother status pie chart">
+      <svg viewBox="0 0 220 220" aria-hidden="true">
+        <circle className="analytics-donut-track" cx="110" cy="110" r={radius} />
+        {segments.map(segment => <circle key={segment.label} className={`analytics-donut-segment ${segment.color || ''}`} cx="110" cy="110" r={radius} strokeDasharray={`${segment.length} ${circumference - segment.length}`} strokeDashoffset={-segment.offset} />)}
+        <text className="analytics-donut-total" x="110" y="105" textAnchor="middle">{denominator}</text>
+        <text className="analytics-donut-caption" x="110" y="125" textAnchor="middle">mothers</text>
+      </svg>
+    </div>
+    <div className="analytics-pie-legend" aria-label="Mother status breakdown">
+      {segments.map(row => <div className="analytics-pie-legend-row" key={row.label}>
+        <div className="analytics-breakdown-label"><span className={`analytics-dot ${row.color || ''}`} /><span>{row.label}</span></div>
+        <strong>{row.value.toLocaleString()}</strong>
+        <small>{row.percentage}%</small>
+      </div>)}
+    </div>
+  </div>;
 }
 
-function BreakdownCard({ title, icon, rows, total, tone = 'blue', barGraph = false, lineGraph = false }) {
+function BreakdownCard({ title, icon, rows, total, tone = 'blue', barGraph = false, pieChart = false }) {
   const denominator = total || rows.reduce((sum, row) => sum + row.value, 0);
   const maxValue = Math.max(1, ...rows.map(row => row.value));
   return <section className={`analytics-breakdown ${tone}`}>
     <div className="analytics-card-heading"><div><i className={`fa-solid ${icon}`} aria-hidden="true" /><h2>{title}</h2></div><strong>{denominator.toLocaleString()}</strong></div>
-    {lineGraph ? <MotherStatusLineGraph rows={rows} total={denominator} /> : <div className={`analytics-breakdown-list${barGraph ? ' analytics-bar-graph' : ''}`} aria-label={barGraph ? `${title} bar graph` : title}>{rows.map(row => {
+    {pieChart ? <MotherStatusPieChart rows={rows} total={denominator} /> : <div className={`analytics-breakdown-list${barGraph ? ' analytics-bar-graph' : ''}`} aria-label={barGraph ? `${title} bar graph` : title}>{rows.map(row => {
       const percentage = denominator ? Math.round((row.value / denominator) * 100) : 0;
       return <div className="analytics-breakdown-row" key={row.label}>
         {barGraph ? <><span className="analytics-breakdown-value">{row.value.toLocaleString()}</span><div className="analytics-vertical-track"><span className={`analytics-vertical-bar ${row.color || ''}`} style={{ height: `${row.value ? Math.max(10, (row.value / maxValue) * 100) : 3}%` }} /></div><div className="analytics-breakdown-label"><span className={`analytics-dot ${row.color || ''}`} /><span>{row.label}</span></div><small>{percentage}%</small></> : <><div className="analytics-breakdown-label"><span className={`analytics-dot ${row.color || ''}`} /> <span>{row.label}</span><b>{row.value.toLocaleString()}</b></div><div className="analytics-bar"><span style={{ width: `${percentage}%` }} /></div><small>{percentage}%</small></>}
@@ -212,7 +219,7 @@ function ReportsAnalytics() {
       <MetricCard icon="fa-clock-rotate-left" value={analytics.appointmentRequests.length} label="Reschedule requests" note="All request statuses" tone="purple" />
     </section>
     <section className="analytics-breakdown-grid">
-      <BreakdownCard title="Mother status" icon="fa-person-pregnant" rows={analytics.motherStatusRows} tone="pink" lineGraph />
+      <BreakdownCard title="Mother status" icon="fa-person-pregnant" rows={analytics.motherStatusRows} tone="pink" pieChart />
       <BreakdownCard title="Infant sex" icon="fa-baby" rows={analytics.infantSexRows} tone="blue" />
       <BreakdownCard title="Appointment type" icon="fa-calendar-days" rows={analytics.appointmentTypeRows} total={analytics.rangedAppointments.length} tone="purple" barGraph />
       <BreakdownCard title="Appointment status" icon="fa-calendar-check" rows={analytics.appointmentStatusRows} total={analytics.rangedAppointments.length} tone="green" />
