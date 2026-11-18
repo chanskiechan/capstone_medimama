@@ -132,7 +132,7 @@ async function sendSms({ to, message }) {
   const response = await fetch(`${textbeeApiUrl}/gateway/send-sms`, {
     method: 'POST',
     headers: { 'x-api-key': process.env.TEXTBEE_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recipients: [recipient], message: String(message || '').replace(/\s+/g, ' ').trim().slice(0, 300) }),
+    body: JSON.stringify({ recipients: [recipient], message: String(message || '').replace(/\s+/g, ' ').trim().slice(0, 1600) }),
   });
   if (!response.ok) {
     const details = await response.text();
