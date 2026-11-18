@@ -87,12 +87,30 @@ async function adminEmailRecipients() {
   return emailsForUserIds((profiles || []).map(profile => profile.id));
 }
 
-async function notifyAdmins({ subject, title, intro, details = [] }) {
+async function notifyAdmins({ subject, title, intro, details = [], sourceKey, linkPath = '/support/notifications' }) {
   const recipients = await adminEmailRecipients();
+  if (!recipients.length) return { notified: 0, emailed: 0 };
+
+  // Keep an in-app notification as a fallback so an admin is still alerted
+  // when the external email provider is temporarily unavailable.
+  const notificationKey = sourceKey || `admin-activity:${Date.now()}:${randomInt(100000, 999999)}`;
+  const notificationMessage = `${title}: ${intro}`.slice(0, 1000);
+  const { error: notificationError } = await supabase.from('notifications').upsert(
+    recipients.map(recipient => ({ user_id: recipient.userId, source_key: notificationKey, message: notificationMessage, link_path: linkPath })),
+    { onConflict: 'user_id,source_key', ignoreDuplicates: true },
+  );
+  if (notificationError) console.warn('Admin inbox notification failed:', notificationError.message);
+
+  let emailed = 0;
   for (const recipient of recipients) {
-    await sendMail({ to: recipient.email, subject, title, intro, details });
+    try {
+      await sendMail({ to: recipient.email, subject, title, intro, details });
+      emailed += 1;
+    } catch (error) {
+      console.warn(`Admin email failed for ${recipient.email}:`, error.message);
+    }
   }
-  return recipients.length;
+  return { notified: recipients.length, emailed };
 }
 
 const motherTransactionLabels = {
@@ -112,13 +130,14 @@ async function notifyMotherTransaction(context, body) {
     .map(([label, value]) => [String(label).slice(0, 80), String(value ?? '').slice(0, 500)])
     .filter(([, value]) => value);
   const displayName = context.profile.full_name || context.user.email || 'A mother account';
-  const sent = await notifyAdmins({
+  const result = await notifyAdmins({
     subject: `MediMama: ${title}`,
     title,
     intro: `${displayName} completed an action in the mother portal.`,
     details: [['Mother', displayName], ['Account email', context.user.email || 'Not available'], ...details],
+    sourceKey: `mother-transaction:${context.user.id}:${type}:${Date.now()}`,
   });
-  return { status: 200, body: { sent } };
+  return { status: 200, body: { sent: result.emailed, notified: result.notified } };
 }
 
 async function sendMail({ to, subject, title, intro, details = [] }) {
@@ -285,6 +304,8 @@ async function registerCaregiver(body) {
       title: 'New caregiver request',
       intro: 'A mother submitted a caregiver access request that is waiting for administrator review.',
       details: [['Caregiver', fullName], ['Email', email], ['Relationship', metadata.relationship], ['Linked mother', metadata.linked_patient]],
+      sourceKey: `caregiver-request:${created.user.id}`,
+      linkPath: '/caregiver-requests',
     });
   } catch (error) {
     console.warn('Caregiver request admin email failed:', error.message);
@@ -357,6 +378,8 @@ async function registerMother(body) {
       title: 'New mother registration',
       intro: 'A new mother account was submitted and is waiting for health center review.',
       details: [['Mother', fullName], ['Email', email], ['Contact', metadata.contact_number], ['Address', metadata.address]],
+      sourceKey: `mother-registration:${created.user.id}`,
+      linkPath: '/caregiver-requests',
     });
   } catch (error) {
     console.warn('Mother registration admin email failed:', error.message);
@@ -388,35 +411,46 @@ async function notifyAppointment(context, body) {
   const recipients = await appointmentRecipients(appointment);
   if (context.profile.role !== 'admin' && !recipients.userIds.includes(context.user.id)) return { status: 403, body: { error: 'You cannot notify this appointment.' } };
   const emails = await emailsForUserIds(recipients.userIds);
+  let familyEmailed = 0;
   for (const recipient of emails) {
-    await sendMail({
-      to: recipient.email,
-      subject: `MediMama appointment update: ${appointment.service}`,
-      title: 'Appointment update',
-      intro: 'Your MediMama care appointment has been created or updated.',
-      details: [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]],
-    });
+    try {
+      await sendMail({
+        to: recipient.email,
+        subject: `MediMama appointment update: ${appointment.service}`,
+        title: 'Appointment update',
+        intro: 'Your MediMama care appointment has been created or updated.',
+        details: [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]],
+      });
+      familyEmailed += 1;
+    } catch (error) {
+      console.warn(`Family appointment email failed for ${recipient.email}:`, error.message);
+    }
   }
   if (context.profile.role === 'mother') {
     const eventType = String(body.eventType || 'updated');
     const action = eventType.replaceAll('_', ' ');
     const details = [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]];
+    let requestId = '';
     if (eventType === 'reschedule_requested') {
-      const { data: request, error: requestError } = await supabase.from('appointment_change_requests').select('requested_scheduled_at,reason').eq('appointment_id', appointment.id).eq('status', 'pending').order('created_at', { ascending: false }).limit(1).maybeSingle();
+      const { data: request, error: requestError } = await supabase.from('appointment_change_requests').select('id,requested_scheduled_at,reason').eq('appointment_id', appointment.id).eq('status', 'pending').order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (requestError) throw requestError;
       if (request) {
+        requestId = request.id || '';
         details.push(['Requested schedule', formatDate(request.requested_scheduled_at)]);
         if (request.reason) details.push(['Reason', request.reason]);
       }
     }
-    await notifyAdmins({
+    const adminResult = await notifyAdmins({
       subject: `MediMama: Mother appointment ${action}`,
       title: 'Mother appointment activity',
       intro: `${context.profile.full_name || context.user.email || 'A mother'} ${action} an appointment in the mother portal.`,
       details,
+      sourceKey: requestId ? `mother-appointment-request:${requestId}` : `mother-appointment:${appointment.id}:${eventType}:${Date.now()}`,
+      linkPath: '/healthcare?tab=appointments',
     });
+    return { status: 200, body: { sent: familyEmailed, adminNotified: adminResult.notified, adminEmailed: adminResult.emailed } };
   }
-  return { status: 200, body: { sent: emails.length } };
+  return { status: 200, body: { sent: familyEmailed } };
 }
 
 async function notifyAnnouncement(context, body) {
