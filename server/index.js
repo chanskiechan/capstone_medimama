@@ -145,11 +145,12 @@ async function sendSmsNotifications(recipients, { title, intro }) {
   if (!textbeeConfigured) return 0;
   const sentNumbers = new Set();
   let sent = 0;
+  const smsIntro = String(intro || title || '').replace(/\s+/g, ' ').trim();
   for (const recipient of recipients) {
     if (!recipient.phone || sentNumbers.has(recipient.phone)) continue;
     sentNumbers.add(recipient.phone);
     try {
-      if (await sendSms({ to: recipient.phone, message: `MediMama: ${title}. ${intro} Open the app for full details.` })) sent += 1;
+      if (await sendSms({ to: recipient.phone, message: `MediMama: ${smsIntro} Open the app for full details.` })) sent += 1;
     } catch (error) {
       console.warn(`TextBee SMS failed for ${recipient.phone}:`, error.message);
     }
@@ -504,7 +505,7 @@ async function notifyAppointment(context, body) {
   }
   const familySmsSent = await sendSmsNotifications(contacts, {
     title: `Appointment ${actionLabel}`,
-    intro: `Your MediMama care appointment was ${actionLabel}.`,
+    intro: `Your appointment has been ${actionLabel}.`,
   });
   if (context.profile.role === 'mother') {
     const action = eventType.replaceAll('_', ' ');
