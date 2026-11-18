@@ -289,7 +289,7 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
     // Pull the saved appointment back from Supabase straight away so the
     // appointment list and the admin dashboard use the same record.
     await refreshPatientData?.();
-    void notifyEmailEvent('/api/email/appointment', { appointmentId: next.id });
+    void notifyEmailEvent('/api/email/appointment', { appointmentId: next.id, eventType: old ? 'rescheduled' : 'booked' });
     finish(old ? 'Appointment rescheduled. The reason and previous schedule are visible to the health center.' : 'Appointment booked.');
   };
 
@@ -311,6 +311,7 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
     const { error: infantError } = await supabase.rpc('register_care_infant', { values_json: { ...values, name } });
     if (infantError) return setError(infantError.message);
     await refreshPatientData();
+    if (user.role === 'mother') void notifyEmailEvent('/api/email/mother-transaction', { type: 'infant_registration', details: { Infant: name, 'Birth date': values.birthDate, 'Mother record': values.motherId } });
     finish(canEdit ? 'Infant registered.' : 'Infant submitted for health center approval.');
   };
 

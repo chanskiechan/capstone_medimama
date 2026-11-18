@@ -3,6 +3,7 @@ import { FamilyHeader } from './FamilyPortal';
 import { PageStyles } from '../components/PageStyles';
 import { supabase } from '../lib/supabase';
 import { expectedDeliveryError, expectedDeliveryWindow, maternalStatusLabel, session, today } from '../care';
+import { notifyEmailEvent } from '../lib/emailNotifications';
 import { useStore } from '../store';
 import './MotherProfile.css';
 
@@ -73,6 +74,7 @@ export default function MotherProfile() {
     const next = { ...mother, full_name: values.full_name.trim(), address: values.address.trim(), contact_number: values.phone, maternal_status: values.maternal_status, delivery_date: expectedDeliveryDate || '' };
     setMother(next); setProfile(current => ({ ...current, full_name: next.full_name, phone: values.phone }));
     localStorage.setItem('medimama-current-session', JSON.stringify({ ...user, name: next.full_name }));
+    void notifyEmailEvent('/api/email/mother-transaction', { type: 'profile_updated', details: { 'Updated fields': 'Name, contact number, address, or expected delivery date' } });
     setEditing(false); setNotice('Profile and maternal status updated.');
   };
 
@@ -85,7 +87,7 @@ export default function MotherProfile() {
     const { data: url } = supabase.storage.from('avatars').getPublicUrl(path); const avatarUrl = `${url.publicUrl}?v=${Date.now()}`;
     const { error } = await supabase.rpc('update_my_avatar', { new_avatar_url: avatarUrl }); setBusy(false);
     if (error) return setNotice(error.message);
-    setProfile(current => ({ ...current, avatar_url: avatarUrl })); window.dispatchEvent(new CustomEvent('medimama-avatar-updated', { detail: avatarUrl })); setNotice('Profile photo updated.');
+    setProfile(current => ({ ...current, avatar_url: avatarUrl })); void notifyEmailEvent('/api/email/mother-transaction', { type: 'profile_updated', details: { 'Updated fields': 'Profile photo' } }); window.dispatchEvent(new CustomEvent('medimama-avatar-updated', { detail: avatarUrl })); setNotice('Profile photo updated.');
   };
 
   const displayName = profile.full_name || mother.full_name || user.name || 'Mother';

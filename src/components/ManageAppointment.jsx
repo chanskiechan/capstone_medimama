@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { appointmentCapacity, appointmentError, availableAppointmentDates, availableAppointmentTimes, serviceGroup, session, today } from '../care';
 import { useStore } from '../store';
 import { supabase } from '../lib/supabase';
+import { notifyEmailEvent } from '../lib/emailNotifications';
 
 const isUuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || '');
 const displayDate = value => value ? new Date(`${value}T00:00:00+08:00`).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }) : '';
@@ -41,6 +42,7 @@ export default function ManageAppointment({ appointment }) {
     updateLocalAppointment({ status: 'Confirmed', motherConfirmedAt: new Date().toISOString() });
     setBusy(false); setNotice('Appointment confirmed.');
     await refreshPatientData?.();
+    void notifyEmailEvent('/api/email/appointment', { appointmentId: appointment.id, eventType: 'confirmed' });
   };
 
   const startReschedule = () => {
@@ -79,6 +81,7 @@ export default function ManageAppointment({ appointment }) {
     }
     setRescheduling(false); setBusy(false); setNotice('Reschedule request sent. The health center must confirm the new Wednesday.');
     await refreshPatientData?.();
+    void notifyEmailEvent('/api/email/appointment', { appointmentId: appointment.id, eventType: 'reschedule_requested' });
   };
 
   const changeDate = value => {

@@ -81,6 +81,46 @@ async function emailsForUserIds(userIds) {
   return recipients;
 }
 
+async function adminEmailRecipients() {
+  const { data: profiles, error } = await supabase.from('profiles').select('id').eq('role', 'admin');
+  if (error) throw error;
+  return emailsForUserIds((profiles || []).map(profile => profile.id));
+}
+
+async function notifyAdmins({ subject, title, intro, details = [] }) {
+  const recipients = await adminEmailRecipients();
+  for (const recipient of recipients) {
+    await sendMail({ to: recipient.email, subject, title, intro, details });
+  }
+  return recipients.length;
+}
+
+const motherTransactionLabels = {
+  care_request_submitted: 'New care request submitted',
+  care_request_follow_up: 'Care request follow-up received',
+  infant_registration: 'New infant registration submitted',
+  profile_updated: 'Mother profile updated',
+};
+
+async function notifyMotherTransaction(context, body) {
+  if (context.profile.role !== 'mother') return { status: 403, body: { error: 'Only mother accounts can send this notification.' } };
+  const type = String(body.type || '').trim();
+  const title = motherTransactionLabels[type];
+  if (!title) return { status: 400, body: { error: 'Unsupported mother transaction.' } };
+  const details = Object.entries(body.details || {})
+    .slice(0, 8)
+    .map(([label, value]) => [String(label).slice(0, 80), String(value ?? '').slice(0, 500)])
+    .filter(([, value]) => value);
+  const displayName = context.profile.full_name || context.user.email || 'A mother account';
+  const sent = await notifyAdmins({
+    subject: `MediMama: ${title}`,
+    title,
+    intro: `${displayName} completed an action in the mother portal.`,
+    details: [['Mother', displayName], ['Account email', context.user.email || 'Not available'], ...details],
+  });
+  return { status: 200, body: { sent } };
+}
+
 async function sendMail({ to, subject, title, intro, details = [] }) {
   if (!emailConfigured) throw new Error('Email delivery is not configured. Add BREVO_API_KEY and BREVO_FROM_EMAIL, RESEND_API_KEY and RESEND_FROM_EMAIL, or configure SMTP.');
   const rows = details.map(([label, value]) => `<tr><td style="padding:6px 12px 6px 0;color:#63708a"><strong>${escapeHtml(label)}</strong></td><td style="padding:6px 0">${escapeHtml(value)}</td></tr>`).join('');
@@ -239,6 +279,16 @@ async function registerCaregiver(body) {
     throw requestError;
   }
   registrationOtps.delete(email);
+  try {
+    await notifyAdmins({
+      subject: 'MediMama: New caregiver request',
+      title: 'New caregiver request',
+      intro: 'A mother submitted a caregiver access request that is waiting for administrator review.',
+      details: [['Caregiver', fullName], ['Email', email], ['Relationship', metadata.relationship], ['Linked mother', metadata.linked_patient]],
+    });
+  } catch (error) {
+    console.warn('Caregiver request admin email failed:', error.message);
+  }
   return { status: 200, body: { created: true, pendingApproval: true } };
 }
 
@@ -301,6 +351,16 @@ async function registerMother(body) {
   }
 
   registrationOtps.delete(email);
+  try {
+    await notifyAdmins({
+      subject: 'MediMama: New mother registration',
+      title: 'New mother registration',
+      intro: 'A new mother account was submitted and is waiting for health center review.',
+      details: [['Mother', fullName], ['Email', email], ['Contact', metadata.contact_number], ['Address', metadata.address]],
+    });
+  } catch (error) {
+    console.warn('Mother registration admin email failed:', error.message);
+  }
   return { status: 200, body: { created: true, pendingApproval: true } };
 }
 
@@ -335,6 +395,25 @@ async function notifyAppointment(context, body) {
       title: 'Appointment update',
       intro: 'Your MediMama care appointment has been created or updated.',
       details: [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]],
+    });
+  }
+  if (context.profile.role === 'mother') {
+    const eventType = String(body.eventType || 'updated');
+    const action = eventType.replaceAll('_', ' ');
+    const details = [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]];
+    if (eventType === 'reschedule_requested') {
+      const { data: request, error: requestError } = await supabase.from('appointment_change_requests').select('requested_scheduled_at,reason').eq('appointment_id', appointment.id).eq('status', 'pending').order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (requestError) throw requestError;
+      if (request) {
+        details.push(['Requested schedule', formatDate(request.requested_scheduled_at)]);
+        if (request.reason) details.push(['Reason', request.reason]);
+      }
+    }
+    await notifyAdmins({
+      subject: `MediMama: Mother appointment ${action}`,
+      title: 'Mother appointment activity',
+      intro: `${context.profile.full_name || context.user.email || 'A mother'} ${action} an appointment in the mother portal.`,
+      details,
     });
   }
   return { status: 200, body: { sent: emails.length } };
@@ -455,7 +534,7 @@ const server = createServer(async (request, response) => {
       await sendMail({ to: context.user.email, subject: 'MediMama login notification', title: 'New login detected', intro: 'Your MediMama account was signed in successfully.', details: [['Account', context.user.email], ['Role', context.profile.role], ['Login time', formatDate(new Date())]] });
       return json(response, 200, { sent: 1 });
     }
-    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverApproved(context, body) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
+    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/mother-transaction' ? await notifyMotherTransaction(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverApproved(context, body) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
     return json(response, result.status, result.body);
   } catch (error) {
     console.error('Email request failed:', error.message);
