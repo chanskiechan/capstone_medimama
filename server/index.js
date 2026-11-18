@@ -175,7 +175,7 @@ async function notifyAdmins({ subject, title, intro, details = [], sourceKey, li
   // Keep an in-app notification as a fallback so an admin is still alerted
   // when the external email provider is temporarily unavailable.
   const notificationKey = sourceKey || `admin-activity:${Date.now()}:${randomInt(100000, 999999)}`;
-  const notificationMessage = `${title}: ${intro}`.slice(0, 1000);
+  const notificationMessage = [title, intro, ...details.map(([label, value]) => `${label}: ${value}`)].join('\n').slice(0, 1000);
   const { error: notificationError } = await supabase.from('notifications').upsert(
     recipients.map(recipient => ({ user_id: recipient.userId, source_key: notificationKey, message: notificationMessage, link_path: linkPath })),
     { onConflict: 'user_id,source_key', ignoreDuplicates: true },
@@ -526,21 +526,35 @@ async function notifyAppointment(context, body) {
   }) : 0;
   if (context.profile.role === 'mother') {
     const action = eventType.replaceAll('_', ' ');
-    const details = [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]];
+    const displayName = context.profile.full_name || context.user.email || 'A mother';
+    const isRescheduleRequest = eventType === 'reschedule_requested';
+    const details = [
+      ['Mother', displayName],
+      ['Account email', context.user.email || 'Not available'],
+      ['Appointment type', appointment.service],
+      ['Current schedule', formatDate(appointment.scheduled_at)],
+      ['Current appointment status', appointment.status],
+    ];
     let requestId = '';
-    if (eventType === 'reschedule_requested') {
+    if (isRescheduleRequest) {
       const { data: request, error: requestError } = await supabase.from('appointment_change_requests').select('id,requested_scheduled_at,reason').eq('appointment_id', appointment.id).eq('status', 'pending').order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (requestError) throw requestError;
       if (request) {
         requestId = request.id || '';
         details.push(['Requested schedule', formatDate(request.requested_scheduled_at)]);
-        if (request.reason) details.push(['Reason', request.reason]);
+        details.push(['Reason for moving the appointment', request.reason || 'Not provided']);
+        details.push(['Request status', 'Pending admin review']);
       }
     }
+    const adminTitle = isRescheduleRequest
+      ? `MEDIMAMA: ${displayName} sent a reschedule request`
+      : 'Mother appointment activity';
     const adminResult = await notifyAdmins({
-      subject: `MediMama: Mother appointment ${action}`,
-      title: 'Mother appointment activity',
-      intro: `${context.profile.full_name || context.user.email || 'A mother'} ${action} an appointment in the mother portal.`,
+      subject: isRescheduleRequest ? adminTitle : `MediMama: Mother appointment ${action}`,
+      title: adminTitle,
+      intro: isRescheduleRequest
+        ? `MEDIMAMA: ${displayName} sent a reschedule request. Review the complete request details below.`
+        : `${displayName} ${action} an appointment in the mother portal.`,
       details,
       sourceKey: requestId ? `mother-appointment-request:${requestId}` : `mother-appointment:${appointment.id}:${eventType}:${Date.now()}`,
       linkPath: '/healthcare?tab=appointments',
