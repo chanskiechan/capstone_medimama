@@ -141,16 +141,26 @@ async function sendSms({ to, message }) {
   return true;
 }
 
-async function sendSmsNotifications(recipients, { title, intro }) {
+function buildSmsMessage({ title, intro, details = [] }) {
+  const smsIntro = String(intro || title || '').replace(/\s+/g, ' ').trim();
+  const smsDetails = details
+    .map(([label, value]) => `${label}: ${value}`)
+    .filter(Boolean)
+    .join(' | ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return `MEDIMAMA: ${smsIntro}${smsDetails ? ` ${smsDetails}.` : ''} Open the app for full details.`;
+}
+
+async function sendSmsNotifications(recipients, { title, intro, details = [] }) {
   if (!textbeeConfigured) return 0;
   const sentNumbers = new Set();
   let sent = 0;
-  const smsIntro = String(intro || title || '').replace(/\s+/g, ' ').trim();
   for (const recipient of recipients) {
     if (!recipient.phone || sentNumbers.has(recipient.phone)) continue;
     sentNumbers.add(recipient.phone);
     try {
-      if (await sendSms({ to: recipient.phone, message: `MediMama: ${smsIntro} Open the app for full details.` })) sent += 1;
+      if (await sendSms({ to: recipient.phone, message: buildSmsMessage({ title, intro, details }) })) sent += 1;
     } catch (error) {
       console.warn(`TextBee SMS failed for ${recipient.phone}:`, error.message);
     }
@@ -512,6 +522,7 @@ async function notifyAppointment(context, body) {
   const familySmsSent = notifyFamily ? await sendSmsNotifications(contacts, {
     title: `Appointment ${actionLabel}`,
     intro: `Your appointment has been ${actionLabel}.`,
+    details: [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]],
   }) : 0;
   if (context.profile.role === 'mother') {
     const action = eventType.replaceAll('_', ' ');
@@ -682,7 +693,7 @@ async function processReminderEmails() {
     for (const [phone, reminderRows] of smsRowsByNumber) {
       const first = reminderRows[0];
       try {
-        await sendSms({ to: phone, message: `MediMama: ${first.row.message} Open the app for full details.` });
+        await sendSms({ to: phone, message: buildSmsMessage({ intro: first.row.message }) });
         const ids = reminderRows.map(({ row }) => row.id);
         const { error: smsUpdateError } = await supabase.from('notifications')
           .update({ sms_sent_at: new Date().toISOString() })
