@@ -28,6 +28,12 @@ export default function ManageAppointment({ appointment }) {
     setDate('');
   }, [appointment.id, appointment.time]);
 
+  useEffect(() => {
+    if (!notice) return undefined;
+    const timeout = window.setTimeout(() => setNotice(''), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+
   const updateLocalAppointment = update => save(current => ({
     ...current,
     appointments: current.appointments.map(item => item.id === appointment.id ? { ...item, ...update } : item),
@@ -91,7 +97,7 @@ export default function ManageAppointment({ appointment }) {
 
   return <section className="manage-appointment" aria-label="Manage appointment">
     <h3>Appointment response</h3>
-    {notice && <p className="care-success" role="status">{notice}</p>}
+    {notice && <p className="manage-appointment-toast care-success" role="status"><span className="manage-appointment-check" aria-hidden="true">✓</span>{notice}</p>}
     {error && <p className="care-error" role="alert">{error}</p>}
     {pendingRequest && <p className="care-muted">A change request for {displayDate(pendingRequest.requested_scheduled_at?.slice(0, 10))} is waiting for health center confirmation.</p>}
     {!rescheduling ? <div className="manage-appointment-actions">
