@@ -484,29 +484,35 @@ async function notifyAppointment(context, body) {
   const recipients = await appointmentRecipients(appointment);
   if (context.profile.role !== 'admin' && !recipients.userIds.includes(context.user.id)) return { status: 403, body: { error: 'You cannot notify this appointment.' } };
   const contacts = await contactsForUserIds(recipients.userIds);
-  const emails = contacts.filter(recipient => recipient.email);
   const eventType = String(body.eventType || 'updated');
+  // A reschedule request is an admin-review event. The mother and caregivers
+  // should receive one family notification after the admin approves it, not
+  // another SMS immediately when the request is submitted.
+  const notifyFamily = !(context.profile.role === 'mother' && eventType === 'reschedule_requested');
+  const emails = contacts.filter(recipient => recipient.email);
   const actionLabels = { booked: 'booked', rescheduled: 'rescheduled', confirmed: 'confirmed', completed: 'marked completed', cancelled: 'cancelled', updated: 'updated' };
   const actionLabel = actionLabels[eventType] || 'updated';
   let familyEmailed = 0;
-  for (const recipient of emails) {
-    try {
-      await sendMail({
-        to: recipient.email,
-        subject: `MediMama appointment update: ${appointment.service}`,
-        title: `Appointment ${actionLabel}`,
-        intro: `Your MediMama care appointment was ${actionLabel}.`,
-        details: [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]],
-      });
-      familyEmailed += 1;
-    } catch (error) {
-      console.warn(`Family appointment email failed for ${recipient.email}:`, error.message);
+  if (notifyFamily) {
+    for (const recipient of emails) {
+      try {
+        await sendMail({
+          to: recipient.email,
+          subject: `MediMama appointment update: ${appointment.service}`,
+          title: `Appointment ${actionLabel}`,
+          intro: `Your MediMama care appointment was ${actionLabel}.`,
+          details: [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]],
+        });
+        familyEmailed += 1;
+      } catch (error) {
+        console.warn(`Family appointment email failed for ${recipient.email}:`, error.message);
+      }
     }
   }
-  const familySmsSent = await sendSmsNotifications(contacts, {
+  const familySmsSent = notifyFamily ? await sendSmsNotifications(contacts, {
     title: `Appointment ${actionLabel}`,
     intro: `Your appointment has been ${actionLabel}.`,
-  });
+  }) : 0;
   if (context.profile.role === 'mother') {
     const action = eventType.replaceAll('_', ' ');
     const details = [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]];
