@@ -115,6 +115,81 @@ async function downloadReportsPdf(periodLabel, analytics) {
     });
     y += 16;
   };
+  const chartColor = color => ({
+    pregnant: [215, 95, 145],
+    postnatal: [41, 146, 108],
+    male: [77, 124, 244],
+    female: [215, 95, 145],
+    prenatal: [125, 85, 213],
+    postnatalAppointment: [41, 146, 108],
+    immunization: [41, 146, 108],
+    other: [154, 166, 184],
+  }[color] || [77, 124, 244]);
+  const drawPie = (rows, total, centerX, centerY, radius) => {
+    doc.setFillColor(237, 241, 247);
+    doc.circle(centerX, centerY, radius, 'F');
+    const denominator = total || rows.reduce((sum, row) => sum + row.value, 0);
+    let angle = -Math.PI / 2;
+    rows.filter(row => row.value > 0).forEach(row => {
+      const nextAngle = angle + ((row.value / denominator) * Math.PI * 2);
+      const steps = Math.max(2, Math.ceil((nextAngle - angle) * 16));
+      const points = [[centerX, centerY]];
+      for (let index = 0; index <= steps; index += 1) {
+        const pointAngle = angle + ((nextAngle - angle) * index / steps);
+        points.push([centerX + Math.cos(pointAngle) * radius, centerY + Math.sin(pointAngle) * radius]);
+      }
+      points.push([centerX, centerY]);
+      const relativeLines = points.slice(1).map((point, index) => [point[0] - points[index][0], point[1] - points[index][1]]);
+      doc.setFillColor(...chartColor(row.color));
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(1);
+      doc.lines(relativeLines, centerX, centerY, 1, 'FD', true);
+      angle = nextAngle;
+    });
+  };
+  const drawVisualSummaries = () => {
+    const chartHeight = 190;
+    if (y + chartHeight > pageHeight - margin) newPage();
+    const top = y;
+    const pieCenterX = margin + 82;
+    const pieCenterY = top + 98;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(38, 59, 91);
+    doc.text('Mother status', margin, top + 14);
+    drawPie(analytics.motherStatusRows, analytics.mothers.length, pieCenterX, pieCenterY, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(82, 98, 125);
+    analytics.motherStatusRows.forEach((row, index) => {
+      const legendY = top + 58 + (index * 28);
+      doc.setFillColor(...chartColor(row.color));
+      doc.circle(margin + 150, legendY - 3, 4, 'F');
+      doc.text(`${reportPdfValue(row.label)}: ${row.value} (${analytics.mothers.length ? Math.round((row.value / analytics.mothers.length) * 100) : 0}%)`, margin + 160, legendY);
+    });
+
+    const barX = margin + 280;
+    const barWidth = pageWidth - margin - barX - 8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(38, 59, 91);
+    doc.text('Appointment type', barX, top + 14);
+    const max = Math.max(1, ...analytics.appointmentTypeRows.map(row => row.value));
+    analytics.appointmentTypeRows.forEach((row, index) => {
+      const rowY = top + 42 + (index * 30);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(82, 98, 125);
+      doc.text(reportPdfValue(row.label), barX, rowY);
+      doc.setFillColor(237, 241, 247);
+      doc.roundedRect(barX, rowY + 6, barWidth - 30, 8, 4, 4, 'F');
+      doc.setFillColor(...chartColor(row.color));
+      doc.roundedRect(barX, rowY + 6, Math.max(row.value ? 4 : 0, ((row.value / max) * (barWidth - 30))), 8, 4, 4, 'F');
+      doc.setTextColor(38, 59, 91);
+      doc.text(String(row.value), barX + barWidth - 20, rowY + 13, { align: 'right' });
+    });
+    y = top + chartHeight;
+  };
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
@@ -147,6 +222,7 @@ async function downloadReportsPdf(periodLabel, analytics) {
   );
 
   sectionTitle('Status and activity breakdowns');
+  drawVisualSummaries();
   const breakdownRows = [
     ...analytics.motherStatusRows.map(row => ['Mother status', row.label, row.value, `${analytics.mothers.length ? Math.round((row.value / analytics.mothers.length) * 100) : 0}%`]),
     ...analytics.infantSexRows.map(row => ['Infant sex', row.label, row.value, `${analytics.infants.length ? Math.round((row.value / analytics.infants.length) * 100) : 0}%`]),
