@@ -627,22 +627,74 @@ async function notifyMotherApproval(context, body) {
 }
 
 async function processReminderEmails() {
-  if (reminderJobRunning || !emailConfigured) return;
+  if (reminderJobRunning || (!emailConfigured && !textbeeConfigured)) return;
   reminderJobRunning = true;
   try {
     await supabase.rpc('generate_appointment_reminders');
     await supabase.rpc('generate_vaccine_reminders');
-    const { data: rows, error } = await supabase.from('notifications').select('id,user_id,message,created_at,source_key').is('email_sent_at', null).or('source_key.like.appointment-1day:*,source_key.like.vaccine:*').order('created_at', { ascending: true }).limit(50);
+    const { data: rows, error } = await supabase.from('notifications')
+      .select('id,user_id,message,created_at,source_key,email_sent_at,sms_sent_at')
+      .or('source_key.like.appointment-1day:*,source_key.like.vaccine:*')
+      .or('email_sent_at.is.null,sms_sent_at.is.null')
+      .order('created_at', { ascending: true })
+      .limit(100);
     if (error) throw error;
+
+    const smsRowsByNumber = new Map();
     for (const row of rows || []) {
-      const email = await userEmail(row.user_id);
-      if (!email) continue;
-      await sendMail({ to: email, subject: 'MediMama reminder', title: 'Care reminder', intro: row.message, details: [['Received', formatDate(row.created_at)]] });
-      const { error: updateError } = await supabase.from('notifications').update({ email_sent_at: new Date().toISOString() }).eq('id', row.id).is('email_sent_at', null);
-      if (updateError) throw updateError;
+      const contact = await userContact(row.user_id);
+      if (emailConfigured && row.email_sent_at === null) {
+        let emailDelivered = !contact.email;
+        if (contact.email) {
+          try {
+            await sendMail({ to: contact.email, subject: 'MediMama reminder', title: 'Care reminder', intro: row.message, details: [['Received', formatDate(row.created_at)]] });
+            emailDelivered = true;
+          } catch (sendError) {
+            console.warn(`Reminder email failed for ${contact.email}:`, sendError.message);
+          }
+        }
+        if (emailDelivered) {
+          const { error: emailUpdateError } = await supabase.from('notifications')
+            .update({ email_sent_at: new Date().toISOString() })
+            .eq('id', row.id)
+            .is('email_sent_at', null);
+          if (emailUpdateError) throw emailUpdateError;
+        }
+      }
+
+      if (textbeeConfigured && row.sms_sent_at === null) {
+        if (!contact.phone) {
+          const { error: smsUpdateError } = await supabase.from('notifications')
+            .update({ sms_sent_at: new Date().toISOString() })
+            .eq('id', row.id)
+            .is('sms_sent_at', null);
+          if (smsUpdateError) throw smsUpdateError;
+        } else {
+          const reminderRows = smsRowsByNumber.get(contact.phone) || [];
+          reminderRows.push({ row, contact });
+          smsRowsByNumber.set(contact.phone, reminderRows);
+        }
+      }
+    }
+
+    // One SMS per phone number per reminder run, even when the same phone is
+    // linked to more than one MediMama account.
+    for (const [phone, reminderRows] of smsRowsByNumber) {
+      const first = reminderRows[0];
+      try {
+        await sendSms({ to: phone, message: `MediMama: ${first.row.message} Open the app for full details.` });
+        const ids = reminderRows.map(({ row }) => row.id);
+        const { error: smsUpdateError } = await supabase.from('notifications')
+          .update({ sms_sent_at: new Date().toISOString() })
+          .in('id', ids)
+          .is('sms_sent_at', null);
+        if (smsUpdateError) throw smsUpdateError;
+      } catch (sendError) {
+        console.warn(`Reminder SMS failed for ${phone}:`, sendError.message);
+      }
     }
   } catch (error) {
-    console.error('Reminder email job failed:', error.message);
+    console.error('Reminder delivery job failed:', error.message);
   } finally {
     reminderJobRunning = false;
   }
