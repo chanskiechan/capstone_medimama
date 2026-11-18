@@ -116,6 +116,7 @@ export default function AppointmentApprovals() {
       infants: current.infants.map(currentPatient => currentPatient.id === infant?.id ? { ...currentPatient, records: [...(currentPatient.records || []), { date: recordDate, type: recordType, details: values.details || '', recordedBy: values.recordedBy, recorded_by_label: values.recordedBy }] } : currentPatient),
     }));
     await refreshPatientData?.();
+    void notifyEmailEvent('/api/email/appointment', { appointmentId: item.id, eventType: 'completed' });
     setRecordBusy(false); setRecordTarget(null); setRecordError(''); setNotice('Clinical record saved. Appointment marked Done.');
   };
 
@@ -135,6 +136,7 @@ export default function AppointmentApprovals() {
     }
     save(current => ({ ...current, appointments: current.appointments.map(appointment => appointment.id === item.id ? { ...appointment, status: 'Cancelled' } : appointment) }));
     await refreshPatientData?.();
+    void notifyEmailEvent('/api/email/appointment', { appointmentId: item.id, eventType: 'cancelled' });
     setRequestBusy(''); setCancelTarget(null); setNotice('Appointment cancelled. You can now review the reschedule request.');
   };
 

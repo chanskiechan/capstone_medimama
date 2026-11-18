@@ -411,14 +411,17 @@ async function notifyAppointment(context, body) {
   const recipients = await appointmentRecipients(appointment);
   if (context.profile.role !== 'admin' && !recipients.userIds.includes(context.user.id)) return { status: 403, body: { error: 'You cannot notify this appointment.' } };
   const emails = await emailsForUserIds(recipients.userIds);
+  const eventType = String(body.eventType || 'updated');
+  const actionLabels = { booked: 'booked', rescheduled: 'rescheduled', confirmed: 'confirmed', completed: 'marked completed', cancelled: 'cancelled', updated: 'updated' };
+  const actionLabel = actionLabels[eventType] || 'updated';
   let familyEmailed = 0;
   for (const recipient of emails) {
     try {
       await sendMail({
         to: recipient.email,
         subject: `MediMama appointment update: ${appointment.service}`,
-        title: 'Appointment update',
-        intro: 'Your MediMama care appointment has been created or updated.',
+        title: `Appointment ${actionLabel}`,
+        intro: `Your MediMama care appointment was ${actionLabel}.`,
         details: [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]],
       });
       familyEmailed += 1;
@@ -427,7 +430,6 @@ async function notifyAppointment(context, body) {
     }
   }
   if (context.profile.role === 'mother') {
-    const eventType = String(body.eventType || 'updated');
     const action = eventType.replaceAll('_', ' ');
     const details = [['Service', appointment.service], ['Schedule', formatDate(appointment.scheduled_at)], ['Status', appointment.status]];
     let requestId = '';
