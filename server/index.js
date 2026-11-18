@@ -192,7 +192,7 @@ async function notifyAdmins({ subject, title, intro, details = [], sourceKey, li
       console.warn(`Admin email failed for ${recipient.email}:`, error.message);
     }
   }
-  const smsSent = sendSmsNotification ? await sendSmsNotifications(recipients, { title, intro }) : 0;
+  const smsSent = sendSmsNotification ? await sendSmsNotifications(recipients, { title, intro, details }) : 0;
   return { notified: recipients.length, emailed, smsSent };
 }
 
@@ -558,7 +558,7 @@ async function notifyAppointment(context, body) {
       details,
       sourceKey: requestId ? `mother-appointment-request:${requestId}` : `mother-appointment:${appointment.id}:${eventType}:${Date.now()}`,
       linkPath: '/healthcare?tab=appointments',
-      sendSmsNotification: eventType !== 'reschedule_requested',
+      sendSmsNotification: true,
     });
     return { status: 200, body: { sent: familyEmailed, smsSent: familySmsSent, adminNotified: adminResult.notified, adminEmailed: adminResult.emailed, adminSmsSent: adminResult.smsSent } };
   }
