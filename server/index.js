@@ -159,6 +159,33 @@ function buildSmsMessage({ title, intro, details = [] }) {
   return `MEDIMAMA: ${smsIntro}${smsDetails ? ` ${smsDetails}.` : ''} Open the app for full details.`;
 }
 
+function formatAnnouncementDate(value) {
+  if (!value) return 'Not specified';
+  const normalized = String(value).slice(0, 10);
+  const date = new Date(`${normalized}T00:00:00+08:00`);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat('en-PH', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'Asia/Manila',
+  }).format(date);
+}
+
+function formatAnnouncementTime(value) {
+  if (!value) return 'Not specified';
+  const normalized = String(value).slice(0, 5);
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(normalized)) return String(value);
+  const date = new Date(`1970-01-01T${normalized}:00Z`);
+  return new Intl.DateTimeFormat('en-PH', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC',
+  }).format(date);
+}
+
 async function sendSmsNotifications(recipients, { title, intro, details = [] }) {
   if (!textbeeConfigured) return 0;
   const sentNumbers = new Set();
@@ -585,18 +612,29 @@ async function notifyAnnouncement(context, body) {
   if (context.profile.role !== 'admin') return { status: 403, body: { error: 'Only administrators can send announcements.' } };
   const announcementId = String(body.announcementId || '');
   if (!announcementId) return { status: 400, body: { error: 'announcementId is required.' } };
-  const { data: announcement, error } = await supabase.from('announcements').select('title,description,audience,priority').eq('id', announcementId).single();
+  const { data: announcement, error } = await supabase.from('announcements').select('title,description,audience,priority,event_date,event_time').eq('id', announcementId).single();
   if (error || !announcement) return { status: 404, body: { error: 'Announcement not found.' } };
+  const announcementDetails = [
+    ['Audience', announcement.audience],
+    ['Priority', announcement.priority],
+    ['When', formatAnnouncementDate(announcement.event_date)],
+    ['Time', formatAnnouncementTime(announcement.event_time)],
+  ];
   const { data: profiles, error: profileError } = await supabase.from('profiles').select('id,role').in('role', ['mother', 'caregiver']);
   if (profileError) throw profileError;
   const contacts = await contactsForUserIds((profiles || []).map(profile => profile.id));
   const emails = contacts.filter(recipient => recipient.email);
   for (const recipient of emails) {
-    await sendMail({ to: recipient.email, subject: `MediMama announcement: ${announcement.title}`, title: announcement.title, intro: announcement.description, details: [['Audience', announcement.audience], ['Priority', announcement.priority]] });
+    await sendMail({ to: recipient.email, subject: `MediMama announcement: ${announcement.title}`, title: announcement.title, intro: announcement.description, details: announcementDetails });
   }
   const smsSent = await sendSmsNotifications(contacts, {
-    title: announcement.title,
-    intro: 'There is a new health center announcement. Open the app for full details.',
+    title: 'Health center announcement',
+    intro: 'New health center announcement.',
+    details: [
+      ['Title', announcement.title],
+      ['Message', announcement.description],
+      ...announcementDetails,
+    ],
   });
   return { status: 200, body: { sent: emails.length, smsSent } };
 }
