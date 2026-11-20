@@ -667,6 +667,76 @@ async function notifyMotherApproval(context, body) {
   return { status: 200, body: { sent: emails.length, smsSent } };
 }
 
+async function notifyVaccineRecord(context, body) {
+  if (context.profile.role !== 'admin') return { status: 403, body: { error: 'Only administrators can send immunization notifications.' } };
+  const vaccinationId = String(body.vaccinationId || '');
+  if (!vaccinationId) return { status: 400, body: { error: 'vaccinationId is required.' } };
+
+  const { data: vaccination, error: vaccinationError } = await supabase
+    .from('vaccinations')
+    .select('id,infant_id,administered_at,vaccine,dose,notes,recorded_by_label,provider')
+    .eq('id', vaccinationId)
+    .single();
+  if (vaccinationError || !vaccination) return { status: 404, body: { error: 'Vaccination record not found.' } };
+
+  const { data: infant, error: infantError } = await supabase
+    .from('infants')
+    .select('id,full_name,mother_id')
+    .eq('id', vaccination.infant_id)
+    .single();
+  if (infantError || !infant) return { status: 404, body: { error: 'Infant record not found.' } };
+
+  const [{ data: motherLinks, error: motherError }, { data: caregiverLinks, error: caregiverError }] = await Promise.all([
+    supabase.from('mother_accounts').select('user_id').eq('mother_id', infant.mother_id),
+    supabase.from('caregiver_assignments').select('caregiver_id').eq('mother_id', infant.mother_id).eq('status', 'approved'),
+  ]);
+  if (motherError) throw motherError;
+  if (caregiverError) throw caregiverError;
+
+  const userIds = [
+    ...(motherLinks || []).map(link => link.user_id),
+    ...(caregiverLinks || []).map(link => link.caregiver_id),
+  ];
+  const contacts = await contactsForUserIds(userIds);
+  const recordedBy = vaccination.recorded_by_label || vaccination.provider || 'Health Center';
+  const details = [
+    ['Infant', infant.full_name],
+    ['Vaccine', vaccination.vaccine],
+    ['Dose', vaccination.dose],
+    ['Date recorded', vaccination.administered_at],
+    ['Recorded by', recordedBy],
+  ];
+  if (vaccination.notes) details.push(['Notes', vaccination.notes]);
+
+  const title = 'Infant immunization recorded';
+  const intro = `${infant.full_name}'s ${vaccination.vaccine} ${vaccination.dose} was recorded by the health center.`;
+  const sourceKey = `vaccine-record:${vaccination.id}`;
+  const notificationMessage = [title, intro, ...details.map(([label, value]) => `${label}: ${value}`)].join('\n').slice(0, 1000);
+  const { error: notificationError } = await supabase.from('notifications').upsert(
+    contacts.map(contact => ({ user_id: contact.userId, source_key: sourceKey, message: notificationMessage, link_path: '/user/records' })),
+    { onConflict: 'user_id,source_key', ignoreDuplicates: true },
+  );
+  if (notificationError) console.warn('Family immunization inbox notification failed:', notificationError.message);
+
+  let emailed = 0;
+  for (const recipient of contacts.filter(contact => contact.email)) {
+    try {
+      await sendMail({
+        to: recipient.email,
+        subject: `MediMama: ${infant.full_name}'s immunization was recorded`,
+        title,
+        intro,
+        details,
+      });
+      emailed += 1;
+    } catch (error) {
+      console.warn(`Family immunization email failed for ${recipient.email}:`, error.message);
+    }
+  }
+  const smsSent = await sendSmsNotifications(contacts, { title, intro, details });
+  return { status: 200, body: { notified: contacts.length, emailed, smsSent } };
+}
+
 async function processReminderEmails() {
   if (reminderJobRunning || (!emailConfigured && !textbeeConfigured)) return;
   reminderJobRunning = true;
@@ -764,7 +834,7 @@ const server = createServer(async (request, response) => {
       await sendMail({ to: context.user.email, subject: 'MediMama login notification', title: 'New login detected', intro: 'Your MediMama account was signed in successfully.', details: [['Account', context.user.email], ['Role', context.profile.role], ['Login time', formatDate(new Date())]] });
       return json(response, 200, { sent: 1 });
     }
-    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/mother-transaction' ? await notifyMotherTransaction(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverApproved(context, body) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
+    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/mother-transaction' ? await notifyMotherTransaction(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverApproved(context, body) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : url.pathname === '/api/email/vaccine-record' ? await notifyVaccineRecord(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
     return json(response, result.status, result.body);
   } catch (error) {
     console.error('Email request failed:', error.message);

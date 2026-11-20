@@ -372,7 +372,7 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
       record = { ...author, recorded_by_label: values.recordedBy, [infant ? 'infant_id' : 'mother_id']: patient.id, record_date: values.date, record_type: dialog.kind === 'screening' ? values.type : infant ? 'Infant review' : patient.deliveryDate && values.date >= patient.deliveryDate ? 'Postnatal check-up' : 'Prenatal check-up', details: [values.result || values.details].filter(Boolean).join('\n') };
     }
     const isPostnatalRecord = !infant && table === 'maternal_records' && /postnatal/i.test(record.record_type || '');
-    const { error: clinicalError } = await supabase.from(table).insert(record);
+    const { data: savedClinicalRecord, error: clinicalError } = await supabase.from(table).insert(record).select('id').single();
     if (clinicalError) return setError(clinicalError.message);
     if (isPostnatalRecord) {
       const actualDeliveryDate = patient.status === 'Postnatal'
@@ -385,6 +385,9 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
       if (statusError) return setError(statusError.message);
     }
     await refreshPatientData();
+    if (dialog.kind === 'vaccine' && savedClinicalRecord?.id) {
+      void notifyEmailEvent('/api/email/vaccine-record', { vaccinationId: savedClinicalRecord.id });
+    }
     finish(isPostnatalRecord
       ? 'Postnatal record saved. Mother status is now Delivered.'
       : 'Clinical record saved to the shared patient history.');
