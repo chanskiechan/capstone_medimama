@@ -705,6 +705,80 @@ async function notifyMotherApproval(context, body) {
   return { status: 200, body: { sent: emails.length, smsSent } };
 }
 
+async function notifyClinicalRecord(context, body) {
+  if (context.profile.role !== 'admin') return { status: 403, body: { error: 'Only administrators can send clinical record notifications.' } };
+  const recordId = String(body.recordId || '');
+  const patientType = String(body.patientType || '').toLowerCase();
+  if (!recordId || !['mother', 'infant'].includes(patientType)) return { status: 400, body: { error: 'recordId and a valid patientType are required.' } };
+
+  const isInfant = patientType === 'infant';
+  const table = isInfant ? 'infant_records' : 'maternal_records';
+  const patientForeignKey = isInfant ? 'infant_id' : 'mother_id';
+  const { data: record, error: recordError } = await supabase
+    .from(table)
+    .select(`id,${patientForeignKey},record_date,record_type,details,recorded_by_label`)
+    .eq('id', recordId)
+    .single();
+  if (recordError || !record) return { status: 404, body: { error: 'Clinical record not found.' } };
+
+  const patientTable = isInfant ? 'infants' : 'mothers';
+  const { data: patient, error: patientError } = await supabase
+    .from(patientTable)
+    .select(`id,full_name${isInfant ? ',mother_id' : ''}`)
+    .eq('id', record[patientForeignKey])
+    .single();
+  if (patientError || !patient) return { status: 404, body: { error: 'Patient record not found.' } };
+
+  const motherId = isInfant ? patient.mother_id : patient.id;
+  const [{ data: motherLinks, error: motherError }, { data: caregiverLinks, error: caregiverError }] = await Promise.all([
+    supabase.from('mother_accounts').select('user_id').eq('mother_id', motherId),
+    supabase.from('caregiver_assignments').select('caregiver_id').eq('mother_id', motherId).eq('status', 'approved'),
+  ]);
+  if (motherError) throw motherError;
+  if (caregiverError) throw caregiverError;
+
+  const contacts = await contactsForUserIds([
+    ...(motherLinks || []).map(link => link.user_id),
+    ...(caregiverLinks || []).map(link => link.caregiver_id),
+  ]);
+  const recordedBy = record.recorded_by_label || 'Health Center';
+  const details = [
+    [isInfant ? 'Infant' : 'Mother', patient.full_name],
+    ['Record', record.record_type],
+    ['Date recorded', record.record_date],
+    ['Recorded by', recordedBy],
+  ];
+  if (record.details) details.push(['Clinical findings', record.details]);
+
+  const title = isInfant ? 'Infant clinical record updated' : 'Maternal clinical record updated';
+  const intro = `${patient.full_name}'s ${record.record_type} was recorded by the health center.`;
+  const sourceKey = `clinical-record:${record.id}`;
+  const notificationMessage = [title, intro, ...details.map(([label, value]) => `${label}: ${value}`)].join('\n').slice(0, 1000);
+  const { error: notificationError } = await supabase.from('notifications').upsert(
+    contacts.map(contact => ({ user_id: contact.userId, source_key: sourceKey, message: notificationMessage, link_path: isInfant ? '/user/records' : '/user' })),
+    { onConflict: 'user_id,source_key', ignoreDuplicates: true },
+  );
+  if (notificationError) console.warn('Family clinical record inbox notification failed:', notificationError.message);
+
+  let emailed = 0;
+  for (const recipient of contacts.filter(contact => contact.email)) {
+    try {
+      await sendMail({
+        to: recipient.email,
+        subject: `MediMama: ${patient.full_name}'s clinical record was updated`,
+        title,
+        intro,
+        details,
+      });
+      emailed += 1;
+    } catch (error) {
+      console.warn(`Family clinical record email failed for ${recipient.email}:`, error.message);
+    }
+  }
+  const smsSent = await sendSmsNotifications(contacts, { title, intro, details });
+  return { status: 200, body: { notified: contacts.length, emailed, smsSent } };
+}
+
 async function notifyVaccineRecord(context, body) {
   if (context.profile.role !== 'admin') return { status: 403, body: { error: 'Only administrators can send immunization notifications.' } };
   const vaccinationId = String(body.vaccinationId || '');
@@ -872,7 +946,7 @@ const server = createServer(async (request, response) => {
       await sendMail({ to: context.user.email, subject: 'MediMama login notification', title: 'New login detected', intro: 'Your MediMama account was signed in successfully.', details: [['Account', context.user.email], ['Role', context.profile.role], ['Login time', formatDate(new Date())]] });
       return json(response, 200, { sent: 1 });
     }
-    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/mother-transaction' ? await notifyMotherTransaction(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverApproved(context, body) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : url.pathname === '/api/email/vaccine-record' ? await notifyVaccineRecord(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
+    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/mother-transaction' ? await notifyMotherTransaction(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverApproved(context, body) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : url.pathname === '/api/email/clinical-record' ? await notifyClinicalRecord(context, body) : url.pathname === '/api/email/vaccine-record' ? await notifyVaccineRecord(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
     return json(response, result.status, result.body);
   } catch (error) {
     console.error('Email request failed:', error.message);

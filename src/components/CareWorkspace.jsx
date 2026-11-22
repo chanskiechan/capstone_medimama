@@ -385,8 +385,12 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
       if (statusError) return setError(statusError.message);
     }
     await refreshPatientData();
-    if (dialog.kind === 'vaccine' && savedClinicalRecord?.id) {
-      void notifyEmailEvent('/api/email/vaccine-record', { vaccinationId: savedClinicalRecord.id });
+    if (savedClinicalRecord?.id) {
+      if (dialog.kind === 'vaccine') {
+        void notifyEmailEvent('/api/email/vaccine-record', { vaccinationId: savedClinicalRecord.id });
+      } else {
+        void notifyEmailEvent('/api/email/clinical-record', { recordId: savedClinicalRecord.id, patientType: infant ? 'infant' : 'mother' });
+      }
     }
     finish(isPostnatalRecord
       ? 'Postnatal record saved. Mother status is now Delivered.'
@@ -398,16 +402,17 @@ export default function CareWorkspace({ section = 'overview', admin = false }) {
   const recordScreening = async (patient, type) => {
     if (!canEdit || !isUuid(patient?.id)) return false;
     if ((patient.screenings || []).some(screening => screening.type === type && screening.status === 'Completed')) return true;
-    const { error: screeningError } = await supabase.from('infant_records').insert({
+    const { data: savedScreening, error: screeningError } = await supabase.from('infant_records').insert({
       infant_id: patient.id,
       record_date: today(),
       record_type: type,
       details: 'Completed',
       recorded_by: user.id,
       recorded_by_label: 'Health Center',
-    });
+    }).select('id').single();
     if (screeningError) { setError(`Could not save ${type.toLowerCase()}: ${screeningError.message}`); return false; }
     await refreshPatientData();
+    if (savedScreening?.id) void notifyEmailEvent('/api/email/clinical-record', { recordId: savedScreening.id, patientType: 'infant' });
     setNotice(`${type} marked as completed.`);
     return true;
   };
