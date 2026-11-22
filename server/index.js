@@ -234,6 +234,159 @@ async function notifyAdmins({ subject, title, intro, details = [], sourceKey, li
   return { notified: recipients.length, emailed, smsSent };
 }
 
+async function notifyCareRequestRecipients({ recipients, sourceKey, title, intro, details, linkPath }) {
+  const inAppRecipients = recipients.filter(recipient => recipient.userId && recipient.userId !== 'admin-sms-fallback');
+  const notificationMessage = [title, intro, ...details.map(([label, value]) => `${label}: ${value}`)].join('\n').slice(0, 1000);
+  if (inAppRecipients.length) {
+    const { error: notificationError } = await supabase.from('notifications').upsert(
+      inAppRecipients.map(recipient => ({ user_id: recipient.userId, source_key: sourceKey, message: notificationMessage, link_path: linkPath })),
+      { onConflict: 'user_id,source_key', ignoreDuplicates: true },
+    );
+    if (notificationError) console.warn('Care request inbox notification failed:', notificationError.message);
+  }
+
+  const notificationRows = inAppRecipients.length
+    ? await supabase.from('notifications').select('id,user_id,email_sent_at,sms_sent_at').eq('source_key', sourceKey).in('user_id', inAppRecipients.map(recipient => recipient.userId))
+    : { data: [], error: null };
+  if (notificationRows.error) console.warn('Care request notification tracking failed:', notificationRows.error.message);
+  const rowByUserId = new Map((notificationRows.data || []).map(row => [row.user_id, row]));
+
+  let emailed = 0;
+  for (const recipient of recipients.filter(item => item.email && rowByUserId.get(item.userId)?.email_sent_at == null)) {
+    try {
+      await sendMail({ to: recipient.email, subject: `MediMama: ${title}`, title, intro, details });
+      emailed += 1;
+      const row = rowByUserId.get(recipient.userId);
+      if (row) {
+        const { error } = await supabase.from('notifications').update({ email_sent_at: new Date().toISOString() }).eq('id', row.id).is('email_sent_at', null);
+        if (error) console.warn('Care request email tracking update failed:', error.message);
+      }
+    } catch (error) {
+      console.warn(`Care request email failed for ${recipient.email}:`, error.message);
+    }
+  }
+
+  let smsSent = 0;
+  if (textbeeConfigured) {
+    const smsRecipients = new Map();
+    for (const recipient of recipients) {
+      if (!recipient.phone) continue;
+      const row = rowByUserId.get(recipient.userId);
+      if (row?.sms_sent_at != null) continue;
+      const existing = smsRecipients.get(recipient.phone) || [];
+      existing.push(row);
+      smsRecipients.set(recipient.phone, existing);
+    }
+    for (const [phone, rows] of smsRecipients) {
+      try {
+        if (await sendSms({ to: phone, message: buildSmsMessage({ title, intro, details }) })) {
+          smsSent += 1;
+          const ids = rows.filter(Boolean).map(row => row.id);
+          if (ids.length) {
+            const { error } = await supabase.from('notifications').update({ sms_sent_at: new Date().toISOString() }).in('id', ids).is('sms_sent_at', null);
+            if (error) console.warn('Care request SMS tracking update failed:', error.message);
+          }
+        }
+      } catch (error) {
+        console.warn(`Care request SMS failed for ${phone}:`, error.message);
+      }
+    }
+  }
+  return { notified: recipients.length, emailed, smsSent };
+}
+
+async function careRequestContext(concernId) {
+  const { data: concern, error: concernError } = await supabase
+    .from('health_concerns')
+    .select('id,author_id,mother_id,infant_id,category,subject,description,status,created_at,updated_at')
+    .eq('id', concernId)
+    .single();
+  if (concernError || !concern) return null;
+
+  const patientQuery = concern.infant_id
+    ? supabase.from('infants').select('id,full_name,mother_id').eq('id', concern.infant_id).single()
+    : supabase.from('mothers').select('id,full_name').eq('id', concern.mother_id).single();
+  const [{ data: author, error: authorError }, patientResult] = await Promise.all([
+    supabase.from('profiles').select('id,full_name,role').eq('id', concern.author_id).single(),
+    patientQuery,
+  ]);
+  if (authorError) throw authorError;
+  if (patientResult.error) throw patientResult.error;
+  return { concern, author, patient: patientResult.data };
+}
+
+async function notifyCareRequest(context, body) {
+  const eventType = String(body.eventType || '').trim().toLowerCase();
+  const concernId = String(body.concernId || '').trim();
+  const messageId = String(body.messageId || '').trim();
+  if (!concernId || !['submitted', 'follow_up', 'admin_reply'].includes(eventType)) {
+    return { status: 400, body: { error: 'concernId and a valid care request eventType are required.' } };
+  }
+
+  const record = await careRequestContext(concernId);
+  if (!record) return { status: 404, body: { error: 'Care request not found.' } };
+  const { concern, author, patient } = record;
+  const patientName = patient?.full_name || 'Linked patient';
+  const details = [
+    ['Patient', patientName],
+    ['Topic', concern.category],
+    ['Subject', concern.subject || concern.category],
+    ['Status', concern.status],
+    ['Submitted', formatDate(concern.created_at)],
+  ];
+  let message = null;
+  if (eventType !== 'submitted') {
+    if (!messageId) return { status: 400, body: { error: 'messageId is required for this care request event.' } };
+    const { data, error } = await supabase.from('concern_messages').select('id,concern_id,author_id,author_name,author_role,body,created_at').eq('id', messageId).eq('concern_id', concernId).single();
+    if (error || !data) return { status: 404, body: { error: 'Care request reply not found.' } };
+    message = data;
+  }
+
+  if (eventType === 'submitted' || eventType === 'follow_up') {
+    if (!['mother', 'caregiver'].includes(context.profile.role) || concern.author_id !== context.user.id) {
+      return { status: 403, body: { error: 'Only the care request owner can send this event.' } };
+    }
+    if (eventType === 'follow_up' && message.author_id !== context.user.id) {
+      return { status: 403, body: { error: 'This follow-up does not belong to the signed-in account.' } };
+    }
+    if (eventType === 'submitted') details.push(['Description', concern.description]);
+    if (message) details.push(['Follow-up', message.body]);
+    const displayName = author?.full_name || context.profile.full_name || 'A family member';
+    const title = eventType === 'submitted' ? 'New care request submitted' : 'Care request follow-up received';
+    const result = await notifyCareRequestRecipients({
+      recipients: await adminRecipients(),
+      title,
+      intro: eventType === 'submitted'
+        ? `MEDIMAMA: ${displayName} submitted a care request for health center review.`
+        : `MEDIMAMA: ${displayName} added a follow-up to a care request.`,
+      details: [['Reported by', displayName], ['Reporter role', author?.role || context.profile.role], ...details],
+      sourceKey: eventType === 'submitted' ? `concern:${concern.id}` : `concern-message:${message.id}`,
+      linkPath: `/support/concerns?report=${concern.id}`,
+    });
+    return { status: 200, body: { notified: result.notified, emailed: result.emailed, smsSent: result.smsSent } };
+  }
+
+  if (context.profile.role !== 'admin' || message.author_id !== context.user.id || message.author_role !== 'admin') {
+    return { status: 403, body: { error: 'Only the health center can send this care request update.' } };
+  }
+  const contacts = await contactsForUserIds([concern.author_id]);
+  const resolved = concern.status === 'Resolved';
+  const title = resolved ? 'Care request resolved' : 'Care request updated';
+  const intro = resolved
+    ? 'The health center replied to your care request and marked it as resolved.'
+    : 'The health center replied to your care request. Open MediMama to review the guidance.';
+  details.push(['Health center reply', message.body]);
+  const result = await notifyCareRequestRecipients({
+    recipients: contacts,
+    sourceKey: `concern-message:${message.id}`,
+    title,
+    intro,
+    details,
+    linkPath: `/support/concerns?report=${concern.id}`,
+  });
+  return { status: 200, body: { notified: result.notified, emailed: result.emailed, smsSent: result.smsSent } };
+}
+
 const motherTransactionLabels = {
   care_request_submitted: 'New care request submitted',
   care_request_follow_up: 'Care request follow-up received',
@@ -1069,7 +1222,7 @@ const server = createServer(async (request, response) => {
       await sendMail({ to: context.user.email, subject: 'MediMama login notification', title: 'New login detected', intro: 'Your MediMama account was signed in successfully.', details: [['Account', context.user.email], ['Role', context.profile.role], ['Login time', formatDate(new Date())]] });
       return json(response, 200, { sent: 1 });
     }
-    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/mother-transaction' ? await notifyMotherTransaction(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-decision' ? await notifyCaregiverDecision(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverDecision(context, { ...body, decision: 'approved' }) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : url.pathname === '/api/email/infant-approval' ? await notifyInfantApproval(context, body) : url.pathname === '/api/email/clinical-record' ? await notifyClinicalRecord(context, body) : url.pathname === '/api/email/vaccine-record' ? await notifyVaccineRecord(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
+    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/mother-transaction' ? await notifyMotherTransaction(context, body) : url.pathname === '/api/email/care-request' ? await notifyCareRequest(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-decision' ? await notifyCaregiverDecision(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverDecision(context, { ...body, decision: 'approved' }) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : url.pathname === '/api/email/infant-approval' ? await notifyInfantApproval(context, body) : url.pathname === '/api/email/clinical-record' ? await notifyClinicalRecord(context, body) : url.pathname === '/api/email/vaccine-record' ? await notifyVaccineRecord(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
     return json(response, result.status, result.body);
   } catch (error) {
     console.error('Email request failed:', error.message);

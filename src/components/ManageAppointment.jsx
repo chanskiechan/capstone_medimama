@@ -30,7 +30,7 @@ export default function ManageAppointment({ appointment }) {
 
   useEffect(() => {
     if (!notice) return undefined;
-    const timeout = window.setTimeout(() => setNotice(''), 5000);
+    const timeout = window.setTimeout(() => setNotice(''), 6000);
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
