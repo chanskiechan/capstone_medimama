@@ -192,9 +192,9 @@ export default function CaregiverRequests() {
     }
     const { error } = await supabase.from('caregiver_requests').update({ status, reviewed_by: auth.user.id, reviewed_at: new Date().toISOString() }).eq('id', request.id);
     if (error) return setNotice(error.message);
-    if (status === 'approved') void notifyEmailEvent('/api/email/caregiver-approved', { requestId: request.id });
+    void notifyEmailEvent('/api/email/caregiver-decision', { requestId: request.id, decision: status });
     setSelected(null);
-    setNotice(status === 'approved' ? 'Request approved. Approval emails are being sent to the caregiver and mother.' : `Request ${status}.`);
+    setNotice(status === 'approved' ? 'Request approved. Email and SMS notifications are being sent to the caregiver and mother.' : 'Request declined. An email and SMS notification are being sent to the caregiver.');
     await load();
   };
 

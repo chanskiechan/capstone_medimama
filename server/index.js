@@ -247,7 +247,7 @@ async function notifyMotherTransaction(context, body) {
   const title = motherTransactionLabels[type];
   if (!title) return { status: 400, body: { error: 'Unsupported mother transaction.' } };
   const details = Object.entries(body.details || {})
-    .slice(0, 8)
+    .slice(0, 12)
     .map(([label, value]) => [String(label).slice(0, 80), String(value ?? '').slice(0, 500)])
     .filter(([, value]) => value);
   const displayName = context.profile.full_name || context.user.email || 'A mother account';
@@ -258,7 +258,7 @@ async function notifyMotherTransaction(context, body) {
     details: [['Mother', displayName], ['Account email', context.user.email || 'Not available'], ...details],
     sourceKey: `mother-transaction:${context.user.id}:${type}:${Date.now()}`,
   });
-  return { status: 200, body: { sent: result.emailed, notified: result.notified } };
+  return { status: 200, body: { sent: result.emailed, smsSent: result.smsSent, notified: result.notified } };
 }
 
 async function sendMail({ to, subject, title, intro, details = [] }) {
@@ -639,34 +639,90 @@ async function notifyAnnouncement(context, body) {
   return { status: 200, body: { sent: emails.length, smsSent } };
 }
 
-async function notifyCaregiverApproved(context, body) {
-  if (context.profile.role !== 'admin') return { status: 403, body: { error: 'Only administrators can send approval notifications.' } };
+async function notifyCaregiverDecision(context, body) {
+  if (context.profile.role !== 'admin') return { status: 403, body: { error: 'Only administrators can send caregiver decision notifications.' } };
   const requestId = String(body.requestId || '');
-  if (!requestId) return { status: 400, body: { error: 'requestId is required.' } };
-  const { data: request, error: requestError } = await supabase.from('caregiver_requests').select('id,caregiver_id,full_name,requested_patient_name,status').eq('id', requestId).single();
+  const decision = String(body.decision || '').toLowerCase();
+  if (!requestId || !['approved', 'declined'].includes(decision)) return { status: 400, body: { error: 'requestId and a valid caregiver decision are required.' } };
+
+  const { data: request, error: requestError } = await supabase
+    .from('caregiver_requests')
+    .select('id,caregiver_id,full_name,relationship,requested_patient_name,status')
+    .eq('id', requestId)
+    .single();
   if (requestError || !request) return { status: 404, body: { error: 'Caregiver request not found.' } };
-  if (request.status !== 'approved') return { status: 400, body: { error: 'The caregiver request is not approved.' } };
-  const { data: assignment, error: assignmentError } = await supabase.from('caregiver_assignments').select('mother_id,relationship').eq('caregiver_id', request.caregiver_id).eq('status', 'approved').order('created_at', { ascending: false }).limit(1).maybeSingle();
-  if (assignmentError) throw assignmentError;
-  const { data: motherLinks, error: motherError } = await supabase.from('mother_accounts').select('user_id').eq('mother_id', assignment?.mother_id || '00000000-0000-0000-0000-000000000000');
-  if (motherError) throw motherError;
-  const contacts = await contactsForUserIds([request.caregiver_id, ...(motherLinks || []).map(link => link.user_id)]);
-  const emails = contacts.filter(recipient => recipient.email);
-  for (const recipient of emails) {
+  if (request.status !== decision) return { status: 400, body: { error: `The caregiver request is not ${decision}.` } };
+
+  const approved = decision === 'approved';
+  let assignment = null;
+  let motherLinks = [];
+  if (approved) {
+    const { data, error } = await supabase
+      .from('caregiver_assignments')
+      .select('mother_id,relationship')
+      .eq('caregiver_id', request.caregiver_id)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    assignment = data;
+    const { data: links, error: motherError } = await supabase
+      .from('mother_accounts')
+      .select('user_id')
+      .eq('mother_id', assignment?.mother_id || '00000000-0000-0000-0000-000000000000');
+    if (motherError) throw motherError;
+    motherLinks = links || [];
+  }
+
+  const userIds = [request.caregiver_id, ...(motherLinks || []).map(link => link.user_id)];
+  const contacts = await contactsForUserIds(userIds);
+  const title = approved ? 'Caregiver account approved' : 'Caregiver request declined';
+  const intro = approved
+    ? 'Your caregiver request was approved by the health center. You can now access the linked family records.'
+    : 'Your caregiver request was declined by the health center. Please contact the health center if you need clarification.';
+  const details = [
+    ['Caregiver', request.full_name],
+    ['Relationship', assignment?.relationship || request.relationship || 'Caregiver'],
+    ['Linked mother', request.requested_patient_name],
+    ['Decision', approved ? 'Approved' : 'Declined'],
+  ].filter(([, value]) => value);
+  const notificationMessage = [title, intro, ...details.map(([label, value]) => `${label}: ${value}`)].join('\n').slice(0, 1000);
+  const { error: notificationError } = await supabase.from('notifications').upsert(
+    contacts.map(contact => ({
+      user_id: contact.userId,
+      source_key: `caregiver-decision:${request.id}:${decision}`,
+      message: notificationMessage,
+      link_path: contact.userId === request.caregiver_id ? '/caregiver?tab=overview' : '/user',
+    })),
+    { onConflict: 'user_id,source_key', ignoreDuplicates: true },
+  );
+  if (notificationError) console.warn('Caregiver decision inbox notification failed:', notificationError.message);
+
+  let emailed = 0;
+  for (const recipient of contacts.filter(contact => contact.email)) {
     const caregiverRecipient = recipient.userId === request.caregiver_id;
-    await sendMail({
-      to: recipient.email,
-      subject: 'MediMama caregiver account approved',
-      title: caregiverRecipient ? 'Caregiver account approved' : 'A caregiver has been approved',
-      intro: caregiverRecipient ? 'Your MediMama caregiver account has been approved. You can now log in and access the linked family records.' : `${request.full_name} has been approved as a caregiver for your MediMama account.`,
-      details: [['Caregiver', request.full_name], ['Relationship', assignment?.relationship || 'Caregiver'], ['Linked mother', request.requested_patient_name]],
-    });
+    try {
+      await sendMail({
+        to: recipient.email,
+        subject: `MediMama: caregiver request ${decision}`,
+        title: caregiverRecipient ? title : 'Caregiver access update',
+        intro: caregiverRecipient ? intro : `${request.full_name} has been approved as a caregiver for your MediMama account.`,
+        details,
+      });
+      emailed += 1;
+    } catch (error) {
+      console.warn(`Caregiver decision email failed for ${recipient.email}:`, error.message);
+    }
   }
   const smsSent = await sendSmsNotifications(contacts, {
-    title: 'Caregiver access update',
-    intro: 'A caregiver account was approved in MediMama. Open the app for full details.',
+    title: approved ? 'Caregiver access approved' : 'Caregiver request declined',
+    intro: approved
+      ? 'Your caregiver request was approved by MediMama. Open the app for full details.'
+      : 'Your caregiver request was declined by MediMama. Please contact the health center for assistance.',
+    details,
   });
-  return { status: 200, body: { sent: emails.length, smsSent } };
+  return { status: 200, body: { notified: contacts.length, sent: emailed, emailed, smsSent } };
 }
 
 async function notifyMotherApproval(context, body) {
@@ -703,6 +759,73 @@ async function notifyMotherApproval(context, body) {
     intro: approved ? 'Your MediMama account was approved. Open the app to continue.' : 'Your MediMama registration needs further review. Open the app for details.',
   });
   return { status: 200, body: { sent: emails.length, smsSent } };
+}
+
+async function notifyInfantApproval(context, body) {
+  if (context.profile.role !== 'admin') return { status: 403, body: { error: 'Only administrators can send infant approval notifications.' } };
+  const infantId = String(body.infantId || '');
+  const decision = String(body.decision || '').toLowerCase();
+  if (!infantId || !['approved', 'declined'].includes(decision)) return { status: 400, body: { error: 'infantId and a valid approval decision are required.' } };
+
+  const { data: infant, error: infantError } = await supabase
+    .from('infants')
+    .select('id,record_code,full_name,birth_date,sex,mother_id,status')
+    .eq('id', infantId)
+    .single();
+  if (infantError || !infant) return { status: 404, body: { error: 'Infant record not found.' } };
+
+  const [{ data: mother, error: motherError }, { data: motherLinks, error: motherLinkError }, { data: caregiverLinks, error: caregiverError }] = await Promise.all([
+    supabase.from('mothers').select('id,full_name').eq('id', infant.mother_id).single(),
+    supabase.from('mother_accounts').select('user_id').eq('mother_id', infant.mother_id),
+    supabase.from('caregiver_assignments').select('caregiver_id').eq('mother_id', infant.mother_id).eq('status', 'approved'),
+  ]);
+  if (motherError || !mother) return { status: 404, body: { error: 'Mother record not found.' } };
+  if (motherLinkError) throw motherLinkError;
+  if (caregiverError) throw caregiverError;
+
+  const userIds = [
+    ...(motherLinks || []).map(link => link.user_id),
+    ...(caregiverLinks || []).map(link => link.caregiver_id),
+  ];
+  const contacts = await contactsForUserIds(userIds);
+  const approved = decision === 'approved';
+  const title = approved ? 'Infant registration approved' : 'Infant registration declined';
+  const intro = approved
+    ? `${infant.full_name}'s infant registration was approved by the health center. The record is now available to the linked family accounts.`
+    : `${infant.full_name}'s infant registration was declined by the health center and needs further review. Please contact the health center for assistance.`;
+  const details = [
+    ['Infant', infant.full_name],
+    ['Mother', mother.full_name],
+    ['Record ID', infant.record_code],
+    ['Birth date', infant.birth_date],
+    ['Sex', infant.sex],
+    ['Decision', approved ? 'Approved' : 'Declined'],
+    ['Record status', infant.status],
+  ].filter(([, value]) => value);
+  const notificationMessage = [title, intro, ...details.map(([label, value]) => `${label}: ${value}`)].join('\n').slice(0, 1000);
+  const { error: notificationError } = await supabase.from('notifications').upsert(
+    contacts.map(contact => ({ user_id: contact.userId, source_key: `infant-registration:${infant.id}:${decision}`, message: notificationMessage, link_path: '/user/records' })),
+    { onConflict: 'user_id,source_key', ignoreDuplicates: true },
+  );
+  if (notificationError) console.warn('Family infant approval inbox notification failed:', notificationError.message);
+
+  let emailed = 0;
+  for (const recipient of contacts.filter(contact => contact.email)) {
+    try {
+      await sendMail({
+        to: recipient.email,
+        subject: `MediMama: ${infant.full_name}'s registration ${approved ? 'approved' : 'declined'}`,
+        title,
+        intro,
+        details,
+      });
+      emailed += 1;
+    } catch (error) {
+      console.warn(`Family infant approval email failed for ${recipient.email}:`, error.message);
+    }
+  }
+  const smsSent = await sendSmsNotifications(contacts, { title, intro, details });
+  return { status: 200, body: { notified: contacts.length, emailed, smsSent } };
 }
 
 async function notifyClinicalRecord(context, body) {
@@ -946,7 +1069,7 @@ const server = createServer(async (request, response) => {
       await sendMail({ to: context.user.email, subject: 'MediMama login notification', title: 'New login detected', intro: 'Your MediMama account was signed in successfully.', details: [['Account', context.user.email], ['Role', context.profile.role], ['Login time', formatDate(new Date())]] });
       return json(response, 200, { sent: 1 });
     }
-    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/mother-transaction' ? await notifyMotherTransaction(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverApproved(context, body) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : url.pathname === '/api/email/clinical-record' ? await notifyClinicalRecord(context, body) : url.pathname === '/api/email/vaccine-record' ? await notifyVaccineRecord(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
+    const result = url.pathname === '/api/email/appointment' ? await notifyAppointment(context, body) : url.pathname === '/api/email/mother-transaction' ? await notifyMotherTransaction(context, body) : url.pathname === '/api/email/announcement' ? await notifyAnnouncement(context, body) : url.pathname === '/api/email/caregiver-decision' ? await notifyCaregiverDecision(context, body) : url.pathname === '/api/email/caregiver-approved' ? await notifyCaregiverDecision(context, { ...body, decision: 'approved' }) : url.pathname === '/api/email/mother-approval' ? await notifyMotherApproval(context, body) : url.pathname === '/api/email/infant-approval' ? await notifyInfantApproval(context, body) : url.pathname === '/api/email/clinical-record' ? await notifyClinicalRecord(context, body) : url.pathname === '/api/email/vaccine-record' ? await notifyVaccineRecord(context, body) : { status: 404, body: { error: 'Unknown email event.' } };
     return json(response, result.status, result.body);
   } catch (error) {
     console.error('Email request failed:', error.message);

@@ -6,6 +6,7 @@ import { useStore } from '../store';
 import CareWorkspace from '../components/CareWorkspace';
 import { expectedDeliveryError, expectedDeliveryWindow, isDeliveredMaternalStatus, maternalStatusLabel, today } from '../care';
 import { supabase } from '../lib/supabase';
+import { notifyEmailEvent } from '../lib/emailNotifications';
 import AppointmentApprovals from './AppointmentApprovals';
 import './AdminWorkspace.css';
 
@@ -291,6 +292,7 @@ export function Directory({ type }) {
     if (isDatabaseId) { const { error } = await supabase.from('infants').update({ status: 'active', approved_at: new Date().toISOString() }).eq('id', selected.id); if (error) return setNotice(`Could not approve infant: ${error.message}`); }
     const approved = { ...selected, status: 'Active', approvedAt: new Date().toISOString() };
     save(current => ({ ...current, infants: current.infants.map(item => item.id === approved.id ? approved : item) }));
+    void notifyEmailEvent('/api/email/infant-approval', { infantId: selected.id, decision: 'approved' });
     close(); setNotice('Infant record approved.');
   };
   useEffect(() => {
@@ -331,7 +333,7 @@ export function Directory({ type }) {
     if (!formMother && !editingRecord) {
       const linkedMother = data.mothers.find(item => item.id === fields.motherId);
       if (linkedMother && linkedMother.status !== 'Postnatal') return setNotice('Infant registration is available only after the mother is marked Delivered.');
-      const { error } = await supabase.rpc('register_care_infant', { values_json: {
+      const { data: infantId, error } = await supabase.rpc('register_care_infant', { values_json: {
         motherId: fields.motherId,
         name: infantName,
         birthDate: fields.birthDate,
@@ -345,6 +347,7 @@ export function Directory({ type }) {
       } });
       if (error) return setNotice(`Could not save infant: ${error.message}`);
       await refreshPatientData?.();
+      if (infantId) void notifyEmailEvent('/api/email/infant-approval', { infantId, decision: 'approved' });
       close(); return setNotice('Infant record saved to Supabase.');
     }
     // Updates to a submitted infant must be persisted too. Without this,
@@ -397,6 +400,7 @@ export function Directory({ type }) {
       const { error } = await supabase.from(type).update({ status: 'archived' }).eq('id', selected.id);
       if (error) return setNotice(`Could not archive record: ${error.message}`);
       await refreshPatientData?.();
+      if (!mother && selected.status === 'Pending approval') void notifyEmailEvent('/api/email/infant-approval', { infantId: selected.id, decision: 'declined' });
     }
     save((current) => ({ ...current, [type]: current[type].map((item) => item.id === selected.id ? { ...item, archived: true, status: 'Archived' } : item) }));
     close();
